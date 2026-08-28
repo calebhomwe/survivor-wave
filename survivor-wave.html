@@ -8208,7 +8208,7 @@ function render(){
 
       for(let cyy=cy0;cyy*CHUNK<cam.y+H+CHUNK;cyy++){
 
-        const ck=cxx+','+cyy;
+        const ck=TH0.id+':'+cxx+','+cyy;/*MAPFIX: key must match getChunk's theme-prefixed key or the cache check always misses and the world never paints*/
 
         if(!chunkCache.has(ck)){
 
