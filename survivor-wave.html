@@ -2950,6 +2950,8 @@ function rollEliteAffix(e){/*B019 ~50% base roll, +15% per chapter past 1, cappe
 
   if(e.affix==='swift'){e.speed*=1.4;e.trail=[];}
 
+  if(e.affix)sfx('elitesting');/*B038 affixed elite spawn sting*/
+
   return e;
 
 }
@@ -3503,6 +3505,8 @@ function killEnemy(e){
 
     sfx('boom');
 
+    sfx('bossdeath');/*B038 big descending boom*/
+
   }else if(e.isElite){
 
     eliteCount++;
@@ -3526,6 +3530,8 @@ function killEnemy(e){
       for(let i=0;i<2;i++)pickups.push({kind:'coin',x:e.x+(Math.random()-0.5)*66,y:e.y+(Math.random()-0.5)*66,r:8,v:coinVal(6)});/* BAL: B003 curve*/
 
       addFloater(e.x,e.y-48,ELITE_AFFIXES[e.affix].name+' BONUS','#fde047',1,13);
+
+      sfx('rare');/*B038 rare-drop chime on the affix-bonus pity drop*/
 
     }
 
@@ -5361,6 +5367,8 @@ function applyChoice(c){
 
 function announceEvo(name){
 
+  sfx('evofanfare');/*B038 major fanfare*/
+
   const b=document.getElementById('evoBanner');
 
   document.getElementById('evoName').textContent=name.toUpperCase();
@@ -5718,6 +5726,8 @@ function openChest(){
   ['chestRes','chestName','chestDesc','chestBtn'].forEach(id=>document.getElementById(id).classList.add('hidden'));
 
   showEl('chestOv');
+
+  sfx('chestopen');/*B038 rising sparkle arpeggio*/
 
   setTimeout(()=>{
 
@@ -6380,6 +6390,158 @@ const MI={lg:null,parent:null,threat:0,boss:false,tau:0.7,
   Music.start=function(){const r=ms0();try{MI.layers();MI.apply(true);}catch(_){}return r;};
 
   setInterval(()=>{try{MI.tick();}catch(_){}},200);
+
+})();
+
+
+
+/* ============================== B038 FIVE NEW SYNTHESIZED SFX ============================== */
+
+/* elitesting (low braaam) / chestopen (rising sparkle arp) / evofanfare (major 3-note) /
+
+   bossdeath (big descending boom) / rare (pity & rare-drop chime). Pure WebAudio to stay
+
+   single-file; routed through AU.master (B036 soft limiter) so settings.sfxVol + ducking apply.
+
+   Headless-safe: no audio device -> audioCtx stays null and b038Bus() returns null (no-op). */
+
+const B038_SYNTH={elitesting:1,chestopen:1,evofanfare:1,bossdeath:1,rare:1};
+
+AU.chan.elitesting=1;AU.chan.chestopen=0.95;AU.chan.evofanfare=1;AU.chan.bossdeath=1;AU.chan.rare=0.9;/*B038*/
+
+function b038Bus(){
+
+  try{
+
+    if(muted||!audioCtx)return null;
+
+    auMaster();
+
+    if(!AU.master)return null;
+
+    const g=audioCtx.createGain();
+
+    g.gain.value=0.62*(settings.sfxVol!==undefined?settings.sfxVol:1)*(auDuckActive()?AU.duckF:1);/*B038 respect vol + duck*/
+
+    g.connect(AU.master);
+
+    return g;
+
+  }catch(_){return null;}
+
+}
+
+function b038Tone(dest,f0,f1,t0,d,type,v){ /* one enveloped oscillator, optional pitch glide */
+
+  try{
+
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+
+    o.type=type;
+
+    o.frequency.setValueAtTime(f0,t0);
+
+    if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t0+d);
+
+    g.gain.setValueAtTime(0.0001,t0);
+
+    g.gain.linearRampToValueAtTime(v,t0+0.012);
+
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+d);
+
+    o.connect(g);g.connect(dest);
+
+    o.start(t0);o.stop(t0+d+0.05);
+
+  }catch(_){}
+
+}
+
+function sfxSynth(n){
+
+  const bus=b038Bus();
+
+  if(!bus)return;
+
+  try{
+
+    const t=audioCtx.currentTime+0.01;
+
+    if(n==='elitesting'){ /* low braaam: detuned saw stack through a falling lowpass */
+
+      const f=audioCtx.createBiquadFilter();
+
+      f.type='lowpass';
+
+      f.frequency.setValueAtTime(620,t);f.frequency.exponentialRampToValueAtTime(90,t+0.7);
+
+      f.connect(bus);
+
+      b038Tone(f,55,52,t,0.7,'sawtooth',0.5);
+
+      b038Tone(f,55.6,52.6,t,0.7,'sawtooth',0.4);
+
+      b038Tone(f,82.5,77,t,0.55,'sawtooth',0.22);
+
+    }else if(n==='chestopen'){ /* rising sparkle arpeggio C5-E5-G5-C6-E6 */
+
+      const fr=[523.25,659.25,783.99,1046.5,1318.5];
+
+      for(let i=0;i<fr.length;i++)b038Tone(bus,fr[i],fr[i],t+i*0.09,0.34,'triangle',0.26);
+
+      b038Tone(bus,2093,2093,t+0.45,0.4,'sine',0.1);/*top sparkle tail*/
+
+    }else if(n==='evofanfare'){ /* major 3-note fanfare C5-E5-G5 + held C6 */
+
+      b038Tone(bus,523.25,523.25,t,0.22,'sawtooth',0.22);
+
+      b038Tone(bus,659.25,659.25,t+0.14,0.22,'sawtooth',0.22);
+
+      b038Tone(bus,783.99,783.99,t+0.28,0.22,'sawtooth',0.22);
+
+      b038Tone(bus,1046.5,1046.5,t+0.42,0.6,'sawtooth',0.24);
+
+      b038Tone(bus,1046.5,1046.5,t+0.42,0.6,'triangle',0.2);/*brass-ish body*/
+
+    }else if(n==='bossdeath'){ /* big descending boom: sine thump + saw growl both falling */
+
+      b038Tone(bus,180,34,t,1.15,'sine',0.7);
+
+      b038Tone(bus,92,27,t,1.15,'sawtooth',0.3);
+
+      b038Tone(bus,300,60,t,0.5,'square',0.16);/*attack crack*/
+
+    }else if(n==='rare'){ /* pity/rare-drop chime: two bell partials + shimmer */
+
+      b038Tone(bus,1318.5,1318.5,t,0.5,'sine',0.24);
+
+      b038Tone(bus,2637,2637,t,0.3,'sine',0.08);
+
+      b038Tone(bus,1760,1760,t+0.13,0.6,'sine',0.2);
+
+      b038Tone(bus,2637,2637,t+0.13,0.35,'sine',0.06);
+
+    }
+
+  }catch(_){}
+
+}
+
+(function(){ /* wrap sfx: B038 names play via the synth engine instead of HTMLAudio.
+
+   prev() still runs first so the shared sfxGate debounce + B036 duck wrapper stay in charge. */
+
+  const prev=sfx;
+
+  sfx=function(n){
+
+    const r=prev(n);
+
+    if(B038_SYNTH[n])try{sfxSynth(n);}catch(_){}
+
+    return r;
+
+  };
 
 })();
 
