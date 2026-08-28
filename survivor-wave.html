@@ -9346,7 +9346,7 @@ function render(){
 
   for(const z2 of zones)glow(z2.x,z2.y,z2.r*0.8,'#f97316',Math.min(0.7,z2.dur*0.3));
 
-  for(const g3 of gems){if(onScreen(g3,20))glow(g3.x,g3.y,g3.r*2.4,gemCol(g3.xp),0.22);} /*PATCH-TAG B090: tier-colored glow*/
+  for(const g3 of gems){if(onScreen(g3,20))glow(g3.x,g3.y,g3.r*2.4,cbGemCol(g3),0.22);}
 
   const fw2=ownedWeapon('forcefield');
 
@@ -9582,15 +9582,25 @@ function render(){
 
     ctx.beginPath();ctx.ellipse(g.x,g.y+g.r*0.8,g.r*0.8,g.r*0.35,0,0,Math.PI*2);ctx.fill();
 
-    const col=gemCol(g.xp); /*PATCH-TAG B090: tier color*/
+    const col=cbGemCol(g);/*B078*/
+
+    const gr=settings.colorblind?g.r*(g.xp>=4?1.35:0.9):g.r;/*B078: size ramp*/
 
     ctx.fillStyle=col;
 
     ctx.beginPath();
 
-    ctx.moveTo(g.x,g.y-g.r+bob);ctx.lineTo(g.x+g.r*0.7,g.y+bob);
+    if(settings.colorblind&&g.xp>=4){/*B078: big gems = hexagon, small stay diamond*/
 
-    ctx.lineTo(g.x,g.y+g.r+bob);ctx.lineTo(g.x-g.r*0.7,g.y+bob);
+      for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;const vx=g.x+Math.cos(a)*gr*0.85,vyy=g.y+Math.sin(a)*gr*0.85+bob;i?vx:ctx.moveTo(vx,vyy);ctx.lineTo(vx,vyy);}
+
+      ctx.closePath();ctx.fill();
+
+    }else{
+
+    ctx.moveTo(g.x,g.y-gr+bob);ctx.lineTo(g.x+gr*0.7,g.y+bob);
+
+    ctx.lineTo(g.x,g.y+gr+bob);ctx.lineTo(g.x-gr*0.7,g.y+bob);
 
     ctx.closePath();ctx.fill();
 
@@ -10818,7 +10828,7 @@ function drawPlayer(){
 
     if(hps>hpr){ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillRect(bx,byy,bw*hps,4);}
 
-    ctx.fillStyle=hpr>0.35?'#4ade80':'#f87171';
+    ctx.fillStyle=hpr>0.35?cbCol('okHp','#4ade80'):cbCol('lowHp','#f87171');/*B078*/
 
     ctx.fillRect(bx,byy,bw*hpr,4);
 
@@ -10987,11 +10997,15 @@ function drawEnemy(e){
 
     ctx.fillRect(bx-1,byy-1,bw+2,7);
 
-    ctx.fillStyle=e.isBoss?'#ef4444':'#f59e0b';
+    ctx.fillStyle=e.isBoss?cbCol('bossHp','#ef4444'):cbCol('enemyHp','#f59e0b');/*B078*/
 
     ctx.fillRect(bx,byy,bw*Math.max(0,e.hp/e.maxHp),5);
 
   }
+
+  /*B078: colorblind-safe shape marker — chevron above bosses & big (tank) enemies*/
+
+  if(settings.colorblind&&(e.isBoss||e.type==='tank'))drawThreatChevron(px,py-e.r-24,e.isBoss);
 
 }
 
@@ -11259,7 +11273,7 @@ function renderHUD(){
 
     ctx.fillRect(bx,by,bw,10);
 
-    ctx.fillStyle='#ef4444';
+    ctx.fillStyle=cbCol('bossHp','#ef4444');/*B078*/
 
     ctx.fillRect(bx,by,bw*Math.max(0,boss.hp/boss.maxHp),10);
 
@@ -11499,7 +11513,7 @@ function renderHUD(){
 
       if(e.hp<=0)continue;
 
-      ctx.fillStyle=e.isBoss?'#ff5d5d':e.isElite?'#f59e0b':'#f87171';
+      ctx.fillStyle=e.isBoss?cbCol('miniBoss','#ff5d5d'):e.isElite?'#f59e0b':cbCol('miniEnemy','#f87171');/*B078*/
 
       const mSz=e.isBoss?3:e.isElite?2.4:1.6;
 
@@ -13047,6 +13061,7 @@ renderHeroes();
 
 })();
 
+
 /* =====================================================================
    B030 [JUIC]: screen shake + hit-stop — appended juice layer.
    All triggers gated by settings.shake && !settings.lowFx.
@@ -13219,9 +13234,101 @@ killEnemy=function(e){
   }
   ui();
 })();
+
+/* ============================== B078: COLORBLIND-SAFE MODE ============================== */
+
+/* settings.colorblind (default false, persisted via survivorSettings). When ON:
+
+   (1) health/danger reds+greens switch to a blue/orange high-contrast palette via
+
+       cbCol() consulted at the existing draw decision points (player HP bar, enemy/
+
+       boss HP bars, boss HUD bar, minimap) — no painter rewrites;
+
+   (2) bosses & big (tank) enemies get a shape marker (chevron, double for bosses)
+
+       via drawThreatChevron so threat is never color-only; elite logic untouched;
+
+   (3) XP gems keep value-distinct SHAPES (small=diamond, big=hexagon) plus a size
+
+       ramp via cbGemCol()/gr override at the gem draw site. */
+
+if(typeof settings.colorblind!=='boolean')settings.colorblind=false;
+
+function cbCol(k,def){
+
+  if(!settings.colorblind)return def;
+
+  const CB={lowHp:'#3b82f6',okHp:'#f59e0b',bossHp:'#f59e0b',enemyHp:'#38bdf8',miniBoss:'#f59e0b',miniEnemy:'#38bdf8'};
+
+  return CB[k]||def;
+
+}
+
+function cbGemCol(g){
+
+  if(!settings.colorblind)return g.xp>=4?'#38bdf8':'#4ade80';
+
+  return g.xp>=4?'#f59e0b':'#38bdf8';
+
+}
+
+function drawThreatChevron(x,y,isBoss){
+
+  ctx.save();
+
+  ctx.translate(x,y);
+
+  ctx.fillStyle=isBoss?'#f59e0b':'#38bdf8';
+
+  ctx.strokeStyle='rgba(0,0,0,0.55)';
+
+  ctx.lineWidth=2;
+
+  const n=isBoss?2:1;
+
+  for(let i=0;i<n;i++){
+
+    ctx.beginPath();
+
+    ctx.moveTo(-9,0);ctx.lineTo(0,8);ctx.lineTo(9,0);
+
+    ctx.closePath();ctx.fill();ctx.stroke();
+
+    ctx.translate(0,-9);
+
+  }
+
+  ctx.restore();
+
+}
+
+/* B078-PATCH: append a "Colorblind-Safe Mode" toggle row to the settings list
+
+   after each renderSettings() call (same pattern as the B074 Reset Save row). */
+
+(function(){
+
+  const _rs=renderSettings;
+
+  renderSettings=function(){
+
+    _rs();
+
+    const list=document.getElementById('setList');if(!list)return;
+
+    const row=document.createElement('div');row.className='shopRow';
+
+    row.innerHTML='<div><div class="sn">Colorblind-Safe Mode</div><div class="sd" style="font-size:11px;color:#999">Blue/orange palette + shape markers on threats</div></div><input type="checkbox" style="margin-left:auto;accent-color:#ffd23f;width:22px;height:22px" '+(settings.colorblind?'checked':'')+'>';
+
+    const cb=row.querySelector('input');
+
+    cb.onchange=()=>{settings.colorblind=cb.checked;saveSettings();sfx('tick');};
+
+    list.appendChild(row);
+
+  };
+
+})();
+
 </script>
-
-</body>
-
-</html>
-
