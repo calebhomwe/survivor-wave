@@ -2283,6 +2283,8 @@ function startGame(){
 
   nextElite=70;nextHorde=80;nextBoss=150;nextRush=210;bossCount=0;eliteCount=0;bossSpawnN=0;score=0;
 
+  volats.length=0;/*B019*/
+
   extraBossDone=false;
 
   const cSc=chapterSel-1;
@@ -2714,6 +2716,38 @@ function makeEnemy(type){
 
 let ultGen=0;
 
+/* ===== B019: ELITE AFFIX SYSTEM (elites only, normal enemies untouched) ===== */
+
+let volats=[];/*B019 pending volatile death-bombs {x,y,t,max,r}*/
+
+const ELITE_AFFIXES={/*B019 append-only affix table*/
+
+  shield:{name:'SHIELDED',col:'#38bdf8'},
+
+  swift:{name:'SWIFT',col:'#4ade80'},
+
+  volatile:{name:'VOLATILE',col:'#f97316'}
+
+};
+
+function rollEliteAffix(e){/*B019 ~50% base roll, +15% per chapter past 1, capped 95%*/
+
+  const ch=Math.min(0.95,0.5+0.15*Math.max(0,(player.chapter||1)-1));
+
+  if(Math.random()>=ch)return e;
+
+  const ks=Object.keys(ELITE_AFFIXES);
+
+  e.affix=ks[(Math.random()*ks.length)|0];
+
+  if(e.affix==='shield'){e.shieldHp=e.maxHp*0.5;e.shieldMax=e.shieldHp;}
+
+  if(e.affix==='swift'){e.speed*=1.4;e.trail=[];}
+
+  return e;
+
+}
+
 function makeEnemyBase(type){
 
   const p=spawnPos();
@@ -2752,7 +2786,7 @@ function makeEnemyBase(type){
 
     const hp=(260+d*70)*Math.pow(1.12,Math.min((player.chapter||1)-1,CHHP_CAP));
 
-    return Object.assign(base,{type,hp,maxHp:hp,speed:44,dmg:18+d*2,r:30,xp:0,color:'#e05252',isElite:true,eT:2.2,slamT:0});
+    return rollEliteAffix(Object.assign(base,{type,hp,maxHp:hp,speed:44,dmg:18+d*2,r:30,xp:0,color:'#e05252',isElite:true,eT:2.2,slamT:0}));/*B019 affix roll*/
 
   }
 
@@ -3111,6 +3145,8 @@ function dealDamage(e,dmg,srcX,srcY,wtag){
 
   if(wtag)rsAdd(wtag,d);/*B041*/
 
+  /*B019*/ if(e.shieldHp>0){const ab=Math.min(e.shieldHp,d);e.shieldHp-=ab;d-=ab;if(e.shieldHp<=0){addFloater(e.x,e.y-e.r-10,'SHIELD BREAK','#38bdf8',0.9,15);spawnParticles(e.x,e.y,'#38bdf8',10,0.9);}if(d<=0){e.flash=0.08;return;}}
+
   e.hp-=d;e.flash=0.08;e.stagger=0.13;
 
   /* HERO-PATCH-B013 */ if(player.heroSteal>0&&player.hp<player.maxHp)player.hp=Math.min(player.maxHp,player.hp+d*player.heroSteal);
@@ -3263,11 +3299,25 @@ function killEnemy(e){
 
     missionsProg('elite',1);
 
+    if(e.affix==='volatile')volats.push({x:e.x,y:e.y,t:0.4,max:0.4,r:120});/*B019 telegraphed death-bomb*/
+
     addFloater(e.x,e.y-30,'ELITE DOWN','#fba74a',1.2,20);
 
     for(let i=0;i<6;i++)dropGem(e.x+(Math.random()-0.5)*50,e.y+(Math.random()-0.5)*50,4);
 
     for(let i=0;i<3;i++)pickups.push({kind:'coin',x:e.x+(Math.random()-0.5)*60,y:e.y+(Math.random()-0.5)*60,r:8,v:8});
+
+    /*B019 affixed elites drop +50% gold/xp*/
+
+    if(e.affix){
+
+      for(let i=0;i<3;i++)dropGem(e.x+(Math.random()-0.5)*56,e.y+(Math.random()-0.5)*56,4);
+
+      for(let i=0;i<2;i++)pickups.push({kind:'coin',x:e.x+(Math.random()-0.5)*66,y:e.y+(Math.random()-0.5)*66,r:8,v:6});
+
+      addFloater(e.x,e.y-48,ELITE_AFFIXES[e.affix].name+' BONUS','#fde047',1,13);
+
+    }
 
     pickups.push({kind:'chest',x:e.x,y:e.y,r:14});
 
@@ -3976,6 +4026,12 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
     e.spdM=e.speed*(e.frostT>0?0.5:1);
 
+    /*B019 swift affix motion trail (skipped in lowFx; trail array stays empty then)*/
+
+    if(e.affix==='swift'&&!settings.lowFx){if(!e.trail)e.trail=[];e.trail.push({x:e.x,y:e.y,t:0.25});if(e.trail.length>10)e.trail.shift();}
+
+    if(e.trail)for(let ti=e.trail.length-1;ti>=0;ti--){e.trail[ti].t-=dt;if(e.trail[ti].t<=0)e.trail.splice(ti,1);}
+
     e.x+=e.kb.x*dt;e.y+=e.kb.y*dt;
 
     e.kb.x*=Math.pow(0.001,dt);e.kb.y*=Math.pow(0.001,dt);
@@ -4230,6 +4286,30 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
   for(const b of bolts)b.life-=dt;
 
   sweep(bolts,b=>b.life>0);
+
+  /*B019 volatile elite death-bombs: 0.4s telegraph then explode*/
+
+  for(let vi=volats.length-1;vi>=0;vi--){
+
+    const v=volats[vi];v.t-=dt;
+
+    if(v.t>0)continue;
+
+    volats.splice(vi,1);
+
+    shake=Math.max(shake,10);
+
+    if(settings.flash)whiteFlash=Math.max(whiteFlash,0.12);
+
+    spawnParticles(v.x,v.y,'#f97316',18,1.3,{sprite:'smoke',size:38});
+
+    sfx('boom');
+
+    const vdx=player.x-v.x,vdy=player.y-v.y;
+
+    if(vdx*vdx+vdy*vdy<v.r*v.r&&player.iframes<=0){hurtPlayer(16+difficulty*2);player.iframes=0.5;}
+
+  }
 
   for(const c2 of corpses)c2.life-=dt;
 
@@ -9224,6 +9304,22 @@ function render(){
 
   /* lightning bolts */
 
+  /*B019 volatile telegraphs: blinking hazard circle + shrinking fuse ring*/
+
+  for(const v of volats){
+
+    const vp=1-v.t/v.max;
+
+    ctx.fillStyle=`rgba(249,115,22,${0.10+0.15*Math.abs(Math.sin(performance.now()/45))})`;
+
+    ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,Math.PI*2);ctx.fill();
+
+    ctx.strokeStyle='rgba(249,115,22,0.85)';ctx.lineWidth=3;
+
+    ctx.beginPath();ctx.arc(v.x,v.y,v.r*vp,0,Math.PI*2);ctx.stroke();
+
+  }
+
   for(const b of bolts){
 
     const a=b.life/0.28;
@@ -9832,6 +9928,10 @@ function drawEnemy(e){
 
   drawShadow(px,py+e.r*0.8,e.r*1.05*(e.isBoss?1.25:1),0.32);
 
+  /*B019 swift affix motion trail (empty when settings.lowFx)*/
+
+  if(e.affix==='swift'&&e.trail)for(const tp of e.trail){const ta=tp.t/0.25;ctx.fillStyle=`rgba(74,222,128,${0.22*ta})`;ctx.beginPath();ctx.arc(tp.x,tp.y,e.r*0.75*ta,0,Math.PI*2);ctx.fill();}
+
   const ty=critterType(e);
 
   const spn=e.spawnT>0?1-Math.pow(e.spawnT/(e.spawnMax||0.65),2):1;
@@ -9906,6 +10006,42 @@ function drawEnemy(e){
     ctx.lineWidth=3;
 
     ctx.beginPath();ctx.arc(px,py,e.r+8+Math.sin(e.anim)*2,0,Math.PI*2);ctx.stroke();
+
+    /*B019 affix visuals: colored outline + name tag; shield ring scales with shieldHp*/
+
+    if(e.affix&&ELITE_AFFIXES[e.affix]){
+
+      const A=ELITE_AFFIXES[e.affix];
+
+      ctx.strokeStyle=A.col;ctx.lineWidth=2;
+
+      ctx.beginPath();ctx.arc(px,py,e.r+3,0,Math.PI*2);ctx.stroke();
+
+      if(e.affix==='shield'&&e.shieldHp>0){
+
+        ctx.strokeStyle=`rgba(56,189,248,${0.3+0.45*(e.shieldHp/(e.shieldMax||1))})`;ctx.lineWidth=3.5;
+
+        ctx.beginPath();ctx.arc(px,py,e.r+14,0,Math.PI*2);ctx.stroke();
+
+      }
+
+      ctx.font='bold 11px system-ui,sans-serif';
+
+      ctx.textAlign='center';
+
+      const tw=ctx.measureText(A.name).width;
+
+      ctx.fillStyle='rgba(0,0,0,0.55)';
+
+      ctx.fillRect(px-tw/2-4,py-e.r-30,tw+8,13);
+
+      ctx.fillStyle=A.col;
+
+      ctx.fillText(A.name,px,py-e.r-20);
+
+      ctx.textAlign='left';/*B019 restore*/
+
+    }
 
   }
 
