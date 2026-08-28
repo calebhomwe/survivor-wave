@@ -2238,6 +2238,34 @@ const WEAPONS={
 
     cd:l=>1.9-l*0.16},
 
+  boomer:{name:'Boomerang',icon:'',iconK:'boomer',color:'#5eead4',passive:'magnet',/*B008*/
+
+    evoName:'Twin Cyclone',evoIcon:'🪃🌀',
+
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Magnet Glove':(l===1?'Thrown blade flies out, pierces, then returns':l===2?'+damage':l===3?'+damage & bigger':l===4?'+1 boomerang':'+EVO at Lv.5 + Magnet Glove'),
+
+    fire(w,st){
+
+      const tg=nearestEnemy(player.x,player.y,650);
+
+      const a=tg?Math.atan2(tg.y-player.y,tg.x-player.x):Math.random()*Math.PI*2;
+
+      const n=(w.evo?2:1)+((w.lvl>=4&&!w.evo)?1:0);/*B008 evo: two spiral blades*/
+
+      for(let i=0;i<n;i++){
+
+        const aa=a+(i-(n-1)/2)*0.5;
+
+        const curve=w.evo?(i%2?1:-1)*1.5:(w.lvl>=3?0.5:0);/*B008 spiral curvature*/
+
+        projectiles.push(poolGet(ppool('boomer'),o=>{o.kind='boomer';o.x=player.x;o.y=player.y;o.vx=Math.cos(aa)*560;o.vy=Math.sin(aa)*560;o.life=3.2;o.dmg=w.evo?st.dmg*1.4:st.dmg;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=w.evo?15:11;o.phase='out';o.t=0;o.rot=0;o.outT=w.evo?1.1:0.62;o.curve=curve;o.ev=w.evo;o.tw=0;}));/*B069 pool*/
+
+      }
+
+      sfx('whoosh');return true;},
+
+    cd:l=>2.2-l*0.2},
+
 };
 
 
@@ -2272,6 +2300,7 @@ function weaponStats(w){
 
     if(w.id==='orbit')base.dmg=12+(w.lvl-1)*5;/*B006*/
     if(w.id==='chainlt')base.dmg=13+(w.lvl-1)*5.5;/*B007*/
+    if(w.id==='boomer')base.dmg=15+(w.lvl-1)*6;/*B008*/
 
   base.dmg*=1+0.10*(player.passives.bullet||0);/*WPN-PATCH*/
 
@@ -3370,7 +3399,7 @@ function onScreen(e,pad){
 const runStats={dmg:{},taken:0,gold:0};
 window.__runStats=runStats;
 function rsWpn(w){try{return (w&&w.id&&WEAPONS[w.id]&&WEAPONS[w.id].name)||'Other';}catch(_){return 'Other';}}
-function rsKind(k){return ({dart:'Kunai',shuriken:'Kunai',blade:'Lightchaser',laser:'Guardian',brick:'Brick',pellet:'Shotgun',swing:'Baseball Bat',rocket:'RPG',wave:'Katana',tdart:'Turret',shell:'Turret'})[k]||'Other';}
+function rsKind(k){return ({dart:'Kunai',shuriken:'Kunai',blade:'Lightchaser',laser:'Guardian',brick:'Brick',pellet:'Shotgun',swing:'Baseball Bat',rocket:'RPG',wave:'Katana',tdart:'Turret',shell:'Turret',boomer:'Boomerang'})[k]||'Other';}
 function rsAdd(t,d){runStats.dmg[t]=(runStats.dmg[t]||0)+d;}
 
 function dealDamage(e,dmg,srcX,srcY,wtag){
@@ -4153,6 +4182,26 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
         const dx=player.x-p.x,dy=player.y-p.y,d=Math.hypot(dx,dy)||1;
 
         p.vx=dx/d*620;p.vy=dy/d*620;
+
+        if(d<26)p.life=0;
+
+      }
+
+      p.x+=p.vx*dt;p.y+=p.vy*dt;
+
+    }else if(p.kind==='boomer'){/*B008*/
+
+      p.rot+=dt*17;p.t+=dt;
+
+      if(p.curve){const ca=Math.cos(p.curve*dt),sa=Math.sin(p.curve*dt),nvx=p.vx*ca-p.vy*sa,nvy=p.vx*sa+p.vy*ca;p.vx=nvx;p.vy=nvy;}/*B008 spiral path*/
+
+      if(p.phase==='out'&&p.t>p.outT){p.phase='back';p.hit.length=0;}/*B008 per-pass hit cooldown*/
+
+      if(p.phase==='back'){
+
+        const dx=player.x-p.x,dy=player.y-p.y,d=Math.hypot(dx,dy)||1;
+
+        p.vx+=(dx/d*900-p.vx)*Math.min(1,dt*6);p.vy+=(dy/d*900-p.vy)*Math.min(1,dt*6);/*B008 homing return*/
 
         if(d<26)p.life=0;
 
@@ -5518,6 +5567,8 @@ function b042Count(id,l,evo){
     case 'katana':return evo?2:1;
 
     case 'guardian':return evo?2:1;
+
+    case 'boomer':return (evo?2:1)+b;/*B008*/
 
     default:return 1;
 
@@ -6937,6 +6988,20 @@ function paintIcon(key,g,Sz){
 
     g.strokeStyle='rgba(255,255,255,0.7)';g.lineWidth=1*u;g.stroke();
 
+  }else if(key==='boomer'){/*B008*/
+
+    g.strokeStyle='#5eead4';g.lineWidth=2.4*u;g.lineCap='round';
+
+    g.beginPath();g.arc(0,2*u,11*u,-2.4,2.4);g.stroke();
+
+    g.strokeStyle='#f0abfc';g.lineWidth=2*u;
+
+    g.beginPath();g.arc(0,2*u,7.5*u,-2.1,2.1);g.stroke();
+
+    g.strokeStyle='rgba(255,255,255,0.65)';g.lineWidth=1*u;
+
+    g.beginPath();g.arc(0,2*u,9.5*u,-1.5,1.5);g.stroke();
+
   }
 
   g.restore();
@@ -6967,7 +7032,7 @@ function iconCV(key,Sz){
 
 function iconImg(key,cls){return SKILL_URL[key]?('<img class="'+(cls||'')+'" src="'+SKILL_URL[key]+'" alt="">'):'';}
 
-['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain'].forEach(k=>iconCV(k,72));/*WPN-PATCH B007*/
+['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain','boomer'].forEach(k=>iconCV(k,72));/*WPN-PATCH B008*/
 
 const [COIN_CV,coinG]=iconCanvas(36);
 
@@ -10481,6 +10546,22 @@ function render(){
       ctx.fillStyle='rgba(255,255,255,0.25)';
 
       ctx.fillRect(-p.r*0.4,-p.r*0.3,p.r*0.25,p.r*0.6);
+
+      ctx.restore();
+
+    }else if(p.kind==='boomer'){/*B008 spinning crescent blade*/
+
+      ctx.save();
+
+      ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+
+      ctx.strokeStyle=p.ev?'#f0abfc':'#5eead4';ctx.lineWidth=5;ctx.lineCap='round';
+
+      ctx.beginPath();ctx.arc(0,0,p.r*1.15,-2.2,2.2);ctx.stroke();
+
+      ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=2;
+
+      ctx.beginPath();ctx.arc(0,0,p.r*0.85,-1.8,1.8);ctx.stroke();
 
       ctx.restore();
 
