@@ -5530,6 +5530,237 @@ function auDuck(){ /* trigger duck window for the level-up jingle */
 
 
 
+/* ============================== B037 DYNAMIC MUSIC INTENSITY ============================== */
+
+/* Threat-driven gain-layer crossfade: calm <-> combat <-> boss. Three gain nodes
+
+   (MI.lg.calm/combat/boss) sit between the per-voice gains and Music.gain, so
+
+   settings.musicVol, B036 ducking and the soft limiter all still apply upstream.
+
+   All three layers are scheduled continuously; only their gains move
+
+   (setTargetAtTime, tau 0.7s ≈ 2s audible ramp) — no track restarts, no scheduling gaps.
+
+   Threat = nearby-enemy pressure around the player (spatial hash, elites/bosses weigh more),
+
+   sampled 5x/s and smoothed. Headless-safe: every audio op is try/caught and skipped
+
+   when audioCtx/Music.gain are absent. */
+
+const MI={lg:null,parent:null,threat:0,boss:false,tau:0.7,
+
+  layers(){ /* (re)build layer gains if Music.gain was recreated by a new Music.start() */
+
+    try{
+
+      if(!audioCtx||!Music.gain||Music.real)return;
+
+      if(this.lg&&this.parent===Music.gain)return;
+
+      const mk=()=>{const g=audioCtx.createGain();g.gain.value=0;g.connect(Music.gain);return g;};
+
+      if(this.lg){try{this.lg.calm.disconnect();this.lg.combat.disconnect();this.lg.boss.disconnect();}catch(_){}}
+
+      this.lg={calm:mk(),combat:mk(),boss:mk()};
+
+      this.parent=Music.gain;
+
+      this.apply(true);
+
+    }catch(_){}
+
+  },
+
+  apply(now){ /* move layer gains toward current targets (~2s ramps) */
+
+    try{
+      if(!audioCtx||!this.lg)return;
+
+      const t=audioCtx.currentTime,th=this.threat;
+
+      const calm=this.boss?0.12:Math.max(0.12,1-th);
+
+      const combat=this.boss?0.25:Math.min(1,th*1.15);
+
+      const boss=this.boss?1:0;
+
+      const ramp=(g,v)=>{try{if(now)g.gain.setValueAtTime(g.gain.value,t);g.gain.setTargetAtTime(v,t,MI.tau);}catch(_){}};
+
+      ramp(this.lg.calm,calm);ramp(this.lg.combat,combat);ramp(this.lg.boss,boss);
+
+    }catch(_){}
+
+  },
+
+  tick(){ /* sample threat from the world 5x/s */
+
+    try{
+      let boss=false;
+
+      if(typeof state!=='undefined'&&state==='play'&&typeof enemies!=='undefined'){
+
+        for(let i=0;i<enemies.length;i++){const e=enemies[i];if(e&&e.isBoss&&e.hp>0){boss=true;break;}}
+
+        let n=0;
+
+        eachNear(player.x,player.y,420,e=>{/*B037 threat pressure*/
+
+          if(e.hp<=0)return;
+
+          const dx=e.x-player.x,dy=e.y-player.y;
+
+          if(dx*dx+dy*dy<420*420)n+=e.isBoss?6:e.isElite?3:1;
+
+        });
+
+        const tgt=Math.min(1,n/28); /* 28 basic foes in range = full combat */
+
+        this.threat+=(tgt-this.threat)*0.25; /* extra smoothing on top of gain ramps */
+
+      }else{
+
+        this.threat+=(0-this.threat)*0.25;
+
+      }
+
+      this.boss=boss;
+
+      this.layers();this.apply();
+
+      if(Music.realEl){ /* mp3 path: gentle intensity scale, vol clamped */
+
+        try{const base=Math.min(1,(settings.musicVol!==undefined?settings.musicVol:0.6)*0.8*(auDuckActive()?0.45:1));
+
+          Music.realEl.volume=Math.max(0,Math.min(1,base*(boss?1:(0.72+0.28*this.threat))));}catch(_){}}
+
+    }catch(_){}
+
+  }
+
+};
+
+(function(){ /* layered scheduler: replaces Music.note with a 3-layer version (orig kept) */
+
+  const noteOrig=Music.note.bind(Music);
+
+  const miTone=(g,f,t,d,type,v)=>{try{
+
+    const o=audioCtx.createOscillator(),gg=audioCtx.createGain();
+
+    o.type=type;o.frequency.value=f;
+
+    gg.gain.setValueAtTime(0.0001,t);
+
+    gg.gain.linearRampToValueAtTime(v,t+0.01);
+
+    gg.gain.exponentialRampToValueAtTime(0.0001,t+d);
+
+    o.connect(gg);gg.connect(g);
+
+    o.start(t);o.stop(t+d+0.05);
+
+  }catch(_){}};
+
+  const miKick=g=>t=>{try{
+
+    const o=audioCtx.createOscillator(),gg=audioCtx.createGain();
+
+    o.type='sine';
+
+    o.frequency.setValueAtTime(150,t);
+
+    o.frequency.exponentialRampToValueAtTime(40,t+0.1);
+
+    gg.gain.setValueAtTime(0.55,t);
+
+    gg.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+
+    o.connect(gg);gg.connect(g);
+
+    o.start(t);o.stop(t+0.15);
+
+  }catch(_){}};
+
+  const miHat=(g,v)=>t=>{try{
+
+    const o=audioCtx.createOscillator(),gg=audioCtx.createGain();
+
+    o.type='square';o.frequency.value=7000;
+
+    gg.gain.setValueAtTime(v,t);
+
+    gg.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+
+    o.connect(gg);gg.connect(g);
+
+    o.start(t);o.stop(t+0.05);
+
+  }catch(_){}};
+
+  Music.note=function(st,t){ /*B037*/
+
+    try{
+      if(muted||!this.gain||!audioCtx)return;
+
+      MI.layers();
+
+      if(!MI.lg){noteOrig(st,t);return;} /* fallback: no layers yet -> original mono track */
+
+      const bass=[45,45,41,41,36,36,43,43];
+
+      const root=bass[Math.floor(st/4)%8];
+
+      const midi=n=>440*Math.pow(2,(n-69)/12);
+
+      const arp=[0,3,7,10,12,10,7,3];
+
+      /* CALM: slow bass + soft triangle arp, sparse */
+
+      if(st%4===0)miTone(MI.lg.calm,midi(root),t,0.5,'triangle',0.5);
+
+      miTone(MI.lg.calm,midi(root+24+arp[st%8]),t,0.11,'triangle',0.08);
+
+      /* COMBAT: kick/hat backbeat + square arp (the original driving mix) */
+
+      const inten=Math.min(1,MI.threat);
+
+      if(st%8===0||(inten>0.5&&st%8===4))miKick(MI.lg.combat)(t);
+
+      if(st%4===2||(inten>0.6&&st%2===1))miHat(MI.lg.combat,0.05)(t);
+
+      if(st%4===0)miTone(MI.lg.combat,midi(root),t,0.5,'triangle',0.5);
+
+      miTone(MI.lg.combat,midi(root+24+arp[st%8]),t,0.11,'square',0.10);
+
+      if(inten>0.75&&st%8===6)miTone(MI.lg.combat,midi(root+12+arp[(st+3)%8]),t,0.09,'sawtooth',0.07);
+
+      /* BOSS: relentless saw bass on every 2 steps, hard kick every 4, hats every 2, flat-2 drone */
+
+      if(st%2===0)miTone(MI.lg.boss,midi(root),t,0.16,'sawtooth',0.22);
+
+      if(st%4===0)miKick(MI.lg.boss)(t);
+
+      miHat(MI.lg.boss,0.04)(t);
+
+      miTone(MI.lg.boss,midi(root+6),t,0.14,'square',0.10); /* tritone drone = menace */
+
+      miTone(MI.lg.boss,midi(root+36+arp[(st+2)%8]),t,0.09,'sawtooth',0.06);
+
+    }catch(_){}
+
+  };
+
+  const ms0=Music.start.bind(Music);
+
+  Music.start=function(){const r=ms0();try{MI.layers();MI.apply(true);}catch(_){}return r;};
+
+  setInterval(()=>{try{MI.tick();}catch(_){}},200);
+
+})();
+
+
+
 /* ============================== PARTICLES / FLOATERS ============================== */
 
 function spawnParticles(x,y,color,n,scale,opts){/*FX-ASSETS-PATCH-RB sprite opts*/
