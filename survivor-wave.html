@@ -5,6 +5,7 @@
 <head>
 
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2341582e'/%3E%3Ctext x='8' y='12' font-size='10' text-anchor='middle'%3E%E2%9A%94%3C/text%3E%3C/svg%3E">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
@@ -6415,6 +6416,7 @@ const ROAD_V={x:WORLD.w/2,half:110};
 function hash2(ix,iy){let h=ix*374761393+iy*668265263;h=(h^(h>>13))*1274126177;return ((h^(h>>16))>>>0)/4294967295;}
 
 const chunkCache=new Map();
+let chunkPlaceholder=null;/*BUGFIX: was undeclared — render() crashed with ReferenceError whenever the per-frame chunk budget ran out (world only painted one chunk, rest stayed flat green)*/
 
 let saveAcc=0;/*HEALTH-PATCH-RC gold autosave accumulator*/
 const ELITE_SLAM_R=135;/*HEALTH-PATCH-RC elite slam damage/telegraph radius*/
