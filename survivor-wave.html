@@ -2486,6 +2486,9 @@ function startGame(){
 
   player.chSpawn=1+0.06*cSc;
 
+  /*B024: cinder chapter (slot 13) is tuned to post-ch4 difficulty, not slot-13 scaling*/
+  if(chapterSel===13){player.chHP/=Math.pow(1.12,cSc-4);player.chSpawn/=(1+0.06*cSc)/(1+0.06*4);}
+
   player.chapter=chapterSel;
 
   /* DAILY-PATCH-R2 */
@@ -2520,6 +2523,9 @@ function startGame(){
 
   player.chSize=undefined;player.chSpd=undefined;
 
+  /*B024: reset cinder state (pools spawned after ROADS below)*/
+  cinderRoll=false;lavaPools.length=0;player._lava=0;
+
   bfxGustTimer=0;bfxGustLeft=0;
 
   ultGen++;
@@ -2528,7 +2534,9 @@ function startGame(){
 
   ROADS=buildRoads(chapterSel||player.chapter||1);
 
-  warn({sand:'DESERT MESA',snow:'FROSTPINE TUNDRA',scorch:'EMBER WASTES'}[themeFor().group]||'WILD STREETS'); /*BFX-PATCH*/
+  if(themeFor().group==='volcano')ensureLavaPools();/*B024 needs ROADS built first*/
+
+  warn({sand:'DESERT MESA',snow:'FROSTPINE TUNDRA',scorch:'EMBER WASTES',volcano:'CINDER WASTES — MIND THE LAVA'}[themeFor().group]||'WILD STREETS'); /*BFX-PATCH*/
 
   const st0=sioc.stars[chapterSel]||{clr:0};
 
@@ -2900,6 +2908,9 @@ function makeEnemy(type){
     if(player.chSpd&&!_me0.isBoss&&!_me0.isElite){_me0.speed*=player.chSpd;}
 
     if(dusk&&!_me0.isBoss&&!_me0.isElite)_me0.speed*=1.12;
+
+    /*B024 cinder BFX: enemies +10% speed in Cinder Wastes*/
+    if(themeFor().group==='volcano'&&!_me0.isBoss&&!_me0.isElite)_me0.speed*=1.10;
 
     try{bestiarySee(critterType(_me0));}catch(_){}/*B052 bestiary first-seen*/
 
@@ -7044,6 +7055,15 @@ function critterType(e){
 
   if(e.type==='spitter')return 'toad';
 
+  /*B024: Cinder Wastes skins (visual variants of existing roles, volcano group only)*/
+  try{
+    if(typeof themeFor==='function'&&themeFor().group==='volcano'){
+      if(e.type==='grunt')return 'ashworm';
+      if(e.type==='fast'||e.type==='baby')return 'cinderling';
+      if(e.type==='tank'||e.type==='splitter')return 'magmoth';
+    }
+  }catch(_){}
+
   return 'snake';
 
 }
@@ -7856,6 +7876,56 @@ function paintCritter(g,ty,x,y,ang,anim,r,flash,ghost){
 
     g.beginPath();g.moveTo(r*0.21,bob+r*0.53);g.lineTo(r*0.39,bob+r*0.585);g.stroke();
 
+  }else if(ty==='ashworm'){ /*B024 Cinder Wastes grunt skin: basalt segments, ember veins*/
+    const wob=Math.sin(anim*2.4);
+    for(let i=6;i>=1;i--){
+      const d=-r*0.55*i;
+      const off=Math.sin(anim*2.4-i*0.85)*r*0.42;
+      const rr=r*(0.72-i*0.075);
+      g.fillStyle=i%2?'#3a2f2c':'#312624';
+      g.beginPath();g.arc(d,off,rr,0,Math.PI*2);g.fill();
+      g.strokeStyle='rgba(255,110,40,0.7)';g.lineWidth=Math.max(1,rr*0.12);
+      g.stroke();
+      g.fillStyle='rgba(255,160,60,0.3)';
+      g.beginPath();g.arc(d,off-rr*0.3,rr*0.4,0,Math.PI*2);g.fill();
+    }
+    g.fillStyle='#43352f';
+    g.beginPath();g.ellipse(0,0,r*0.82,r*0.62,0,0,Math.PI*2);g.fill();
+    g.fillStyle='#57392a';
+    g.beginPath();g.ellipse(-r*0.15,0,r*0.5,r*0.42,0,0,Math.PI*2);g.fill();
+    const gl=0.6+0.4*Math.sin(anim*3);
+    W1('rgba(255,'+(140+Math.floor(gl*60))+',50,0.95)',r*0.17);
+    g.fillStyle='#2a1010';
+    g.beginPath();g.arc(r*0.34,-r*0.18,r*0.09,0,Math.PI*2);g.arc(r*0.34,r*0.18,r*0.09,0,Math.PI*2);g.fill();
+  }else if(ty==='cinderling'){ /*B024 fast/baby skin: hopping ember imp*/
+    const hop=Math.abs(Math.sin(anim*6))*r*0.22;
+    E('rgba(20,12,10,0.3)',[0,r*0.5],r*0.8,r*0.3);
+    E('#5a2d1e',[0,-hop*0.3],r*0.75,r*0.62);
+    E('#7a3a20',[r*0.1,-hop*0.3-r*0.05],r*0.55,r*0.45);
+    const gl=0.55+0.45*Math.sin(anim*5+sd*6);
+    g.fillStyle='rgba(255,210,90,'+gl.toFixed(2)+')';
+    g.beginPath();g.arc(r*0.3,-r*0.16,r*0.11,0,Math.PI*2);g.arc(r*0.3,r*0.16,r*0.11,0,Math.PI*2);g.fill();
+    g.fillStyle='#3c2018';
+    g.beginPath();g.moveTo(-r*0.2,-r*0.5);g.lineTo(-r*0.05,-r*0.9);g.lineTo(r*0.05,-r*0.45);g.closePath();g.fill();
+    g.beginPath();g.moveTo(r*0.05,-r*0.5);g.lineTo(r*0.2,-r*0.88);g.lineTo(r*0.3,-r*0.42);g.closePath();g.fill();
+    g.strokeStyle='rgba(255,140,50,0.8)';g.lineWidth=Math.max(1.2,r*0.1);
+    g.beginPath();g.moveTo(-r*0.6,-hop*0.3);g.quadraticCurveTo(-r*1.1,r*0.1,-r*0.9,r*0.45);g.stroke();
+  }else if(ty==='magmoth'){ /*B024 tank/splitter skin: cracked magma golem*/
+    E('rgba(15,8,7,0.35)',[0,r*0.48],r,r*0.34);
+    E('#38302e',[0,0],r*0.95,r*0.78);
+    E('#493934',[r*0.12,-r*0.08],r*0.68,r*0.55);
+    g.strokeStyle='rgba(255,120,30,0.85)';g.lineWidth=Math.max(1.4,r*0.08);
+    g.beginPath();
+    g.moveTo(-r*0.5,-r*0.3);g.lineTo(-r*0.2,-r*0.05);g.lineTo(-r*0.35,r*0.3);
+    g.moveTo(r*0.15,-r*0.35);g.lineTo(r*0.3,0);g.lineTo(r*0.12,r*0.35);
+    g.moveTo(-r*0.6,r*0.15);g.lineTo(-r*0.15,r*0.2);
+    g.stroke();
+    const gl=0.6+0.4*Math.sin(anim*2.5+sd*9);
+    g.fillStyle='rgba(255,190,80,'+gl.toFixed(2)+')';
+    g.beginPath();g.arc(r*0.32,-r*0.2,r*0.1,0,Math.PI*2);g.arc(r*0.32,r*0.14,r*0.1,0,Math.PI*2);g.fill();
+    g.fillStyle='#2c2523';
+    g.beginPath();g.moveTo(-r*0.3,-r*0.6);g.lineTo(-r*0.15,-r*0.95);g.lineTo(0,-r*0.55);g.closePath();g.fill();
+    g.beginPath();g.moveTo(r*0.05,-r*0.6);g.lineTo(r*0.25,-r*0.92);g.lineTo(r*0.35,-r*0.5);g.closePath();g.fill();
   }
 
   /* RB: consistent contact shading (dark underside arc, alpha 0.12) */
@@ -8276,14 +8346,38 @@ const THEMES=[
 
   tree:'deadtree',bush:'charbush',tuft:'embervent',flower:'embervent',ambient:'ember',treePal:'dead'},
 
+ /*B024 Cinder Wastes (5th biome, volcano group)*/
+ {id:'cinder',border:'rgba(200,70,20,0.75)',group:'volcano',g:['#2b2426','#332a2c','#241e20','#3a2f31'],patch:'rgba(255,90,20,0.16)',
+  road:'#2e2628',roadWear:'#241e20',dash:'#ff8c3a',walk:'#3c3234',walkEdge:'rgba(255,120,50,0.22)',
+  pad:'#4a3b3d',padTop:'#57454a',dayTint:'rgba(255,110,45,0.09)',nightTint:'rgba(26,8,10,0.55)',
+  tree:'deadtree',bush:'charbush',tuft:'embervent',flower:'embervent',ambient:'ember',treePal:'dead'},
+
 ];
+
+let cinderRoll=false;/*B024: endless can re-theme into Cinder Wastes*/
 
 function themeFor(){
 
   const ch=(typeof chapterSel!=='undefined'&&chapterSel)||player.chapter||1;
 
+  /*B024: Cinder Wastes — endless roll or chapter 13+ (post-ch4 unlock slot)*/
+  if(cinderRoll)return THEMES[4];
+  if(ch>=13)return THEMES[4];
   return THEMES[Math.min(3,Math.floor((ch-1)/3))];
 
+}
+
+/*B024: lava pool hazards for Cinder Wastes (deterministic per run, roads+spawn kept clear)*/
+let lavaPools=[];
+
+function ensureLavaPools(){
+  if(lavaPools.length)return;
+  for(let i=0;i<140;i++){
+    const lx=60+Math.random()*(WORLD.w-120),ly=60+Math.random()*(WORLD.h-120);
+    if(Math.hypot(lx-WORLD.w/2,ly-WORLD.h/2)<420)continue;
+    if(nearAnyRoad(lx,ly,60))continue;
+    lavaPools.push({x:lx,y:ly,r:42+Math.random()*34,ph:Math.random()*6.28});
+  }
 }
 
 let curThemeId=null,ROADS=[];
@@ -8768,6 +8862,22 @@ function getChunk(cx,cy){
 
         }
 
+      }else if(grp==='volcano'){ /*B024: dark ash flecks + ember specks*/
+
+        g.fillStyle='rgba(150,140,135,0.22)';
+
+        for(let k=0;k<6;k++)g.fillRect(tx+hash2(k*9+8,bx+ty*3)*60+2,ty+hash2(by*5+tx*2,k*4+7)*60+2,2,1.5);
+
+        for(let k=0;k<3;k++){
+
+          const emx3=tx+hash2(k*17+2,bx*2+ty)*58+3,emy3=ty+hash2(by+tx*3,k*19+1)*58+3;
+
+          g.fillStyle=k%2?'rgba(255,135,45,0.6)':'rgba(255,80,20,0.5)';
+
+          g.beginPath();g.arc(emx3,emy3,1.5,0,Math.PI*2);g.fill();
+
+        }
+
       }else{
 
         g.fillStyle='rgba(185,176,168,0.28)';
@@ -8823,6 +8933,28 @@ function getChunk(cx,cy){
       let px3=lx,py3=ly;
 
       for(let k=0;k<4;k++){px3+=(hash2(i*9+k,k*3)-0.5)*70;py3+=(hash2(k*7,i+k)-0.5)*70;g.lineTo(px3,py3);}
+
+      g.stroke();
+
+    }
+
+  }
+
+  if(TH.group==='volcano'){ /*B024: glowing fissures cracked into the ash*/
+
+    for(let i=0;i<4;i++){
+
+      const lx=hash2(bx+i*13,by*7+i*3)*CHUNK,ly=hash2(bx*5+i,by+i*11)*CHUNK;
+
+      g.strokeStyle=i%2?'rgba(255,95,25,0.42)':'rgba(255,145,50,0.34)';
+
+      g.lineWidth=1.6+i%2;
+
+      g.beginPath();g.moveTo(lx,ly);
+
+      let px4=lx,py4=ly;
+
+      for(let k=0;k<4;k++){px4+=(hash2(i*9+k,k*3)-0.5)*70;py4+=(hash2(k*7,i+k)-0.5)*70;g.lineTo(px4,py4);}
 
       g.stroke();
 
@@ -9315,6 +9447,47 @@ function render(){
         if(ch.lamps)for(const L of ch.lamps)window.visLamps.push({x:L.x,y:L.y});
 
       }
+
+  }
+
+  {/*B024 Cinder Wastes: animated lava pools — pulsing glow telegraphs the hazard; lowFx skips embers*/
+    if(themeFor().group==='volcano'){
+
+      const t=performance.now()/1000;
+
+      for(let i=0;i<lavaPools.length;i++){
+
+        const L=lavaPools[i];
+
+        if(L.x+L.r*2<cam.x||L.x-L.r*2>cam.x+W||L.y+L.r*2<cam.y||L.y-L.r*2>cam.y+H)continue;
+
+        const pu=0.82+0.18*Math.sin(t*2.2+L.ph);
+
+        const rg=ctx.createRadialGradient(L.x,L.y,2,L.x,L.y,L.r*1.55);
+
+        rg.addColorStop(0,'rgba(255,190,80,'+(0.5*pu).toFixed(3)+')');
+
+        rg.addColorStop(0.55,'rgba(255,90,20,'+(0.4*pu).toFixed(3)+')');
+
+        rg.addColorStop(1,'rgba(120,20,5,0)');
+
+        ctx.fillStyle=rg;ctx.beginPath();ctx.arc(L.x,L.y,L.r*1.55,0,Math.PI*2);ctx.fill();
+
+        ctx.fillStyle='#b33414';ctx.beginPath();ctx.arc(L.x,L.y,L.r,0,Math.PI*2);ctx.fill();
+
+        ctx.fillStyle='#e8641e';ctx.beginPath();ctx.arc(L.x,L.y,L.r*0.72,0,Math.PI*2);ctx.fill();
+
+        ctx.fillStyle='#ffb648';ctx.beginPath();ctx.arc(L.x-L.r*0.15,L.y-L.r*0.15,L.r*0.34*pu,0,Math.PI*2);ctx.fill();
+
+        ctx.strokeStyle='rgba(30,16,14,0.8)';ctx.lineWidth=3;
+
+        ctx.beginPath();ctx.arc(L.x,L.y,L.r+2,0,Math.PI*2);ctx.stroke();
+
+        if(!settings.lowFx&&Math.random()<0.10)spawnParticles(L.x+(Math.random()-0.5)*L.r,L.y+(Math.random()-0.5)*L.r,'#ffb648',1,0.8,{sprite:'ember',size:14});
+
+      }
+
+    }
 
   }
 
@@ -12453,6 +12626,36 @@ function biomeTick(dt){
 
   }
 
+  if(grp==='volcano'){ /*B024 cinder BFX: burn ticks while standing on lava pools (glow-telegraphed, avoidable)*/
+
+    player._lava=(player._lava||0)+dt;
+
+    if(!lavaPools.length)ensureLavaPools();
+
+    if(player._lava>=0.5&&state==='play'&&(player.dashT||0)<=0){
+
+      for(let i=0;i<lavaPools.length;i++){
+
+        const L=lavaPools[i],dx=player.x-L.x,dy=player.y-L.y,rr=L.r-8;
+
+        if(dx*dx+dy*dy<rr*rr){
+
+          player._lava=0;
+
+          hurtPlayer(3+Math.floor((player.maxHp||100)*0.012));
+
+          addFloater(player.x,player.y-28,'BURN!','#ff8c3a',0.6,11);
+
+          break;
+
+        }
+
+      }
+
+    }
+
+  }
+
 }
 
 function drawSkillChip(def,w,x,y){
@@ -12536,7 +12739,7 @@ document.getElementById('againBtn').onclick=startGame;
 
 document.getElementById('winAgainBtn').onclick=startGame;
 
-document.getElementById('endlessBtn').onclick=()=>{endless=true;hideEl('win');state='play';sfx('tick');};
+document.getElementById('endlessBtn').onclick=()=>{endless=true;hideEl('win');state='play';sfx('tick');/*B024: endless can roll into Cinder Wastes*/cinderRoll=Math.random()<0.5;if(cinderRoll){ensureLavaPools();warn('CINDER WASTES RISE!');}};
 
 document.getElementById('pause').addEventListener('click',togglePause);
 
@@ -12686,9 +12889,9 @@ function renderChapters(){
 
   grid.innerHTML='';
 
-  for(let n=1;n<=12;n++){
+  for(let n=1;n<=13;n++){
 
-    const unlocked=n<=(sioc.stage||1);
+    const unlocked=n<=(sioc.stage||1)||(n===13&&(sioc.stage||1)>=5);/*B024: cinder chapter, post-ch4 clear*/
 
     const cst=sioc.stars[n]||{clr:0,slay:0};
 
@@ -12701,6 +12904,8 @@ function renderChapters(){
     const pSlay=cst.slay?'<span class="on">\u2605</span>':'<span>\u2605</span>';
 
     card.innerHTML='<div class="ccNum">'+(unlocked?n:'\uD83D\uDD12')+'</div>'
+
+      +(n===13&&unlocked?'<div class="ccFc" style="color:#ff9a3a">CINDER WASTES</div>':'')
 
       +'<div class="ccPips">'+pClr+pSlay+'</div>'
 
@@ -13374,7 +13579,10 @@ killEnemy=function(e){
     {k:'scorpion',n:'Elite Scorpion', d:'Elite slamer. Ground-pound area attack.',   r:26},
     {k:'boa',     n:'Brute Boa',      d:'BOSS. Charges and slams in a frenzy.',      r:34},
     {k:'hornet',  n:'Devourer',       d:'BOSS. Relentless teleporting hunter.',      r:30},
-    {k:'blimp',   n:'Terror Blimp',   d:'Airship elite. Bursts into splitters.',     r:30}
+    {k:'blimp',   n:'Terror Blimp',   d:'Airship elite. Bursts into splitters.',     r:30},
+    {k:'ashworm', n:'Ash Worm',       d:'CINDER. Basalt segments with ember veins.',  r:13},
+    {k:'cinderling',n:'Cinderling',   d:'CINDER. Ember imp that hops on hot ash.',    r:10},
+    {k:'magmoth', n:'Magmoth',        d:'CINDER. Magma golem, cracks glow as it runs.',r:24}
   ];
   var B={seen:{},kills:{},chap:{}};
   try{
