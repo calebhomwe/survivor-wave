@@ -1035,6 +1035,29 @@ let metaLv={};
 
 try{metaLv=JSON.parse(localStorage.getItem('survivorMeta'))||{};for(const k in metaLv){if(typeof metaLv[k]!=='number'||!isFinite(metaLv[k]))delete metaLv[k];}}catch(_){metaLv={};}
 
+/* B015: hero perks — 3-tier per-hero perks bought with gold */
+const PERKS={
+
+  survivor:{icon:'⚔️',desc:'+4% damage per tier'},
+
+  soldier:{icon:'❤️',desc:'+15 max HP per tier'},
+
+  scout:{icon:'👟',desc:'+3% move speed per tier'},
+
+  medic:{icon:'💉',desc:'+1 HP/s regen per tier'},
+
+  engi:{icon:'🛠️',desc:'+8% turret damage per tier'},
+
+  crimson:{icon:'🩸',desc:'+2% lifesteal per tier'}
+
+};
+
+const PERK_COST=[150,400,900];
+
+let heroPerks={};
+
+try{heroPerks=JSON.parse(localStorage.getItem('survivorPerks'))||{};for(const k in heroPerks){const v=heroPerks[k];if(typeof v!=='number'||!isFinite(v))delete heroPerks[k];else heroPerks[k]=Math.max(0,Math.min(3,Math.floor(v)));}}catch(_){heroPerks={};}
+
 /* chapters */
 
 let sioc={stage:1,stars:{}};
@@ -1274,6 +1297,8 @@ function saveMeta(){
 
     localStorage.setItem('survivorAchievements',JSON.stringify(achieves));
 
+    localStorage.setItem('survivorPerks',JSON.stringify(heroPerks));/*B015*/
+
   }catch(_){}
 
 }
@@ -1413,6 +1438,61 @@ function renderShop(){
     };
 
     list.appendChild(row);
+
+  }
+
+  /* B015: hero perk shop rows */
+  const pkHead=document.createElement('div');
+
+  pkHead.className='shopRow';
+
+  pkHead.style.cssText='justify-content:center;padding:4px 12px;letter-spacing:3px;color:#7dd3fc;font-family:\'Luckiest Guy\',cursive;opacity:.8;border-radius:0;border-bottom:1px solid rgba(125,211,252,.25);';
+
+  pkHead.textContent='\u2014 HERO PERKS \u2014';
+
+  list.appendChild(pkHead);
+
+  for(const hid in PERKS){
+
+    const p=PERKS[hid],t=Math.max(0,Math.min(3,heroPerks[hid]||0)),maxed=t>=3,cost=maxed?0:PERK_COST[t];
+
+    const hn=(HEROES[hid]&&HEROES[hid].name)||hid;
+
+    const prow=document.createElement('div');
+
+    prow.className='shopRow rar'+(maxed?'g':'b');
+
+    let pips='';
+
+    for(let i=0;i<3;i++)pips+=`<i class="${i<t?'on':''}"></i>`;
+
+    prow.innerHTML=`<div class="si">${p.icon}</div><div><div class="sn">${hn} Perk</div><div class="sd">${p.desc}</div><div class="pips">${pips}</div></div><button class="buyBtn${maxed?' maxed':''}" ${maxed||gold<cost?'disabled':''}>${maxed?'MAX':cost+' <i class="coin"></i>'}</button>`;
+
+    const pb2=prow.querySelector('.buyBtn');
+
+    pb2.onclick=()=>{
+
+      if(maxed||gold<cost)return;
+
+      gold-=cost;
+
+      heroPerks[hid]=t+1;
+
+      saveMeta();
+
+      sfx('coin');
+
+      const sg3=document.getElementById('shopGold');
+
+      if(sg3){sg3.style.transition='transform .12s';sg3.style.transform='scale(1.35)';setTimeout(()=>sg3.style.transform='scale(1)',140);}
+
+      pb2.textContent='OK!';
+
+      setTimeout(()=>renderShop(),150);
+
+    };
+
+    list.appendChild(prow);
 
   }
 
@@ -2352,6 +2432,29 @@ function startGame(){
   if(hero.turrD)player.turrD=hero.turrD;/*B014*/
 
   /* HERO-PATCH-B013 */ player.heroSteal=hero.steal||0;
+
+  /* B015: hero perks applied at run start */
+  {
+
+    const pk=Math.max(0,Math.min(3,heroPerks[selectedHero]||0));
+
+    if(pk>0){
+
+      if(selectedHero==='survivor')player.metaAtk*=1+0.04*pk;
+
+      else if(selectedHero==='soldier'){player.maxHp+=15*pk;player.hp+=15*pk;}
+
+      else if(selectedHero==='scout'){player.speed*=1+0.03*pk;player.baseSpeed*=1+0.03*pk;}
+
+      else if(selectedHero==='medic')player.metaRegen=(player.metaRegen||0)+1*pk;
+
+      else if(selectedHero==='engi')player.turrD=(player.turrD||1)*(1+0.08*pk);
+
+      else if(selectedHero==='crimson')player.heroSteal+=0.02*pk;
+
+    }
+
+  }
 
   player.revives=(metaLv.revive||0)>0?1:0;
 
