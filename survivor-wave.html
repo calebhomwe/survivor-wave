@@ -13950,4 +13950,103 @@ function drawThreatChevron(x,y,isBoss){
 
 })();
 
+/* ===== B045: first-run 3-step tutorial overlay (gold-ring pills, non-blocking) ===== */
+(function(){
+
+  if(typeof tutDone==='undefined')return;
+
+  let b3On=false,b3Cur=-1,b3T0=0,b3T2v=0,b3Xp=0,b3PX=0,b3PY=0,b3Iv=null;
+
+  const pill=document.createElement('div');
+
+  pill.style.cssText='position:fixed;z-index:26;display:none;pointer-events:none;background:rgba(8,12,26,.9);border:2px solid rgba(255,210,63,.75);color:#ffe9a3;font-weight:800;font-size:15px;padding:12px 46px 12px 20px;border-radius:16px;box-shadow:0 0 0 3px rgba(255,210,63,.15),0 4px 14px rgba(0,0,0,.5);white-space:nowrap;text-shadow:0 2px 4px rgba(0,0,0,.7)';
+
+  const txt=document.createElement('span');pill.appendChild(txt);
+
+  const xb=document.createElement('button');
+
+  xb.textContent='✕';
+
+  xb.title='Skip tutorial';
+
+  xb.style.cssText='pointer-events:auto;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:none;border-radius:50%;background:rgba(255,210,63,.18);color:#ffd23f;font-size:13px;font-weight:900;cursor:pointer;line-height:1;padding:0';
+
+  xb.addEventListener('click',function(ev){ev.stopPropagation();ev.preventDefault();fin();});
+
+  pill.appendChild(xb);document.body.appendChild(pill);
+
+  const STEPS=[
+
+    {t:'① MOVE — WASD or drag',s:'left:50%;bottom:150px;right:auto;top:auto;transform:translateX(-50%)'},
+
+    {t:'② COLLECT — grab XP gems',s:'left:50%;top:96px;right:auto;bottom:auto;transform:translateX(-50%)'},
+
+    {t:'③ DASH — SPACE',s:'right:26px;bottom:118px;left:auto;top:auto;transform:none'}
+
+  ];
+
+  function fin(){
+
+    b3On=false;pill.style.display='none';
+
+    if(b3Iv){clearInterval(b3Iv);b3Iv=null;}
+
+    tutDone=true;try{localStorage.setItem('survivorTut','1');}catch(_){}
+
+  }
+
+  function show(i){
+
+    txt.textContent=STEPS[i].t;
+
+    const base=pill.style.cssText.split(';').filter(p=>p&&!/^(left|right|top|bottom|transform)/.test(p.trim())).join(';');
+
+    pill.style.cssText=base+';'+STEPS[i].s+';display:block';
+
+  }
+
+  function tick(){
+
+    if(!b3On)return;
+
+    if(tutDone){fin();return;}
+
+    if(Date.now()-b3T0>20000){fin();return;} /* hard expiry: never linger in harness runs */
+
+    if(state==='levelup'||state==='chest'){fin();return;} /* don't fight the level-up UI */
+
+    if(state!=='play')return;
+
+    const moved=Math.abs(player.x-b3PX)+Math.abs(player.y-b3PY)>6;
+
+    if(b3Cur===0&&(moved||player.moving)){b3PX=player.x;b3PY=player.y;show(1);}
+
+    else if(b3Cur===1&&player.xp>b3Xp){b3T2v=Date.now();show(2);}
+
+    else if(b3Cur===2&&(player.dashT>0||player.dashCd>0||Date.now()-b3T2v>6000)){fin();}
+
+  }
+
+  const _startGame=startGame;
+
+  startGame=function(){const r=_startGame.apply(this,arguments);begin();return r;};
+
+  function begin(){
+
+    if(tutDone)return;
+
+    b3On=true;b3Xp=player.xp||0;b3PX=player.x;b3PY=player.y;b3T0=Date.now();
+
+    show(0);
+
+    if(!b3Iv)b3Iv=setInterval(tick,200);
+
+  }
+
+  /* suppress the legacy one-shot hint pill — B045 replaces it */
+
+  tutShow=function(){};
+
+})();
+
 </script>
