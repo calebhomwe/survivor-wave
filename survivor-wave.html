@@ -1640,7 +1640,7 @@ function tryUlt(){
 
       const a=i*(Math.PI*2/12);
 
-      projectiles.push({kind:'blade',x:player.x,y:player.y,a,life:1.3,dmg:70+difficulty*6,pierce:99,hit:[],r:26,len:150,spd:520});
+      projectiles.push(poolGet(ppool('blade'),o=>{o.kind='blade';o.x=player.x;o.y=player.y;o.a=a;o.life=1.3;o.dmg=70+difficulty*6;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=26;o.len=150;o.spd=520;o.tw=0;}));/*B069 pool*/
 
     }
 
@@ -1770,6 +1770,18 @@ function buzz(ms){if(settings.haptics&&navigator.vibrate){try{navigator.vibrate(
 
 function sweep(arr,keep){let j=0;for(let i=0;i<arr.length;i++){if(keep(arr[i]))arr[j++]=arr[i];}arr.length=j;}
 
+/*B069 object pooling: free-lists for particles/floaters/projectiles/eprojs/gems. poolGet(fl,factory)
+  pops a dead object from the free list (or makes a fresh one on first use) and lets the factory
+  overwrite every field; poolFree recycles at sweep time. Stats: window.__poolStats (free=recycled, fresh=allocated).*/
+const POOLS={particles:[],floaters:[],eprojs:[],gems:[],projectiles:{}};
+window.__poolStats={particles:{free:0,fresh:0},floaters:{free:0,fresh:0},eprojs:{free:0,fresh:0},gems:{free:0,fresh:0},projectiles:{free:0,fresh:0}};
+POOLS.particles.st=window.__poolStats.particles;POOLS.floaters.st=window.__poolStats.floaters;POOLS.eprojs.st=window.__poolStats.eprojs;POOLS.gems.st=window.__poolStats.gems;
+function ppool(kind){let f=POOLS.projectiles[kind];if(!f){f=[];f.st=window.__poolStats.projectiles;POOLS.projectiles[kind]=f;}return f;}
+function poolGet(fl,f){let o=fl.pop();if(o)fl.st.free++;else{fl.st.fresh++;o={};}f(o);return o;}
+function poolFree(fl,o){if(fl.length<600)fl.push(o);}
+function sweepP(arr,keep,fl){let j=0;for(let i=0;i<arr.length;i++){const o=arr[i];if(keep(o))arr[j++]=o;else poolFree(fl,o);}arr.length=j;}/*B069 pooled variant of sweep()*/
+function sweepPK(arr,keep){let j=0;for(let i=0;i<arr.length;i++){const o=arr[i];if(keep(o))arr[j++]=o;else poolFree(ppool(o.kind||'x'),o);}arr.length=j;}/*B069 kind-keyed variant for projectiles*/
+
 function randVisible(pad){let n=0,pick=null;for(const e of enemies){if(e.hp>0&&onScreen(e,pad)){n++;if(Math.random()<1/n)pick=e;}}return pick;}
 
 const egrid=new Map(),gridUsed=[];
@@ -1844,7 +1856,7 @@ const WEAPONS={
 
         const dmg=w.evo?st.dmg*1.5:st.dmg;
 
-        projectiles.push({kind:w.evo?'shuriken':'dart',x:player.x,y:player.y,vx:Math.cos(a)*(w.evo?560:480),vy:Math.sin(a)*(w.evo?560:480),life:w.evo?1.1:0.9,dmg,pierce:w.evo?6:1+(w.lvl>=3?1:0),hit:[],r:w.evo?9:5});
+        projectiles.push(poolGet(ppool(w.evo?'shuriken':'dart'),o=>{o.kind=w.evo?'shuriken':'dart';o.x=player.x;o.y=player.y;o.vx=Math.cos(a)*(w.evo?560:480);o.vy=Math.sin(a)*(w.evo?560:480);o.life=w.evo?1.1:0.9;o.dmg=dmg;o.pierce=w.evo?6:1+(w.lvl>=3?1:0);o.hit=o.hit||[];o.hit.length=0;o.r=w.evo?9:5;o.tw=0;}));/*B069 pool*/
 
       }
 
@@ -1874,7 +1886,7 @@ const WEAPONS={
 
         const dmg=w.evo?st.dmg*1.9:st.dmg;
 
-        projectiles.push({kind:'blade',x:player.x,y:player.y,a,life:0.55,dmg,pierce:99,hit:[],r:w.evo?26:16,len:w.evo?170:110,spd:w.evo?760:640});
+        projectiles.push(poolGet(ppool('blade'),o=>{o.kind='blade';o.x=player.x;o.y=player.y;o.a=a;o.life=0.55;o.dmg=dmg;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=w.evo?26:16;o.len=w.evo?170:110;o.spd=w.evo?760:640;o.tw=0;}));/*B069 pool*/
 
       }
 
@@ -1970,7 +1982,7 @@ const WEAPONS={
 
         const aa=a+(i-(n-1)/2)*0.35;
 
-        projectiles.push({kind:'brick',x:player.x,y:player.y,vx:Math.cos(aa)*540,vy:Math.sin(aa)*540,life:2.6,dmg:w.evo?st.dmg*2.2:st.dmg,pierce:99,hit:[],r:w.evo?16:11,phase:'out',t:0,rot:0});
+        projectiles.push(poolGet(ppool('brick'),o=>{o.kind='brick';o.x=player.x;o.y=player.y;o.vx=Math.cos(aa)*540;o.vy=Math.sin(aa)*540;o.life=2.6;o.dmg=w.evo?st.dmg*2.2:st.dmg;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=w.evo?16:11;o.phase='out';o.t=0;o.rot=0;o.tw=0;}));/*B069 pool*/
 
       }
 
@@ -1996,7 +2008,7 @@ const WEAPONS={
 
         const a=ba+(Math.random()-0.5)*0.12;
 
-        projectiles.push({kind:'pellet',x:player.x,y:player.y,vx:Math.cos(a)*820,vy:Math.sin(a)*820,life:0.5,dmg:st.dmg*0.5,pierce:1,hit:[],r:4});
+        projectiles.push(poolGet(ppool('pellet'),o=>{o.kind='pellet';o.x=player.x;o.y=player.y;o.vx=Math.cos(a)*820;o.vy=Math.sin(a)*820;o.life=0.5;o.dmg=st.dmg*0.5;o.pierce=1;o.hit=o.hit||[];o.hit.length=0;o.r=4;o.tw=0;}));/*B069 pool*/
 
         spawnParticles(player.x+Math.cos(ba)*22,player.y+Math.sin(ba)*22,'#fdba74',2,0.5);
 
@@ -2012,7 +2024,7 @@ const WEAPONS={
 
         const a=ba+(i-(n-1)/2)*(spread/Math.max(1,n-1))*1.6+(Math.random()-0.5)*0.06;
 
-        projectiles.push({kind:'pellet',x:player.x,y:player.y,vx:Math.cos(a)*(640+Math.random()*90),vy:Math.sin(a)*(640+Math.random()*90),life:life+Math.random()*0.08,dmg:st.dmg,pierce:0,hit:[],r:4.5});
+        projectiles.push(poolGet(ppool('pellet'),o=>{o.kind='pellet';o.x=player.x;o.y=player.y;o.vx=Math.cos(a)*(640+Math.random()*90);o.vy=Math.sin(a)*(640+Math.random()*90);o.life=life+Math.random()*0.08;o.dmg=st.dmg;o.pierce=0;o.hit=o.hit||[];o.hit.length=0;o.r=4.5;o.tw=0;}));/*B069 pool*/
 
       }
 
@@ -2048,7 +2060,7 @@ const WEAPONS={
 
       const arc=(w.evo?2.6:1.9)+(w.lvl>=3?0.5:0);
 
-      projectiles.push({kind:'swing',x:player.x,y:player.y,vx:0,vy:0,a,arc,reach,life:0.16,dmg:0,pierce:0,hit:[],r:0});
+      projectiles.push(poolGet(ppool('swing'),o=>{o.kind='swing';o.x=player.x;o.y=player.y;o.vx=0;o.vy=0;o.a=a;o.arc=arc;o.reach=reach;o.life=0.16;o.dmg=0;o.pierce=0;o.hit=o.hit||[];o.hit.length=0;o.r=0;o.tw=0;}));/*B069 pool*/
 
       sfx('whoosh');
 
@@ -2118,7 +2130,7 @@ const WEAPONS={
 
       player.facing=a;player.faceT=0.45;
 
-      projectiles.push({kind:'rocket',x:player.x,y:player.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,tx:tg.x,ty:tg.y,life:2.2,dmg:st.dmg,pierce:0,hit:[],r:7,blast:110*(1+(w.lvl>=3?0.3:0))*(w.evo?1.5:1),trail:0});
+      projectiles.push(poolGet(ppool('rocket'),o=>{o.kind='rocket';o.x=player.x;o.y=player.y;o.vx=Math.cos(a)*380;o.vy=Math.sin(a)*380;o.tx=tg.x;o.ty=tg.y;o.life=2.2;o.dmg=st.dmg;o.pierce=0;o.hit=o.hit||[];o.hit.length=0;o.r=7;o.blast=110*(1+(w.lvl>=3?0.3:0))*(w.evo?1.5:1);o.trail=0;o.tw=0;}));/*B069 pool*/
 
       spawnParticles(player.x+Math.cos(a)*20,player.y+Math.sin(a)*20,'#fdba74',4,0.7);
 
@@ -2142,9 +2154,9 @@ const WEAPONS={
 
       player.facing=a;player.faceT=0.45;
 
-      projectiles.push({kind:'wave',x:player.x,y:player.y,vx:Math.cos(a)*520,vy:Math.sin(a)*520,life:0.55,dmg:st.dmg,pierce:99,hit:[],r:34*(1+(w.lvl>=3?0.25:0)),a});
+      projectiles.push(poolGet(ppool('wave'),o=>{o.kind='wave';o.x=player.x;o.y=player.y;o.vx=Math.cos(a)*520;o.vy=Math.sin(a)*520;o.life=0.55;o.dmg=st.dmg;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=34*(1+(w.lvl>=3?0.25:0));o.a=a;o.ev=0;o.tw=0;}));/*B069 pool*/
 
-      if(w.evo)projectiles.push({kind:'wave',x:player.x,y:player.y,vx:Math.cos(a+0.5)*560,vy:Math.sin(a+0.5)*560,life:0.7,dmg:st.dmg*0.7,pierce:99,hit:[],r:34*(1+(w.lvl>=3?0.25:0))*1.3,a:a+0.5,ev:true});
+      if(w.evo)projectiles.push(poolGet(ppool('wave'),o=>{o.kind='wave';o.x=player.x;o.y=player.y;o.vx=Math.cos(a+0.5)*560;o.vy=Math.sin(a+0.5)*560;o.life=0.7;o.dmg=st.dmg*0.7;o.pierce=99;o.hit=o.hit||[];o.hit.length=0;o.r=34*(1+(w.lvl>=3?0.25:0))*1.3;o.a=a+0.5;o.ev=1;o.tw=0;}));/*B069 pool*/
 
       sfx('whoosh');return true;},
 
@@ -3591,11 +3603,11 @@ function killEnemy(e){
 
 function dropGem(x,y,val){
 
-  if(gems.length>350)gems.shift();
+  if(gems.length>350)poolFree(POOLS.gems,gems.shift());/*B069 pool*/
 
   if(gems.length>280)gemMergeT=0; /*PATCH-TAG B090: force merge pass when dense*/
 
-  gems.push({x,y,r:gemR(val),xp:val,magnet:false,ph:Math.random()*6});
+  gems.push(poolGet(POOLS.gems,o=>{o.x=x;o.y=y;o.r=gemR(val);o.xp=val;o.magnet=false;o.ph=Math.random()*6;o.dead=false;}));/*B069 pool*/
 
 }
 
@@ -3942,7 +3954,7 @@ if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Relic
 
             const a2=Math.atan2(tg.y-dy,tg.x-dx);
 
-            projectiles.push({kind:'laser',x:dx,y:dy,vx:Math.cos(a2)*700,vy:Math.sin(a2)*700,life:0.9,dmg:st.dmg*(w.evo?1.7:1),pierce:w.lvl>=4?3:1,hit:[],r:4});
+            projectiles.push(poolGet(ppool('laser'),o=>{o.kind='laser';o.x=dx;o.y=dy;o.vx=Math.cos(a2)*700;o.vy=Math.sin(a2)*700;o.life=0.9;o.dmg=st.dmg*(w.evo?1.7:1);o.pierce=w.lvl>=4?3:1;o.hit=o.hit||[];o.hit.length=0;o.r=4;o.tw=0;}));/*B069 pool*/
 
           }else d.cd=0.2;
 
@@ -4262,7 +4274,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
   }
 
-  sweep(projectiles,p=>p.life>0&&p.x>cam.x-200&&p.x<cam.x+W+200&&p.y>cam.y-200&&p.y<cam.y+H+200);
+  sweepPK(projectiles,p=>p.life>0&&p.x>cam.x-200&&p.x<cam.x+W+200&&p.y>cam.y-200&&p.y<cam.y+H+200);/*B069*/
 
 
 
@@ -4489,7 +4501,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
         const sp=170;
 
-        eprojs.push({x:e.x,y:e.y,vx:(dx/d)*sp,vy:(dy/d)*sp,life:3,dmg:9+difficulty});
+        eprojs.push(poolGet(POOLS.eprojs,o=>{o.x=e.x;o.y=e.y;o.vx=(dx/d)*sp;o.vy=(dy/d)*sp;o.life=3;o.dmg=9+difficulty;}));/*B069 pool*/
 
         sfx('pop');
 
@@ -4533,7 +4545,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
   }
 
-  sweep(eprojs,p=>p.life>0&&p.x>cam.x-60&&p.x<cam.x+W+60&&p.y>cam.y-60&&p.y<cam.y+H+60);
+  sweepP(eprojs,p=>p.life>0&&p.x>cam.x-60&&p.x<cam.x+W+60&&p.y>cam.y-60&&p.y<cam.y+H+60,POOLS.eprojs);/*B069*/
 
 
 
@@ -4561,13 +4573,13 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
   }
 
-  sweep(gems,g=>!g.dead);
+  sweepP(gems,g=>!g.dead,POOLS.gems);
 
   /*PATCH-TAG B090: periodic xp orb merge sweep (every 0.5s, or forced when very dense on spawn)*/
 
   gemMergeT-=dt;
 
-  if(gemMergeT<=0){gemMergeT=0.5;mergeGems();sweep(gems,g=>!g.dead);}
+  if(gemMergeT<=0){gemMergeT=0.5;mergeGems();sweepP(gems,g=>!g.dead,POOLS.gems);}
 
 
 
@@ -4673,13 +4685,13 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
   let pw=0;
 
-  for(const pt of particles){if(pt.vr)pt.rot+=pt.vr*dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=(pt.conf?520:200)*dt;pt.life-=dt;if(pt.life>0)particles[pw++]=pt;}/*FX-ASSETS-PATCH-RB rot*/
+  for(const pt of particles){if(pt.vr)pt.rot+=pt.vr*dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=(pt.conf?520:200)*dt;pt.life-=dt;if(pt.life>0)particles[pw++]=pt;else poolFree(POOLS.particles,pt);}/*FX-ASSETS-PATCH-RB rot*//*B069 pool*/
 
   particles.length=pw;
 
   for(const f of floaters){f.y-=34*dt;f.life-=dt;f.age=(f.age||0)+dt;}
 
-  sweep(floaters,f=>f.life>0);
+  sweepP(floaters,f=>f.life>0,POOLS.floaters);
 
   for(const b of bolts)b.life-=dt;
 
@@ -4819,17 +4831,17 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
       if(t.ty==='dart'){
 
-        projectiles.push({kind:'tdart',x:t.x,y:t.y,vx:Math.cos(t.ang)*640,vy:Math.sin(t.ang)*640,life:0.6,dmg,pierce:1,hit:[],r:4,tw:1});
+        projectiles.push(poolGet(ppool('tdart'),o=>{o.kind='tdart';o.x=t.x;o.y=t.y;o.vx=Math.cos(t.ang)*640;o.vy=Math.sin(t.ang)*640;o.life=0.6;o.dmg=dmg;o.pierce=1;o.hit=o.hit||[];o.hit.length=0;o.r=4;o.tw=1;}));/*B069 pool*/
 
       }else if(t.ty==='sniper'){
 
-        projectiles.push({kind:'laser',x:t.x,y:t.y,vx:Math.cos(t.ang)*1150,vy:Math.sin(t.ang)*1150,life:0.65,dmg:dmg*2.2,pierce:4,hit:[],r:4,tw:1});
+        projectiles.push(poolGet(ppool('laser'),o=>{o.kind='laser';o.x=t.x;o.y=t.y;o.vx=Math.cos(t.ang)*1150;o.vy=Math.sin(t.ang)*1150;o.life=0.65;o.dmg=dmg*2.2;o.pierce=4;o.hit=o.hit||[];o.hit.length=0;o.r=4;o.tw=1;}));/*B069 pool*/
 
         sfx('tap');
 
       }else{
 
-        projectiles.push({kind:'shell',x:t.x,y:t.y,vx:Math.cos(t.ang)*420,vy:Math.sin(t.ang)*420,tx:tg.x,ty:tg.y,life:1.6,dmg:dmg*1.6,pierce:0,hit:[],r:6,tw:1});
+        projectiles.push(poolGet(ppool('shell'),o=>{o.kind='shell';o.x=t.x;o.y=t.y;o.vx=Math.cos(t.ang)*420;o.vy=Math.sin(t.ang)*420;o.tx=tg.x;o.ty=tg.y;o.life=1.6;o.dmg=dmg*1.6;o.pierce=0;o.hit=o.hit||[];o.hit.length=0;o.r=6;o.tw=1;}));/*B069 pool*/
 
       }
 
@@ -4962,7 +4974,7 @@ function updateBoss(b,dt){
 
         const a=(i/n)*Math.PI*2+b.anim*0.3;
 
-        eprojs.push({x:b.x,y:b.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:3.2,dmg:12+difficulty});
+        eprojs.push(poolGet(POOLS.eprojs,o=>{o.x=b.x;o.y=b.y;o.vx=Math.cos(a)*sp;o.vy=Math.sin(a)*sp;o.life=3.2;o.dmg=12+difficulty;}));/*B069 pool*/
 
       }
 
@@ -6579,7 +6591,7 @@ function spawnParticles(x,y,color,n,scale,opts){/*FX-ASSETS-PATCH-RB sprite opts
 
     const a=Math.random()*Math.PI*2,s=(60+Math.random()*140)*(scale||1);
 
-    const pt={x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60*(scale||1),life:0.35+Math.random()*0.35,color,conf:false};/*FX-ASSETS-PATCH-RB*/
+    const pt=poolGet(POOLS.particles,o=>{o.x=x;o.y=y;o.vx=Math.cos(a)*s;o.vy=Math.sin(a)*s-60*(scale||1);o.life=0.35+Math.random()*0.35;o.color=color;o.conf=false;o.sp=0;o.sz=0;o.rot=0;o.vr=0;});/*B069 pool*//*FX-ASSETS-PATCH-RB*/
 
     if(o&&o.sprite){pt.sp=o.sprite;pt.sz=o.size||24;pt.rot=Math.random()*6.283;pt.vr=(Math.random()-0.5)*5;}
 
@@ -6595,11 +6607,11 @@ function spawnConfetti(){
 
   const cols=['#f87171','#facc15','#4ade80','#38bdf8','#c084fc'];
 
-  particles.push({x:cam.x+Math.random()*W,y:cam.y-10,vx:(Math.random()-0.5)*80,vy:80+Math.random()*120,life:2+Math.random()*1.5,color:cols[Math.floor(Math.random()*5)],conf:true});
+  particles.push(poolGet(POOLS.particles,o=>{o.x=cam.x+Math.random()*W;o.y=cam.y-10;o.vx=(Math.random()-0.5)*80;o.vy=80+Math.random()*120;o.life=2+Math.random()*1.5;o.color=cols[Math.floor(Math.random()*5)];o.conf=true;o.sp=0;o.sz=0;o.rot=0;o.vr=0;}));/*B069 pool*/
 
 }
 
-function addFloater(x,y,text,color,life,size){if(!settings.floaters||floaters.length>=80)return;floaters.push({x,y,text,color,life,size});}
+function addFloater(x,y,text,color,life,size){if(!settings.floaters||floaters.length>=80)return;floaters.push(poolGet(POOLS.floaters,o=>{o.x=x;o.y=y;o.text=text;o.color=color;o.life=life;o.size=size;o.dmg=0;o.val=0;o.hits=0;o.crit=0;o.age=0;}));}/*B069 pool*/
 
 /*PATCH-B029 damage numbers: crit styling + nearby-merge so dense screens stay readable*/
 function addDmgFloater(x,y,amount,crit){
@@ -6620,7 +6632,7 @@ function addDmgFloater(x,y,amount,crit){
     }
   }
   if(floaters.length>=90)return;
-  floaters.push({x,y,val:amount,hits:1,crit:!!crit,text:String(amount),color:crit?'#ffd23f':'#fff7cc',life:crit?0.7:0.5,size:crit?20:13,dmg:1});
+  floaters.push(poolGet(POOLS.floaters,o=>{o.x=x;o.y=y;o.val=amount;o.hits=1;o.crit=!!crit;o.text=String(amount);o.color=crit?'#ffd23f':'#fff7cc';o.life=crit?0.7:0.5;o.size=crit?20:13;o.dmg=1;o.age=0;}));/*B069 pool*/
 }
 
 
