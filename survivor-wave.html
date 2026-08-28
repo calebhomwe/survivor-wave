@@ -1292,6 +1292,8 @@ function saveAll(){
 
     try{if(typeof saveBestiary==='function')saveBestiary();}catch(_){}/*B052 bestiary persist*/
 
+    try{if(typeof saveLife==='function')saveLife();}catch(_){}/*B053 lifetime persist*/
+
   }catch(_){}
 
 }
@@ -2839,6 +2841,8 @@ function gameOver(){
 
   showEl('over');
 
+  try{if(typeof lifeRecord==='function')lifeRecord('death');}catch(_){}/*B053 lifetime agg*/
+
 }
 
 function victory(){
@@ -2921,6 +2925,8 @@ function victory(){
   showEl('win');
 
   for(let i=0;i<80;i++)spawnConfetti();
+
+  try{if(typeof lifeRecord==='function')lifeRecord('win');}catch(_){}/*B053 lifetime agg*/
 
 }
 
@@ -13961,6 +13967,8 @@ function echoEnd(){
 
   echoDone=true;
 
+  try{if(typeof lifeRecord==='function')lifeRecord('echo');}catch(_){}/*B053 lifetime agg (echo end counts as a run, neither death nor win)*/
+
   state='paused';
 
   showEl('echoOv');
@@ -15023,6 +15031,7 @@ render=function(){
 
 
 
+
 /* ============================== B032: LEVEL-UP MOMENT FX ============================== */
 
 /* Time-slow BEFORE the UI opens reuses the existing levelSlow dt-scaling in update()
@@ -15186,5 +15195,106 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
 })();
 
 
+
+
+/* ============================== B053: LIFETIME STATS ============================== */
+/* Aggregated across ALL runs (death + victory + echo end), persisted in survivorLife.
+   Recording hook: lifeRecord(kind) called from gameOver() / victory() / echoEnd(). */
+(function(){
+  var RK='survivorLife';
+  var L={totalRuns:0,totalKills:0,totalTimeSec:0,totalGoldEarned:0,totalDamage:0,bestChapter:1,totalDeaths:0,totalWins:0,wpn:{}};
+  try{
+    var d=JSON.parse(localStorage.getItem(RK)||'null');
+    if(d&&typeof d==='object'){
+      var N=['totalRuns','totalKills','totalTimeSec','totalGoldEarned','totalDamage','bestChapter','totalDeaths','totalWins'];
+      for(var i=0;i<N.length;i++){var k=N[i];if(isFinite(d[k]))L[k]=d[k];}
+      if(d.wpn&&typeof d.wpn==='object'){for(var w in d.wpn){if(isFinite(d.wpn[w]))L.wpn[w]=d.wpn[w];}}
+    }
+  }catch(e){}
+  window.saveLife=function(){try{localStorage.setItem(RK,JSON.stringify(L));}catch(e){}};
+  window.lifeRecord=function(kind){
+    var kills=0,time=0,goldE=0,dmg=0,chap=1;
+    try{kills=Math.max(0,player.kills|0);}catch(e){}
+    try{time=Math.max(0,Math.floor(gameTime));}catch(e){}
+    try{goldE=Math.max(0,Math.floor(runStats.gold||0));}catch(e){}
+    try{chap=(player&&player.chapter)||chapterSel||1;}catch(e){}
+    try{
+      for(var k in runStats.dmg){
+        var v=runStats.dmg[k]||0;if(!(v>0))continue;
+        dmg+=v;L.wpn[k]=(L.wpn[k]||0)+v;
+      }
+    }catch(e){}
+    L.totalRuns++;
+    L.totalKills+=kills;
+    L.totalTimeSec+=time;
+    L.totalGoldEarned+=goldE;
+    L.totalDamage+=Math.round(dmg);
+    if(chap>L.bestChapter)L.bestChapter=chap;
+    if(kind==='win')L.totalWins++;
+    else if(kind==='death')L.totalDeaths++;
+    saveLife();
+  };
+  function favorite(){
+    var best=null,bv=0;
+    for(var k in L.wpn){if(L.wpn[k]>bv){bv=L.wpn[k];best=k;}}
+    return best?{n:best,v:bv}:null;
+  }
+  function fmtHours(sec){
+    var h=sec/3600;
+    if(h>=100)return Math.round(h).toLocaleString()+'h';
+    if(h>=10)return h.toFixed(1)+'h';
+    if(h>=1)return h.toFixed(2)+'h';
+    return Math.round(sec/60).toLocaleString()+'m';
+  }
+  function fmtN(n){return Math.round(n).toLocaleString();}
+  function render(){
+    var grid=document.getElementById('b53Grid');
+    if(!grid)return;
+    var fv=favorite();
+    var hrs=fmtHours(L.totalTimeSec);
+    var cells=[
+      ['TOTAL RUNS',fmtN(L.totalRuns)],
+      ['TOTAL KILLS',fmtN(L.totalKills)],
+      ['DAMAGE DEALT',fmtN(L.totalDamage)],
+      ['GOLD EARNED',fmtN(L.totalGoldEarned)],
+      ['VICTORIES',fmtN(L.totalWins)],
+      ['DEATHS',fmtN(L.totalDeaths)],
+      ['BEST CHAPTER','CH.'+(L.bestChapter|0||1)],
+      ['TIME SURVIVED',hrs]
+    ];
+    var html='';
+    for(var i=0;i<cells.length;i++){
+      html+='<div style="background:rgba(15,25,48,0.72);border:1px solid #2c3d63;border-radius:8px;padding:12px 10px 9px;text-align:center">'
+        +'<div style="font-size:10px;letter-spacing:1px;color:#8fa1c7;font-weight:700">'+cells[i][0]+'</div>'
+        +'<div style="font-size:26px;color:#ffe9a3;font-weight:700;margin-top:3px">'+cells[i][1]+'</div></div>';
+    }
+    grid.innerHTML=html;
+    var fw=document.getElementById('b53Fav');
+    if(fw)fw.innerHTML=fv
+      ?'<span style="color:#8fa1c7;font-size:11px;letter-spacing:1px;font-weight:700">FAVORITE WEAPON</span> <span style="color:#7dd3fc;font-size:15px;font-weight:700">'+fv.n+'</span> <span style="color:#a8b6ce;font-size:11px">('+fmtN(fv.v)+' dmg)</span>'
+      :'<span style="color:#8fa1c7;font-size:11px">FAVORITE WEAPON \u2014 none yet, go deal some damage</span>';
+  }
+  function ui(){
+    var pb=document.getElementById('playBtn');
+    if(pb&&pb.parentNode){
+      var b=document.createElement('button');
+      b.className='btn green';b.id='b53Btn';b.textContent='LIFETIME';
+      b.style.fontSize='12px';b.style.padding='9px 16px 6px';
+      b.addEventListener('click',function(){render();var ov=document.getElementById('b53Ov');if(ov)ov.classList.remove('hidden');try{sfx('tap');}catch(e){}});
+      pb.parentNode.appendChild(b);
+    }
+    var ov=document.createElement('div');
+    ov.className='shopOv hidden';ov.id='b53Ov';
+    ov.innerHTML='<div class="shopBox"><h2>LIFETIME</h2>'
+      +'<div id="b53Grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 10px;min-width:480px"></div>'
+      +'<div id="b53Fav" style="text-align:center;margin:-2px 0 10px"></div>'
+      +'<button class="btn" id="b53Back" style="font-size:16px;padding:12px 38px 9px">BACK</button></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.add('hidden');});
+    var bk=document.getElementById('b53Back');
+    if(bk)bk.addEventListener('click',function(){ov.classList.add('hidden');try{sfx('tap');}catch(e){}});
+  }
+  ui();
+})();
 
 </script>
