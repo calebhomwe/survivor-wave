@@ -9603,6 +9603,7 @@ function render(){
     ctx.lineTo(g.x,g.y+gr+bob);ctx.lineTo(g.x-gr*0.7,g.y+bob);
 
     ctx.closePath();ctx.fill();
+    }/*MERGEFIX: restore else-closer eaten by 3-way merge (B078 hexagon vs B090 flourish)*/
 
     /*PATCH-TAG B090: merged-tier flourishes — large gets 4 spikes, star gets a 5-point star crown*/
 
