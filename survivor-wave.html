@@ -5370,7 +5370,13 @@ function drawChoices(){
 
 let currentChoices=[];
 
+/*BUGFIX B075: double-pick lock — spam-click / held-Enter key-repeat could apply a choice twice, driving pendingLevelUps negative (future level-ups silently swallowed) and granting a free upgrade*/
+
+let b075Picked=false;
+
 function showLevelUp(){
+
+  b075Picked=false;/*BUGFIX B075: re-arm for chained level-ups*/
 
   state='levelup';
 
@@ -5493,6 +5499,10 @@ document.getElementById('rerollBtn').onclick=()=>{
 };
 
 function applyChoice(c){
+
+  if(state!=='levelup'||b075Picked)return;/*BUGFIX B075: ignore double-picks (spam clicks / key repeat on the focused choice button)*/
+
+  b075Picked=true;/*BUGFIX B075*/
 
   if(!tutDone&&!tutPick){tutPick=true;tutShow('Lv5 weapon + its passive = EVO!');setTimeout(tutFinish,6000);}
 
