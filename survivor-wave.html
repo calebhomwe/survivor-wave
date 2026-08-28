@@ -2070,6 +2070,62 @@ const WEAPONS={
 
     cd:l=>1},
 
+  chainlt:{name:'Chain Lightning',icon:'',iconK:'chain',color:'#38bdf8',passive:'weight',/*B007*/
+
+    evoName:'Tempest Coil',evoIcon:'⚡🌀',
+
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Weight Belt':(l===1?'Bolt arcs between nearby enemies':l===2?'+1 chain':l===3?'+damage & longer arcs':l===4?'+1 chain':'+EVO at Lv.5 + Weight Belt'),
+
+    fire(w,st){
+
+      const t0=nearestEnemy(player.x,player.y,250);
+
+      if(!t0)return false;
+
+      const jumps=(w.evo?5:2)+((w.lvl>=2)?1:0)+((w.lvl>=4)?1:0);/*B007 evo: +3 chains*/
+
+      const jr=(w.lvl>=3?180:150)*st.area;
+
+      const pts=[{x:player.x,y:player.y}],hit=new Set();/*B007 no duplicate targets per strike*/
+
+      let cur=t0,dmg=st.dmg*(w.evo?1.15:1);
+
+      for(let i=0;i<jumps&&cur;i++){
+
+        pts.push({x:cur.x,y:cur.y});
+
+        hit.add(cur);
+
+        dealDamage(cur,dmg,undefined,undefined,rsWpn(w));/*B041*/
+
+        if(w.evo&&Math.random()<0.15)cur.stun=Math.max(cur.stun||0,0.4);/*B007 Tempest Coil stun*/
+
+        dmg*=0.75;/*falloff per jump*/
+
+        let nxt=null,nd=jr*jr;
+
+        eachNearPad(cur.x,cur.y,jr,e=>{
+
+          if(e.hp<=0||hit.has(e))return;
+
+          const dx=e.x-cur.x,dy=e.y-cur.y,dd=dx*dx+dy*dy;
+
+          if(dd<nd){nd=dd;nxt=e;}
+
+        });
+
+        cur=nxt;
+
+      }
+
+      CHAINS.push({pts:pts.map(p=>({x:p.x,y:p.y})),life:0.2,max:0.2});
+
+      sfx('buzz');
+
+      return true;},
+
+    cd:l=>1.9-l*0.16},
+
 };
 
 
@@ -2103,6 +2159,7 @@ function weaponStats(w){
     if(w.id==='katana')base.dmg=18+(w.lvl-1)*8;// BAL: 16+7 -> 18+8, slash-wave DPS was below band
 
     if(w.id==='orbit')base.dmg=12+(w.lvl-1)*5;/*B006*/
+    if(w.id==='chainlt')base.dmg=13+(w.lvl-1)*5.5;/*B007*/
 
   base.dmg*=1+0.10*(player.passives.bullet||0);/*WPN-PATCH*/
 
@@ -2135,6 +2192,8 @@ function weaponCd(w){
   return Math.max(0.16,c);
 
 }
+
+let CHAINS=[];/*B007 chain lightning arc segments*/
 
 
 
@@ -2303,6 +2362,7 @@ function startGame(){
   player.passives={};
 
   enemies=[];projectiles=[];eprojs=[];gems=[];pickups=[];zones=[];particles=[];floaters=[];bolts=[];decals=[];corpses=[];
+  CHAINS.length=0;/*B007*/
 
   gameTime=0;spawnT=0;difficulty=1;pendingLevelUps=0;rerollsLeft=1+(metaLv.reroll||0);usedRevive=false;levelSlow=0;
 
@@ -4485,6 +4545,10 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
   sweep(bolts,b=>b.life>0);
 
+  for(const c of CHAINS)c.life-=dt;/*B007*/
+
+  sweep(CHAINS,c=>c.life>0);
+
   /*B019 volatile elite death-bombs: 0.4s telegraph then explode*/
 
   for(let vi=volats.length-1;vi>=0;vi--){
@@ -6543,6 +6607,26 @@ function paintIcon(key,g,Sz){
 
     }
 
+  }else if(key==='chain'){/*B007*/
+
+    g.strokeStyle='#38bdf8';g.lineWidth=2*u;
+
+    for(let i=0;i<2;i++){
+
+      const nx=i?12*u:-12*u;
+
+      g.fillStyle='#e0f2fe';
+
+      g.beginPath();g.arc(nx,0,3.4*u,0,Math.PI*2);g.fill();g.stroke();
+
+    }
+
+    g.strokeStyle='#7dd3fc';g.lineWidth=2.4*u;
+
+    g.beginPath();g.moveTo(-12*u,0);g.lineTo(-5*u,-7*u);g.lineTo(1*u,-1*u);g.lineTo(6*u,-8*u);g.lineTo(12*u,0);g.stroke();
+
+    g.strokeStyle='rgba(255,255,255,0.7)';g.lineWidth=1*u;g.stroke();
+
   }
 
   g.restore();
@@ -6573,7 +6657,7 @@ function iconCV(key,Sz){
 
 function iconImg(key,cls){return SKILL_URL[key]?('<img class="'+(cls||'')+'" src="'+SKILL_URL[key]+'" alt="">'):'';}
 
-['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit'].forEach(k=>iconCV(k,72));/*WPN-PATCH*/
+['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain'].forEach(k=>iconCV(k,72));/*WPN-PATCH B007*/
 
 const [COIN_CV,coinG]=iconCanvas(36);
 
@@ -10297,6 +10381,46 @@ function render(){
     ctx.fillStyle=`rgba(253,224,71,${a*0.3})`;
 
     ctx.beginPath();ctx.arc(b.x,b.y,b.r*(1.1-a*0.1),0,Math.PI*2);ctx.fill();
+
+  }
+
+  /*B007 chain lightning arcs: jitter redrawn every frame for crackle*/
+
+  for(const c of CHAINS){
+
+    const ca=c.life/c.max;
+
+    for(let i=1;i<c.pts.length;i++){
+
+      const p0=c.pts[i-1],p1=c.pts[i];
+
+      ctx.strokeStyle=`rgba(125,211,252,${ca})`;
+
+      ctx.lineWidth=3.5;
+
+      ctx.beginPath();ctx.moveTo(p0.x,p0.y);
+
+      const segs=3+(Math.random()*2|0);
+
+      for(let s=1;s<segs;s++){
+
+        const t=s/segs;
+
+        ctx.lineTo(p0.x+(p1.x-p0.x)*t+(Math.random()-0.5)*14,p0.y+(p1.y-p0.y)*t+(Math.random()-0.5)*14);
+
+      }
+
+      ctx.lineTo(p1.x,p1.y);
+
+      ctx.stroke();
+
+      ctx.strokeStyle=`rgba(255,255,255,${ca*0.85})`;
+
+      ctx.lineWidth=1.4;
+
+      ctx.stroke();
+
+    }
 
   }
 
