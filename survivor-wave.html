@@ -1583,7 +1583,7 @@ let best=+localStorage.getItem('survivorBest2')||0;
 
 let pendingLevelUps=0,rerollsLeft=1;
 
-let shake=0,hitStop=0,redFlash=0,whiteFlash=0,killsPulse=0;
+let shake=0,hitStop=0,redFlash=0,whiteFlash=0,killsPulse=0;/*B030*/let hitStopT=0,hitStopCd=0;
 
 let nextElite=70,nextHorde=80,nextBoss=150,nextRush=210,bossCount=0,eliteCount=0,bossSpawnN=0,goldRush=false;
 
@@ -11568,7 +11568,11 @@ function loop(now){
 
   else if(dtEma<0.018)slowT=0;
 
-  update(dt);
+  /*B030*/if(hitStopCd>0)hitStopCd-=dt;
+
+  /*B030*/let b30dt=dt; if(hitStopT>0){hitStopT-=dt;b30dt=0;gameTime+=dt;} /*40ms hit-stop: freeze sim, keep clock*/
+
+  update(b30dt);
 
   saveAcc=(saveAcc||0)+dt;if(saveAcc>5){saveAcc=0;try{saveMeta();}catch(_){}}
   render();
@@ -12359,6 +12363,54 @@ renderHeroes();
 
   jrUI();
 
+})();
+
+/* =====================================================================
+   B030 [JUIC]: screen shake + hit-stop — appended juice layer.
+   All triggers gated by settings.shake && !settings.lowFx.
+   - explosions/rockets: every in-run sfx('boom') adds a scaled shake pulse
+   - boss hits: throttled micro-shake per damage event on bosses
+   - elite kills: 40ms hit-stop (hitStopT), max once per 0.5s (hitStopCd);
+     the LOOP section zeroes effective dt while hitStopT>0 but advances
+     gameTime normally.
+   Wrappers are append-only — original behaviors are fully preserved.
+   ===================================================================== */
+let b30BossCd=0; /* hitStopT/hitStopCd declared next to the FX vars (line ~1586) so the rAF loop sees them during parse */
+function b30Shake(m){
+  if(!settings.shake||settings.lowFx)return;
+  shake=Math.max(shake,m);
+}
+function b30On(){
+  return state==='play'&&settings.shake&&!settings.lowFx;
+}
+
+/* explosions / rockets: 'boom' = an explosion just went off in-run */
+const _b30sfx=sfx;
+sfx=function(n){
+  if(n==='boom'&&b30On())b30Shake(6); /* tasteful pulse on top of existing shake */
+  return _b30sfx(n);
+};
+
+/* boss hits: small scaled shake, throttled to 1 per 0.15s so bullet-hoses don't buzz */
+const _b30deal=dealDamage;
+dealDamage=function(e,dmg,srcX,srcY,wtag){
+  if(e&&e.isBoss&&b30On()&&b30BossCd<=0){b30BossCd=0.15;b30Shake(1.5);}
+  return _b30deal(e,dmg,srcX,srcY,wtag);
+};
+
+/* elite kills: 40ms hit-stop, max once per 0.5s */
+const _b30kill=killEnemy;
+killEnemy=function(e){
+  _b30kill(e);
+  if(e&&e.isElite&&!e.isBoss&&b30On()&&hitStopCd<=0){
+    hitStopT=0.04;hitStopCd=0.5;b30Shake(5);
+  }
+};
+
+/* tick the boss-hit throttle inside update() so it tracks sim time */
+(function(){
+  const _u=update;
+  update=function(dt){ if(b30BossCd>0)b30BossCd-=dt; return _u(dt); };
 })();
 
 </script>
