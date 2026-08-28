@@ -994,7 +994,7 @@ const HEROES={
 
   medic:{name:'Medic',img:'hero_medic',weapon:'guardian',desc:'+2 HP/s regen.<br>Starts: Guardian',regen:2,ult:{name:'REGEN FIELD',icon:'✚'}},
 
-  engi:{name:'Engineer',img:'hero_engi',weapon:'brick',desc:'Turrets cost -30%.<br>Starts: Brick',turr:0.7,ult:{name:'FORTIFY',icon:'🛠️'}},
+  engi:{name:'Engineer',img:'hero_engi',weapon:'brick',desc:'Turrets cost -30%, +25% turret dmg &amp; fire rate.<br>Starts: Brick',turr:0.7,turrD:1.25/*B014*/,ult:{name:'FORTIFY',icon:'🛠️'}},
 
   /* HERO-PATCH-B013 */ crimson:{name:'Crimson',img:'hero_scout',weapon:'bat',desc:'Vampire: heals 8% of damage dealt, -10 max HP.<br>Starts: Bat',steal:0.08,hp:-10,ult:{name:'BLOOD FRENZY',icon:'🩸'}},
 
@@ -2262,6 +2262,8 @@ function startGame(){
   if(hero.regen)player.metaRegen=(player.metaRegen||0)+hero.regen;
 
   if(hero.turr)player.turrDisc=hero.turr;
+
+  if(hero.turrD)player.turrD=hero.turrD;/*B014*/
 
   /* HERO-PATCH-B013 */ player.heroSteal=hero.steal||0;
 
@@ -4331,9 +4333,9 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
     if(t.cd<=0&&tg){
 
-      t.cd=def.rate*Math.pow(0.82,t.tier-1);
+      t.cd=def.rate*Math.pow(0.82,t.tier-1)/(player.turrD||1);/*B014*/
 
-      const dmg=(12+difficulty*4)*(0.6+t.tier*0.45);
+      const dmg=(12+difficulty*4)*(0.6+t.tier*0.45)*(player.turrD||1);/*B014*/
 
       if(t.ty==='dart'){
 
