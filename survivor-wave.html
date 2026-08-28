@@ -2677,7 +2677,31 @@ function directorTick(dt){
 
     const count=Math.min(8,Math.round((1+Math.floor(difficulty*0.8))*(player.chSpawn||1)));
 
-    for(let i=0;i<count;i++){
+    /* B018: spawn formations — 12/16/20% by chapter, batch becomes one formation instead */
+
+    const _bCh=player.chapter||1;
+
+    let _bT=null;
+
+    if(!echoMode&&gameTime>60&&count>=3&&Math.random()<(_bCh>=3?0.20:_bCh===2?0.16:0.12)){
+
+      const r=Math.random();
+
+      _bT='grunt';
+
+      if(r<0.20&&gameTime>50)_bT='fast';
+
+      else if(r<0.28&&gameTime>110)_bT='tank';
+
+      else if(r<0.36&&gameTime>140)_bT='splitter';
+
+      else if(r<0.44&&gameTime>170)_bT='spitter';
+
+    }
+
+    if(_bT){spawnFormation(_bT,count);}
+
+    else for(let i=0;i<count;i++){
 
       const r=Math.random();
 
@@ -2786,6 +2810,94 @@ function horde(){
     const hSz=(player.chSize||1),hSp=(player.chSpd||1);
 
     enemies.push({x,y,type:'grunt',hp,maxHp:hp,speed:(52+difficulty*3)*hSp,dmg:8+difficulty*1.3,r:13*hSz,xp:1,color:'#6fbf4e',anim:Math.random()*6,hitCd:0,flash:0,kb:{x:0,y:0},ffCd:0,stun:0,spawnT:0.65,spawnMax:0.65});
+
+  }
+
+}
+
+/* B018: spawn formations — ring / V / trail. Thin wrapper over makeEnemy(): */
+
+/* reuses all existing HP/difficulty/chapter scaling, only overrides x/y. */
+
+/* Fairness: formation size == the normal batch count (tanks halved), so */
+
+/* total spawn rate and difficulty curve are unchanged. */
+
+function spawnFormation(type,count){
+
+  const c=spawnPos();
+
+  const n=type==='tank'?Math.max(3,count>>1):count;
+
+  const pick=Math.random();
+
+  if(pick<0.34){
+
+    /* RING: enemies circle the anchor point, closing in together */
+
+    const rad=55+Math.random()*55;
+
+    for(let i=0;i<n;i++){
+
+      const a=(i/n)*Math.PI*2+Math.random()*0.2;
+
+      const e=makeEnemy(type);if(player.chHP){e.hp*=player.chHP;e.maxHp*=player.chHP;}
+
+      e.x=Math.max(30,Math.min(WORLD.w-30,c.x+Math.cos(a)*rad));
+
+      e.y=Math.max(30,Math.min(WORLD.h-30,c.y+Math.sin(a)*rad));
+
+      enemies.push(e);
+
+    }
+
+  }else if(pick<0.67){
+
+    /* V-FORMATION: wedge aimed at the player, arms trailing back */
+
+    const ang=Math.atan2(player.y-c.y,player.x-c.x);
+
+    const fx=Math.cos(ang),fy=Math.sin(ang),px=-fy,py=fx;
+
+    for(let i=0;i<n;i++){
+
+      const k=i===0?0:Math.ceil(i/2);
+
+      const side=i===0?0:(i%2===0?1:-1);
+
+      const e=makeEnemy(type);if(player.chHP){e.hp*=player.chHP;e.maxHp*=player.chHP;}
+
+      e.x=Math.max(30,Math.min(WORLD.w-30,c.x+fx*k*30+px*side*k*26));
+
+      e.y=Math.max(30,Math.min(WORLD.h-30,c.y+fy*k*30+py*side*k*26));
+
+      enemies.push(e);
+
+    }
+
+  }else{
+
+    /* TRAIL: chasing line — leader closest, rest strung out behind, staggered arrival */
+
+    const ang=Math.atan2(player.y-c.y,player.x-c.x)+ (Math.random()-0.5)*0.6;
+
+    const fx=Math.cos(ang),fy=Math.sin(ang);
+
+    for(let i=0;i<n;i++){
+
+      const e=makeEnemy(type);if(player.chHP){e.hp*=player.chHP;e.maxHp*=player.chHP;}
+
+      e.x=Math.max(30,Math.min(WORLD.w-30,c.x-fx*i*38));
+
+      e.y=Math.max(30,Math.min(WORLD.h-30,c.y-fy*i*38));
+
+      e.spawnT+=i*0.28;
+
+      e.spawnMax+=i*0.28;
+
+      enemies.push(e);
+
+    }
 
   }
 
