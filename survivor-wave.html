@@ -1965,7 +1965,9 @@ const WEAPONS={
 
         const dur=(w.evo?5:3.2)*(1+0.25*(player.passives.tank||0));
 
-        zones.push({kind:'burn',x:tx,y:ty,r:rad,dur,tick:0,dmg:(w.evo?st.dmg*0.9:st.dmg*0.7)});// BAL: burn tick 0.55->0.7, was bottom-tier DPS
+        const dist=Math.hypot(tx-player.x,ty-player.y),ft=Math.max(0.35,Math.min(0.8,dist/520));/*AUDIT-FIX lobbed arc, not instant zone*/
+
+        projectiles.push(poolGet(ppool('molo'),o=>{o.kind='molo';o.x=player.x;o.y=player.y;o.sx=player.x;o.sy=player.y;o.tx=tx;o.ty=ty;o.t=0;o.ft=ft;o.life=ft+0.1;o.vx=0;o.vy=0;o.dmg=0;o.pierce=0;o.hit=o.hit||[];o.hit.length=0;o.r=1;o.zr=rad;o.zd=dur;o.zdmg=(w.evo?st.dmg*0.9:st.dmg*0.7);o.tw=0;}));/*AUDIT-FIX*/// BAL: burn tick 0.55->0.7, was bottom-tier DPS
 
       }
 
@@ -4324,6 +4326,28 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
         continue;
 
       }
+
+    }else if(p.kind==='molo'){/*AUDIT-FIX lobbed molotov: flies an arc, spawns burn pool on landing*/
+
+      p.t+=dt;
+
+      const pr=Math.min(1,p.t/p.ft);
+
+      p.x=p.sx+(p.tx-p.sx)*pr;p.y=p.sy+(p.ty-p.sy)*pr;
+
+      if(pr>=1||p.life<=0.02){
+
+        p.life=0;
+
+        zones.push({kind:'burn',x:p.tx,y:p.ty,r:p.zr,dur:p.zd,tick:0,dmg:p.zdmg});
+
+        spawnParticles(p.tx,p.ty,'#fb923c',12,1.1,{sprite:'ember',size:16});
+
+        sfx('boom');
+
+      }
+
+      continue;/*skips enemy-collision: the bottle is the delivery, the pool is the damage*/
 
     }else{/*WPN-PATCH*/
 
@@ -10852,6 +10876,28 @@ function render(){
       ctx.fillStyle='#facc15';
 
       ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
+
+      ctx.restore();
+
+    }else if(p.kind==='molo'){/*AUDIT-FIX lobbed molotov arc rendering*/
+
+      const pr=Math.min(1,p.t/p.ft),hh=Math.sin(pr*Math.PI)*74;
+
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+
+      ctx.beginPath();ctx.ellipse(p.x,p.y,5,2.4,0,0,Math.PI*2);ctx.fill();
+
+      ctx.save();
+
+      ctx.translate(p.x,p.y-hh);ctx.rotate(pr*Math.PI*4);
+
+      ctx.fillStyle='#c96f2f';
+
+      ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle='#fde68a';
+
+      ctx.fillRect(-1.6,-11,3.2,6);
 
       ctx.restore();
 
