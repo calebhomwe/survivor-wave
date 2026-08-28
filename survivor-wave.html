@@ -1011,7 +1011,7 @@ const HEROES={
 
   soldier:{name:'Soldier',img:'hero_soldier',weapon:'lightning',desc:'+40 max HP.<br>Starts: Lightning',hp:40,ult:{name:'ORBITAL STRIKE',icon:'🛰️'}},
 
-  scout:{name:'Scout',img:'hero_scout',weapon:'forcefield',desc:'+12% speed, +40 pickup.<br>Starts: ForceField',spd:1.12,pick:40,ult:{name:'BLADE CYCLONE',icon:'🌪️'}},
+  scout:{name:'Scout',img:'hero_scout',weapon:'forcefield',desc:'Auto-attack drone companion.<br>+12% speed, +40 pickup.<br>Starts: ForceField',spd:1.12,pick:40,drone:1/*B016*/,ult:{name:'BLADE CYCLONE',icon:'🌪️'}},
 
   /* HERO5-PATCH */
 
@@ -2464,6 +2464,9 @@ function startGame(){
   if(hero.turrD)player.turrD=hero.turrD;/*B014*/
 
   /* HERO-PATCH-B013 */ player.heroSteal=hero.steal||0;
+
+  /* B016: scout drone companion state (one drone, whole run, invulnerable) */
+  player.sDrone=hero.drone?{x:player.x,y:player.y,a:Math.random()*6,cd:1,fx:[]}:null;
 
   /* B015: hero perks applied at run start */
   {
@@ -4908,6 +4911,46 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
   }
 
 
+
+  /* B016: scout drone companion — smooth-orbit follow at ~70px, hitscan laser every 0.8s at
+     nearest enemy within 260px; dmg scales with player level (6+2/lvl); tagged 'Drone' for B041 run stats */
+  if(player.sDrone){
+
+    const sd=player.sDrone;
+
+    sd.a+=dt*1.1;
+
+    const tx=player.x+Math.cos(sd.a)*70,ty=player.y+Math.sin(sd.a)*70-8;
+
+    const f=1-Math.exp(-8*dt);
+
+    sd.x+=(tx-sd.x)*f;sd.y+=(ty-sd.y)*f;
+
+    sd.cd-=dt;
+
+    if(sd.cd<=0){
+
+      const tg=nearestEnemy(sd.x,sd.y,260);
+
+      if(tg){
+
+        sd.cd=0.8;
+
+        dealDamage(tg,6+2*player.level,sd.x,sd.y,'Drone');/*B041*/
+
+        sd.fx.push({x1:sd.x,y1:sd.y,x2:tg.x,y2:tg.y,t:0.14});
+
+        if(sd.fx.length>6)sd.fx.shift();
+
+        if(!settings.lowFx)spawnParticles(tg.x,tg.y,'#67e8f9',2,0.5);
+
+      }else sd.cd=0.2;
+
+    }
+
+    for(let i=sd.fx.length-1;i>=0;i--){sd.fx[i].t-=dt;if(sd.fx[i].t<=0)sd.fx.splice(i,1);}
+
+  }
 
   sweep(enemies,e=>e.hp>0);
 
@@ -10793,6 +10836,57 @@ function render(){
       ctx.stroke();
 
     }
+
+  }
+
+
+
+  /* B016: scout drone companion — distinct dart-shaped drone + engine glow (lowFx skips the radial glow) */
+  if(player.sDrone){
+
+    const sd=player.sDrone;
+
+    for(const b of sd.fx){
+
+      const a=Math.max(0,b.t/0.14);
+
+      ctx.strokeStyle=`rgba(103,232,249,${a*0.9})`;
+
+      ctx.lineWidth=2.5;
+
+      ctx.beginPath();ctx.moveTo(b.x1,b.y1);ctx.lineTo(b.x2,b.y2);ctx.stroke();
+
+    }
+
+    ctx.fillStyle='rgba(0,0,0,0.2)';
+
+    ctx.beginPath();ctx.ellipse(sd.x,sd.y+20,8,3,0,0,Math.PI*2);ctx.fill();
+
+    if(!settings.lowFx){
+
+      const g=ctx.createRadialGradient(sd.x,sd.y+8,1,sd.x,sd.y+8,14);
+
+      g.addColorStop(0,'rgba(103,232,249,0.55)');g.addColorStop(1,'rgba(103,232,249,0)');
+
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(sd.x,sd.y+8,14,0,Math.PI*2);ctx.fill();
+
+    }
+
+    ctx.save();ctx.translate(sd.x,sd.y);
+
+    ctx.fillStyle='#a7f3d0';
+
+    ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(7,6);ctx.lineTo(0,3);ctx.lineTo(-7,6);ctx.closePath();ctx.fill();
+
+    ctx.fillStyle='#34d399';
+
+    ctx.beginPath();ctx.arc(0,-2,2.4,0,Math.PI*2);ctx.fill();
+
+    ctx.fillStyle='#22d3ee';
+
+    ctx.beginPath();ctx.ellipse(0,8,2.6,4,0,0,Math.PI*2);ctx.fill();
+
+    ctx.restore();
 
   }
 
