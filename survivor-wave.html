@@ -1240,6 +1240,8 @@ function saveAll(){
 
     try{localStorage.setItem('survivorSaveVer',String(SAVE_VER));}catch(_){}
 
+    try{if(typeof saveBestiary==='function')saveBestiary();}catch(_){}/*B052 bestiary persist*/
+
   }catch(_){}
 
 }
@@ -2725,6 +2727,8 @@ function makeEnemy(type){
 
     if(dusk&&!_me0.isBoss&&!_me0.isElite)_me0.speed*=1.12;
 
+    try{bestiarySee(critterType(_me0));}catch(_){}/*B052 bestiary first-seen*/
+
   }
 
   return _me0;
@@ -3227,6 +3231,8 @@ function killEnemy(e){
   }
 
   player.kills++;
+
+  try{bestiaryKill(critterType(e));}catch(_){}/*B052 bestiary kill count*/
 
   killsPulse=1;
 
@@ -12985,6 +12991,130 @@ killEnemy=function(e){
   update=function(dt){ if(b30BossCd>0)b30BossCd-=dt; return _u(dt); };
 })();
 
+</script>
+
+<script>
+/* B052: BESTIARY — enemy family gallery (seen / kills / first chapter), persisted in survivorBestiary */
+(function(){
+  var RK='survivorBestiary';
+  /* family table: key must match critterType() output; append-only, never reorder */
+  var FAM=[
+    {k:'snake',   n:'Garden Snake',   d:'Basic chaser. Slow, weak, endless.',        r:13},
+    {k:'rat',     n:'Sewer Rat',      d:'Fast runner. Also spawns from splitters.',  r:10},
+    {k:'boar',    n:'Tusk Boar',      d:'Heavy tank. Splits into a swarm on death.', r:24},
+    {k:'toad',    n:'Spit Toad',      d:'Keeps distance and lobs acid globs.',       r:14},
+    {k:'scorpion',n:'Elite Scorpion', d:'Elite slamer. Ground-pound area attack.',   r:26},
+    {k:'boa',     n:'Brute Boa',      d:'BOSS. Charges and slams in a frenzy.',      r:34},
+    {k:'hornet',  n:'Devourer',       d:'BOSS. Relentless teleporting hunter.',      r:30},
+    {k:'blimp',   n:'Terror Blimp',   d:'Airship elite. Bursts into splitters.',     r:30}
+  ];
+  var B={seen:{},kills:{},chap:{}};
+  try{
+    var d=JSON.parse(localStorage.getItem(RK)||'null');
+    if(d&&typeof d==='object'){
+      if(d.seen&&typeof d.seen==='object')B.seen=d.seen;
+      if(d.kills&&typeof d.kills==='object')B.kills=d.kills;
+      if(d.chap&&typeof d.chap==='object')B.chap=d.chap;
+    }
+  }catch(e){}
+  var dirty=false,lastSave=0;
+  function saveB(force){
+    var t=Date.now();
+    if(!force&&t-lastSave<2500){dirty=true;return;}
+    lastSave=t;dirty=false;
+    try{localStorage.setItem(RK,JSON.stringify(B));}catch(e){}
+  }
+  function chapNow(){
+    try{
+      if(typeof player!=='undefined'&&player&&player.chapter)return player.chapter;
+      if(typeof chapterSel!=='undefined'&&chapterSel)return chapterSel;
+    }catch(e){}
+    return 1;
+  }
+  window.bestiarySee=function(k){
+    if(!k)return;
+    if(!B.seen[k]){B.seen[k]=1;B.chap[k]=chapNow();saveB(true);}
+  };
+  window.bestiaryKill=function(k){
+    if(!k)return;
+    if(!B.seen[k]){B.seen[k]=1;B.chap[k]=chapNow();}
+    B.kills[k]=(B.kills[k]|0)+1;
+    saveB(false);
+  };
+  window.saveBestiary=function(){try{localStorage.setItem(RK,JSON.stringify(B));}catch(e){}};
+  function mini(k,r,sil){
+    var c=document.createElement('canvas');
+    c.width=64;c.height=64;
+    c.style.cssText='width:52px;height:52px;image-rendering:pixelated;flex:0 0 auto';
+    var g=c.getContext('2d');
+    try{
+      g.save();
+      g.translate(32,32);
+      if(typeof paintCritter==='function'){
+        if(sil){
+          /* silhouette: paint offscreen then flood the shape dark */
+          var t=document.createElement('canvas');t.width=64;t.height=64;
+          var tg=t.getContext('2d');
+          tg.translate(32,32);
+          paintCritter(tg,k,0,0,0,1.3,Math.min(r,22),0,false);
+          tg.globalCompositeOperation='source-atop';
+          tg.fillStyle='#24304f';
+          tg.fillRect(-64,-64,128,128);
+          g.drawImage(t,-32,-32);
+        }else{
+          paintCritter(g,k,0,0,0,1.3,Math.min(r,22),0,false);
+        }
+      }
+      g.restore();
+    }catch(e){}
+    return c;
+  }
+  function render(){
+    var list=document.getElementById('b52List');
+    if(!list)return;
+    list.innerHTML='';
+    var seenN=0;
+    for(var i=0;i<FAM.length;i++){
+      var f=FAM[i],on=!!B.seen[f.k];
+      if(on)seenN++;
+      var row=document.createElement('div');
+      row.className='shopRow';
+      row.style.cssText='align-items:center;gap:12px';
+      row.appendChild(mini(f.k,f.r,!on));
+      var tx=document.createElement('div');
+      if(on){
+        var kc=B.kills[f.k]|0;
+        tx.innerHTML='<div class="sn">'+f.n+'</div><div class="sd">'+f.d+'</div><div class="sd" style="color:#ffd23f">'+kc+' kill'+(kc===1?'':'s')+' · first seen CH.'+(B.chap[f.k]||1)+'</div>';
+      }else{
+        tx.innerHTML='<div class="sn" style="color:#8fa1c7">???</div><div class="sd">Not yet encountered…</div>';
+      }
+      row.appendChild(tx);
+      list.appendChild(row);
+    }
+    var h2=document.getElementById('b52Count');
+    if(h2)h2.textContent=seenN+' / '+FAM.length+' discovered';
+  }
+  function ui(){
+    var pb=document.getElementById('playBtn');
+    if(pb&&pb.parentNode){
+      var b=document.createElement('button');
+      b.className='btn green';b.id='b52Btn';b.textContent='BESTIARY';
+      b.style.fontSize='12px';b.style.padding='9px 16px 6px';
+      b.addEventListener('click',function(){render();var ov=document.getElementById('b52Ov');if(ov)ov.classList.remove('hidden');try{sfx('tap');}catch(e){}});
+      pb.parentNode.appendChild(b);
+    }
+    var ov=document.createElement('div');
+    ov.className='shopOv hidden';ov.id='b52Ov';
+    ov.innerHTML='<div class="shopBox"><h2>BESTIARY</h2><div id="b52Count" style="font-size:12px;color:#a8b6ce;font-weight:700;margin:-6px 0 8px"></div><div id="b52List"></div><button class="btn" id="b52Back" style="font-size:16px;padding:12px 38px 9px">BACK</button></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.add('hidden');});
+    var bk=document.getElementById('b52Back');
+    if(bk)bk.addEventListener('click',function(){ov.classList.add('hidden');try{sfx('tap');}catch(e){}});
+    window.addEventListener('beforeunload',function(){if(dirty)saveB(true);});
+    setInterval(function(){if(dirty)saveB(true);},5000);
+  }
+  ui();
+})();
 </script>
 
 </body>
