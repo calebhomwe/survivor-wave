@@ -2973,9 +2973,9 @@ function dealDamage(e,dmg,srcX,srcY){
 
   }
 
-  if(crit){addFloater(e.x,e.y-e.r-4,Math.round(d),'#fb923c',0.6,17);spawnParticles(e.x,e.y,'#fb923c',7,1.15,{sprite:'spark',size:18});if(e.isElite||e.isBoss)hitStop=Math.max(hitStop,0.05);}
+  if(crit){addDmgFloater(e.x,e.y-e.r-4,d,true);spawnParticles(e.x,e.y,'#fb923c',7,1.15,{sprite:'spark',size:18});if(e.isElite||e.isBoss)hitStop=Math.max(hitStop,0.05);}
 
-  else if(floaters.length<70&&(e.isBoss||e.isElite||Math.random()<0.5))addFloater(e.x,e.y-e.r-4,Math.round(d),'#fff7cc',0.5,13);
+  else if(floaters.length<70&&(e.isBoss||e.isElite||Math.random()<0.5))addDmgFloater(e.x,e.y-e.r-4,d,false);
 
   if(e.hp<=0)killEnemy(e);
 
@@ -5096,6 +5096,28 @@ function spawnConfetti(){
 }
 
 function addFloater(x,y,text,color,life,size){if(!settings.floaters||floaters.length>=80)return;floaters.push({x,y,text,color,life,size});}
+
+/*PATCH-B029 damage numbers: crit styling + nearby-merge so dense screens stay readable*/
+function addDmgFloater(x,y,amount,crit){
+  if(!settings.floaters)return;
+  amount=Math.round(amount);
+  for(let i=floaters.length-1;i>=0;i--){ /* merge into a recent damage floater within 48px */
+    const f=floaters[i];
+    if(!f.dmg||f.life<=0)continue;
+    const dx=f.x-x,dy=f.y-y;
+    if(dx*dx+dy*dy<48*48){
+      f.val+=amount;f.hits++;
+      f.crit=f.crit||crit;
+      f.life=Math.min(1.1,Math.max(f.life,crit?0.7:0.5)); /* refresh, capped so stacks expire */
+      f.age=0;
+      f.size=Math.max(f.size,f.crit?20:13);
+      f.text=f.hits>=4?Math.round(f.val)+' x'+f.hits:String(Math.round(f.val));
+      return;
+    }
+  }
+  if(floaters.length>=90)return;
+  floaters.push({x,y,val:amount,hits:1,crit:!!crit,text:String(amount),color:crit?'#ffd23f':'#fff7cc',life:crit?0.7:0.5,size:crit?20:13,dmg:1});
+}
 
 
 
@@ -9000,6 +9022,9 @@ function render(){
     ctx.lineWidth=Math.max(2,f.size*0.18);
 
     ctx.strokeText(f.text,f.x,f.y);
+
+    /*PATCH-B029 crit damage numbers get a warm double-stroke to pop*/
+    if(f.crit){ctx.strokeStyle='rgba(180,83,9,0.9)';ctx.lineWidth=Math.max(4,f.size*0.26);ctx.strokeText(f.text,f.x,f.y);}
 
     ctx.fillStyle=f.color;
 
