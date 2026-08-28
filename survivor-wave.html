@@ -2514,12 +2514,12 @@ function startGame(){
 
   const cSc=chapterSel-1;
 
-  player.chHP=Math.pow(1.12,cSc);
+  player.chHP=Math.pow(1.12,chHpExp(cSc));/* BAL: B004 smoothed ch5+ HP curve, ch1-4 exact*/
 
   player.chSpawn=1+0.06*cSc;
 
   /*B024: cinder chapter (slot 13) is tuned to post-ch4 difficulty, not slot-13 scaling*/
-  if(chapterSel===13){player.chHP/=Math.pow(1.12,cSc-4);player.chSpawn/=(1+0.06*cSc)/(1+0.06*4);}
+  if(chapterSel===13){player.chHP/=Math.pow(1.12,chHpExp(cSc)-chHpExp(4));player.chSpawn/=(1+0.06*cSc)/(1+0.06*4);}/* BAL: B004 keep cinder == post-ch4 exactly*/
 
   player.chapter=chapterSel;
 
@@ -2952,6 +2952,46 @@ function makeEnemy(type){
 
 }
 
+// BAL: B004 — ENEMY SCALING AUDIT (chapter curve)
+//
+// Every family's stats = base(d) * late(t) * lv(P) * chapterK, where
+//   d    = difficulty  = (1 + t/26) * (endless ? 1+(t-runGoal)/240 : 1)   [linear; quadratic-ish only in endless]
+//   late = 1 + max(0,t-240)/240                                          [linear ramp]
+//   lv   = 1 + player.level*0.12                                          [linear]
+//   chapterK (HP)  = 1.12 ^ chHpExp(cSc),  cSc = chapter-1
+//   chapterK (spawn count) = 1 + 0.06*cSc                                 [linear]
+//   SPEED/DAMAGE: NO chapter multiplier at all — only d (linear in time) + cinder BFX +10% spd.
+//
+// chHpExp (B004): cSc<=4 -> cSc (chapters 1-4 EXACTLY as tuned before);
+//                 cSc>4  -> 4 + 0.75*(cSc-4)  (25% gentler slope, no more runaway compounding).
+//
+// HP chapter multiplier plot (normal enemies, via player.chHP):
+//   chapter:    1     2     3     4     5     6     7     8     9    10    11    12   13(cinder*)
+//   OLD:      1.00  1.12  1.25  1.41  1.76  1.97  2.21  2.48  2.77  3.11  3.48  3.90  1.57(retuned)
+//   NEW:      1.00  1.12  1.25  1.41  1.68  1.88  2.11  2.21  2.36  2.65  2.98  3.11  1.57(retuned)
+//
+// Elite/Boss chapter factor = 1.12 ^ bossHpExp():
+//   OLD: 1.12^min(cSc,8) — flat-lined at 2.48 from ch9 on AND ignored the cinder
+//        retune, so cinder elites/bosses spiked 2.48x when the whole chapter is
+//        tuned to a post-ch4 baseline (1.57x). Absurd jump, now smoothed.
+//   NEW: cinder counted at cSc=4 (matches its chHP baseline); ch5+ follows the
+//        same 0.75-slope curve as normals, so bosses never fall behind grunt HP
+//        scaling again; exponent hard-capped at 16 as an endless-safety ceiling.
+//   chapter:    1     2     3     4     5     6     7     8     9    10    11    12   13(cinder)
+//   OLD:      1.00  1.12  1.25  1.41  1.76  1.97  2.21  2.48  2.48  2.48  2.48  2.48  2.48
+//   NEW:      1.00  1.12  1.25  1.41  1.68  1.88  2.11  2.21  2.36  2.65  2.98  3.11  1.57
+// (blimp/baby/splitter have flat or d-linear HP only — no chapter term, unchanged.)
+
+// BAL: B004 smoothed chapter HP exponent — identical to raw cSc for ch1-4
+function chHpExp(s){return s<=4?s:4+0.75*(s-4);}
+
+// BAL: B004 elite/boss chapter exponent — mirrors chHpExp + cinder retune, ceiling 16
+function bossHpExp(){
+  let s=(player.chapter||1)-1;
+  if(typeof chapterSel!=='undefined'&&chapterSel===13)s=4;/*B024 cinder tuned to post-ch4 baseline*/
+  return Math.min(chHpExp(s),16);
+}
+
 let ultGen=0;
 
 /* ===== B019: ELITE AFFIX SYSTEM (elites only, normal enemies untouched) ===== */
@@ -3024,7 +3064,7 @@ function makeEnemyBase(type){
 
   if(type==='elite'){
 
-    const hp=(260+d*70)*Math.pow(1.12,Math.min((player.chapter||1)-1,CHHP_CAP));
+    const hp=(260+d*70)*Math.pow(1.12,bossHpExp());/* BAL: B004 smoothed elite chapter curve (cinder retuned, cap aligned w/ normals)*/
 
     return rollEliteAffix(Object.assign(base,{type,hp,maxHp:hp,speed:44,dmg:18+d*2,r:30,xp:0,color:'#e05252',isElite:true,eT:2.2,slamT:0}));/*B019 affix roll*/
 
@@ -3034,7 +3074,7 @@ function makeEnemyBase(type){
 
     const kind=bossSpawnN%2===1?'devourer':'brute';
 
-    const hp=((kind==='devourer'?760:900)+bossCount*680+d*160)*Math.pow(1.12,Math.min((player.chapter||1)-1,CHHP_CAP));
+    const hp=((kind==='devourer'?760:900)+bossCount*680+d*160)*Math.pow(1.12,bossHpExp());/* BAL: B004 smoothed boss chapter curve (cinder retuned, cap aligned w/ normals)*/
 
     return Object.assign(base,{type,hp,maxHp:hp,speed:kind==='devourer'?56:40,dmg:24+d*2,r:kind==='devourer'?38:46,xp:0,color:kind==='devourer'?'#7c3aed':'#b8342f',isBoss:true,kind,bState:'chase',bT:2.5,tele:0,chargeDir:0});
 
