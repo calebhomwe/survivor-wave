@@ -14441,4 +14441,86 @@ render=function(){
 
 
 
+/* ============================== B032: LEVEL-UP MOMENT FX ============================== */
+
+/* Time-slow BEFORE the UI opens reuses the existing levelSlow dt-scaling in update()
+
+   (same family as the B030 hitStopT loop pattern — dt scaled, not zeroed, clock kept).
+
+   Here: gold burst ring from the player + radial dim behind the choice cards.
+
+   All gated on settings.lowFx; showLevelUp wrapper is additive so harness auto-dismiss
+
+   and state='levelup' handling are untouched. */
+
+let b32RingT=0,b32RingX=0,b32RingY=0,b32Last=0;
+
+/* radial dim: applied to the #lvlup DOM overlay itself (its own opaque background would
+
+   hide a canvas-side dim), via an appended class toggled with settings.lowFx */
+
+(function(){const s=document.createElement('style');s.textContent=
+
+  '.lvlup.b32dim{background:radial-gradient(ellipse at 50% 46%,rgba(6,8,18,.76) 0%,rgba(6,8,18,.87) 52%,rgba(2,3,9,.95) 100%)}';
+
+  document.head.appendChild(s);})();
+
+const _b32SLU=showLevelUp;
+
+showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le)le.classList.toggle('b32dim',!settings.lowFx);if(!settings.lowFx){b32RingT=0.6;b32RingX=player.x;b32RingY=player.y;}};
+
+(function(){
+
+  const _r=render;
+
+  render=function(){
+
+    _r();
+
+    try{
+
+      const now=performance.now();
+
+      const d=Math.min(0.05,(now-(b32Last||now))/1000);b32Last=now;
+
+      if(b32RingT>0)b32RingT=Math.max(0,b32RingT-d);
+
+      if(settings.lowFx)return;
+
+      if(state==='levelup'||b32RingT>0){
+
+        if(b32RingT>0){ /* burst ring expanding from the player */
+
+          const p=1-b32RingT/0.6;
+
+          const sx=b32RingX-cam.x,sy=b32RingY-cam.y;
+
+          ctx.save();ctx.globalCompositeOperation='lighter';
+
+          for(let i=0;i<2;i++){
+
+            const rr=(20+p*340)-i*26;if(rr<=0)continue;
+
+            ctx.lineWidth=(i?3:7)*(1-p*0.6);
+
+            ctx.strokeStyle='rgba(255,210,64,'+((0.85*(1-p)*(i?0.8:1)).toFixed(3))+')';
+
+            ctx.beginPath();ctx.arc(sx,sy,rr,0,6.2832);ctx.stroke();
+
+          }
+
+          ctx.restore();
+
+        }
+
+      }
+
+    }catch(_){}
+
+  };
+
+})();
+
+
+
 </script>
