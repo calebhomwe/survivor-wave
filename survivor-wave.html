@@ -1155,6 +1155,108 @@ let selectedHero='survivor';try{selectedHero=localStorage.getItem('survivorHero'
 
 if(!HEROES[selectedHero])selectedHero='survivor';
 
+/* B074-PATCH: save schema versioning + single safe migration entry point.
+
+   - `survivorSaveVer` stamps the current save schema version.
+
+   - `loadAllSafe()` is the migration entry point: it re-validates every
+
+     persisted survivor* key (plus 'siop'), and any value that is corrupt
+
+     (unparseable JSON / wrong shape / NaN number) is removed so the defaults
+
+     already applied by the reads above stay in effect. Never throws.
+
+   - `saveAll()` persists the full current state and stamps the version.
+
+   - `resetSurvivorSave()` wipes all survivor* keys (used by the Reset Save
+
+     button in the settings panel; inline click-twice confirm, no dialogs). */
+
+const SAVE_VER=1;
+
+const SAVE_JSON_KEYS={survivorMeta:1,survivorChapters:1,survivorDaily:1,survivorMissions:1,survivorAchievements:1,survivorSettings:1,siop:1};
+
+const SAVE_NUM_KEYS={survivorGold:1,survivorEchoBest:1,survivorRelics:1,survivorPerilW:1,survivorBest2:1};
+
+function loadAllSafe(){
+
+  let dirty=false;
+
+  try{
+
+    for(const k in SAVE_JSON_KEYS){
+
+      const raw=localStorage.getItem(k);
+
+      if(raw===null)continue;
+
+      try{const v=JSON.parse(raw);if(!v||typeof v!=='object'||Array.isArray(v)){localStorage.removeItem(k);dirty=true;}}
+
+      catch(_){localStorage.removeItem(k);dirty=true;}
+
+    }
+
+    for(const k in SAVE_NUM_KEYS){
+
+      const raw=localStorage.getItem(k);
+
+      if(raw===null)continue;
+
+      if(raw===''||!isFinite(+raw)){localStorage.removeItem(k);dirty=true;}
+
+    }
+
+    const sv=localStorage.getItem('survivorSaveVer');
+
+    if(sv!==String(SAVE_VER)){localStorage.setItem('survivorSaveVer',String(SAVE_VER));dirty=true;}
+
+  }catch(_){}
+
+  return dirty;
+
+}
+
+function saveAll(){
+
+  try{
+
+    saveMeta();
+
+    if(typeof saveSettings==='function')saveSettings();
+
+    try{localStorage.setItem('survivorChapters',JSON.stringify(sioc));}catch(_){}
+
+    try{localStorage.setItem('survivorRelics',String(relicEver));}catch(_){}
+
+    try{localStorage.setItem('survivorPerilW',String(perilWins));}catch(_){}
+
+    try{localStorage.setItem('survivorEchoBest',String(echoBest));}catch(_){}
+
+    try{localStorage.setItem('siop',JSON.stringify(siop));}catch(_){}
+
+    try{localStorage.setItem('survivorSaveVer',String(SAVE_VER));}catch(_){}
+
+  }catch(_){}
+
+}
+
+function resetSurvivorSave(){
+
+  try{
+
+    const kill=[];
+
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.indexOf('survivor')===0||k==='siop'))kill.push(k);}
+
+    for(const k of kill)localStorage.removeItem(k);
+
+  }catch(_){}
+
+}
+
+loadAllSafe();/* B074: migrate/repair any old or corrupt save forward, stamp version */
+
 function saveMeta(){
 
   try{
@@ -11114,6 +11216,50 @@ function renderSettings(){
   }
 
 }
+
+/* B074-PATCH: append a "Reset Save" row to the settings list after each
+
+   renderSettings() call. Inline confirm: first tap arms the button and
+
+   changes its label; a second tap within 4s wipes all survivor* keys and
+
+   reloads. No confirm() dialog. */
+
+(function(){
+
+  const _renderSettingsOrig=renderSettings;
+
+  renderSettings=function(){
+
+    _renderSettingsOrig();
+
+    const list=document.getElementById('setList');if(!list)return;
+
+    const row=document.createElement('div');row.className='shopRow';
+
+    row.innerHTML='<div><div class="sn" style="color:#ff6b6b">Reset Save</div><div class="sd" style="font-size:11px;color:#999">Wipes ALL progress (gold, meta, missions…)</div></div><button class="btn" style="margin-left:auto;font-size:13px;padding:9px 18px 6px;background:#8b2222">RESET</button>';
+
+    const btn=row.querySelector('button');
+
+    let armed=false,t=null;
+
+    btn.onclick=()=>{
+
+      if(!armed){armed=true;btn.textContent='TAP AGAIN TO CONFIRM';btn.style.background='#c0392b';sfx('tick');t=setTimeout(()=>{armed=false;btn.textContent='RESET';btn.style.background='#8b2222';},4000);return;}
+
+      clearTimeout(t);
+
+      resetSurvivorSave();
+
+      try{location.reload();}catch(_){}
+
+    };
+
+    list.appendChild(row);
+
+  };
+
+})();
 
 let tutDone=localStorage.getItem('survivorTut')==='1',tutGem=false,tutPick=false,tutT=null;
 
