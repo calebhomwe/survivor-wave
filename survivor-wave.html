@@ -7711,6 +7711,42 @@ function cloudBlob(){
 
 
 
+/* ============================== B081: ANIMATED TITLE HORDE BACKGROUND ============================== */
+/* Slow ambient silhouetted critters drifting behind the main-menu logo (state==='ready' only).
+   No gameplay impact; skipped entirely when settings.lowFx is on; vanishes instantly on run start. */
+let titleHorde=null,titleHordeT=0;
+function drawTitleHorde(now){
+  let dt=(now-titleHordeT)/1000;titleHordeT=now;
+  if(!(dt>0)||dt>0.1)dt=0.016;
+  if(!titleHorde){
+    titleHorde=[];
+    for(let i=0;i<16;i++){
+      const d=0.35+Math.random()*0.65; /* depth: drives size, speed, alpha (parallax layers) */
+      titleHorde.push({x:Math.random()*W,y:H*0.08+Math.random()*H*0.84,d:d,r:12+d*24,ph:Math.random()*6.28,sp:0.5+Math.random()});
+    }
+  }
+  ctx.save();
+  ctx.fillStyle='#1c2a12';
+  ctx.strokeStyle='#1c2a12';
+  ctx.lineCap='round';
+  for(let i=0;i<titleHorde.length;i++){
+    const c=titleHorde[i];
+    c.x-=c.d*22*c.sp*dt; /* slow leftward drift; deeper layers drift slower */
+    if(c.x<-70){c.x=W+70;c.y=H*0.08+Math.random()*H*0.84;}
+    const bob=Math.sin(now/900*c.sp+c.ph)*4*c.d;
+    const y=c.y+bob;
+    ctx.globalAlpha=0.08+0.16*c.d;
+    ctx.beginPath();ctx.ellipse(c.x,y,c.r,c.r*0.62,0,0,Math.PI*2);ctx.fill(); /* body blob */
+    ctx.beginPath();ctx.arc(c.x+c.r*0.85,y-c.r*0.25,c.r*0.38,0,Math.PI*2);ctx.fill(); /* head */
+    ctx.lineWidth=Math.max(1.5,c.r*0.12);
+    for(let l=-1;l<=1;l++){ /* wobbling stub legs */
+      const sw=Math.sin(now/220*c.sp+l*2+c.ph)*c.r*0.18;
+      ctx.beginPath();ctx.moveTo(c.x+l*c.r*0.5,y+c.r*0.3);ctx.lineTo(c.x+l*c.r*0.5+sw,y+c.r*0.85);ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 /* ============================== RENDER ============================== */
 
 function render(){
@@ -9174,6 +9210,9 @@ function render(){
   }
 
 
+
+  /* B081: ambient title horde behind the main-menu logo */
+  if(state==='ready'&&!settings.lowFx)drawTitleHorde(performance.now());
 
   renderHUD();
 
