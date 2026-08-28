@@ -3374,7 +3374,79 @@ function dropGem(x,y,val){
 
   if(gems.length>350)gems.shift();
 
-  gems.push({x,y,r:val>=4?7:5,xp:val,magnet:false,ph:Math.random()*6});
+  if(gems.length>280)gemMergeT=0; /*PATCH-TAG B090: force merge pass when dense*/
+
+  gems.push({x,y,r:gemR(val),xp:val,magnet:false,ph:Math.random()*6});
+
+}
+
+/*PATCH-TAG B090: xp orb merging + visual tiers (small/medium/large/star)*/
+
+const GEM_TIER_COL=['#4ade80','#38bdf8','#c084fc','#fbbf24'];
+
+const GEM_TIER_RGB=[[74,222,128],[56,189,248],[192,132,252],[251,191,36]];
+
+function gemTier(xp){return xp>=16?3:xp>=8?2:xp>=4?1:0}
+
+function gemR(xp){return [5,7,9,11.5][gemTier(xp)]}
+
+function gemCol(xp){return GEM_TIER_COL[gemTier(xp)]}
+
+function gemGlow(xp,a){const c=GEM_TIER_RGB[gemTier(xp)];return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'}
+
+let gemMergeT=0.5;
+
+/* grid-bucketed sweep: orbs within 44px combine (xp-weighted pos), value preserved */
+
+function mergeGems(){
+
+  if(gems.length<2)return;
+
+  const R=44,cs=88,R2=R*R,grid=new Map();
+
+  for(const g of gems){
+
+    if(g.dead)continue;
+
+    const k=Math.floor(g.x/cs)+'_'+Math.floor(g.y/cs);
+
+    let a=grid.get(k);if(!a){a=[];grid.set(k,a);}
+
+    a.push(g);
+
+  }
+
+  for(const g of gems){
+
+    if(g.dead)continue;
+
+    const cx=Math.floor(g.x/cs),cy=Math.floor(g.y/cs);
+
+    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+
+      const cell=grid.get((cx+ox)+'_'+(cy+oy));if(!cell)continue;
+
+      for(const o of cell){
+
+        if(o===g||o.dead)continue;
+
+        const dx=o.x-g.x,dy=o.y-g.y;
+
+        if(dx*dx+dy*dy<R2){
+
+          const tw=g.xp+o.xp;
+
+          g.x=(g.x*g.xp+o.x*o.xp)/tw;g.y=(g.y*g.xp+o.y*o.xp)/tw;
+
+          g.xp=tw;g.r=gemR(tw);g.magnet=g.magnet||o.magnet;o.dead=true;
+
+        }
+
+      }
+
+    }
+
+  }
 
 }
 
@@ -4271,6 +4343,12 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
   }
 
   sweep(gems,g=>!g.dead);
+
+  /*PATCH-TAG B090: periodic xp orb merge sweep (every 0.5s, or forced when very dense on spawn)*/
+
+  gemMergeT-=dt;
+
+  if(gemMergeT<=0){gemMergeT=0.5;mergeGems();sweep(gems,g=>!g.dead);}
 
 
 
@@ -9268,7 +9346,7 @@ function render(){
 
   for(const z2 of zones)glow(z2.x,z2.y,z2.r*0.8,'#f97316',Math.min(0.7,z2.dur*0.3));
 
-  for(const g3 of gems){if(onScreen(g3,20))glow(g3.x,g3.y,g3.r*2.4,g3.xp>=4?'#38bdf8':'#4ade80',0.22);}
+  for(const g3 of gems){if(onScreen(g3,20))glow(g3.x,g3.y,g3.r*2.4,gemCol(g3.xp),0.22);} /*PATCH-TAG B090: tier-colored glow*/
 
   const fw2=ownedWeapon('forcefield');
 
@@ -9504,7 +9582,7 @@ function render(){
 
     ctx.beginPath();ctx.ellipse(g.x,g.y+g.r*0.8,g.r*0.8,g.r*0.35,0,0,Math.PI*2);ctx.fill();
 
-    const col=g.xp>=4?'#38bdf8':'#4ade80';
+    const col=gemCol(g.xp); /*PATCH-TAG B090: tier color*/
 
     ctx.fillStyle=col;
 
@@ -9515,6 +9593,32 @@ function render(){
     ctx.lineTo(g.x,g.y+g.r+bob);ctx.lineTo(g.x-g.r*0.7,g.y+bob);
 
     ctx.closePath();ctx.fill();
+
+    /*PATCH-TAG B090: merged-tier flourishes — large gets 4 spikes, star gets a 5-point star crown*/
+
+    if(g.xp>=8){
+
+      const n=g.xp>=16?5:4,rr=g.r*(g.xp>=16?1.55:1.2);
+
+      ctx.fillStyle=col;
+
+      for(let s=0;s<n;s++){
+
+        const an=g.ph*0.3+(s/n)*Math.PI*2;
+
+        ctx.beginPath();
+
+        ctx.moveTo(g.x+Math.cos(an-0.16)*g.r*0.8,g.y+bob+Math.sin(an-0.16)*g.r*0.8);
+
+        ctx.lineTo(g.x+Math.cos(an)*rr,g.y+bob+Math.sin(an)*rr);
+
+        ctx.lineTo(g.x+Math.cos(an+0.16)*g.r*0.8,g.y+bob+Math.sin(an+0.16)*g.r*0.8);
+
+        ctx.closePath();ctx.fill();
+
+      }
+
+    }
 
     ctx.fillStyle='rgba(255,255,255,0.55)';
 
@@ -9528,7 +9632,7 @@ function render(){
 
     const gp=0.16+0.12*Math.abs(Math.sin(g.ph*0.9));
 
-    ctx.fillStyle=g.xp>=4?`rgba(56,189,248,${gp})`:`rgba(74,222,128,${gp})`;
+    ctx.fillStyle=gemGlow(g.xp,gp); /*PATCH-TAG B090: tier glow pulse*/
 
     ctx.beginPath();ctx.arc(g.x,g.y+bob,g.r*2.6,0,Math.PI*2);ctx.fill();
 
