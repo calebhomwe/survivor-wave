@@ -5063,6 +5063,114 @@ document.getElementById('reviveBtn').onclick=()=>tryRevive();
 
 
 
+/* ============================== B036 AUDIO MIX (limiter, gains, ducking) ============================== */
+
+/* Master soft-limiter + per-channel gain normalization + level-up ducking.
+
+   Channel topology: synth sources -> per-voice gain (existing) -> Music.gain -> AU.master ->
+
+   AU.comp (DynamicsCompressor soft limiter) -> destination. HTMLAudio SFX elements can't be
+
+   safely re-routed through WebAudio on file:// so they get gain normalization + duck applied
+
+   directly on .volume instead. */
+
+const AU={master:null,comp:null,duckUntil:0,duckF:0.35,duckMs:1400,base2:0.55,base1:0.45,
+
+  chan:{tap:1,pop:0.9,coin:0.8,hit:0.72,boom:0.85,jump:0.9,whoosh:0.85,win:1,lose:1,buzz:0.75,levelup:1,tick:0.8}};
+
+function auMaster(){
+
+  try{
+
+    resumeAudio();
+
+    if(!audioCtx||AU.master)return;
+
+    AU.comp=audioCtx.createDynamicsCompressor();
+
+    AU.comp.threshold.value=-12;AU.comp.knee.value=24;AU.comp.ratio.value=8;
+
+    AU.comp.attack.value=0.003;AU.comp.release.value=0.25;
+
+    AU.master=audioCtx.createGain();AU.master.gain.value=0.9;
+
+    AU.master.connect(AU.comp);AU.comp.connect(audioCtx.destination);
+
+  }catch(_){}
+
+}
+
+function auDuckActive(){return performance.now()<AU.duckUntil;}
+
+function auApplyMix(){
+
+  try{
+
+    const mv=(settings.musicVol!==undefined?settings.musicVol:0.6);
+
+    const sv=(settings.sfxVol!==undefined?settings.sfxVol:1);
+
+    const f=auDuckActive()?AU.duckF:1;
+
+    for(const k in SFX2P){const a=SFX2P[k];if(a)a.volume=Math.min(1,AU.base2*(AU.chan[k]||1)*sv*((k==='levelup'||k==='win')?1:f));}
+
+    for(const k in SFXP){const a=SFXP[k];if(a)a.volume=Math.min(1,AU.base1*(AU.chan[k]||0.9)*sv*((k==='levelup'||k==='win')?1:f));}
+
+    if(Music.realEl)Music.realEl.volume=Math.min(1,mv*0.8*(auDuckActive()?0.45:1));
+
+    if(audioCtx&&Music.gain){try{Music.gain.gain.setTargetAtTime(0.2*mv*(auDuckActive()?0.4:1),audioCtx.currentTime,0.06);}catch(_){}}
+
+  }catch(_){}
+
+}
+
+function auDuck(){ /* trigger duck window for the level-up jingle */
+
+  auMaster();
+
+  AU.duckUntil=performance.now()+AU.duckMs;
+
+  auApplyMix();
+
+  setTimeout(auApplyMix,AU.duckMs+120);
+
+}
+
+(function(){ /* wrap sfx: trigger duck on levelup, then normalize channel gain over whatever sfx() set */
+
+  const orig=sfx;
+
+  sfx=function(n){
+
+    const r=orig(n);
+
+    try{if(!muted&&n==='levelup')auDuck();else auApplyMix();}catch(_){}
+
+    return r;
+
+  };
+
+  const ms=Music.start.bind(Music);
+
+  Music.start=function(){ /* route synth music through the soft limiter */
+
+    auMaster();
+
+    const r=ms();
+
+    try{if(AU.master&&Music.gain&&Music.playing&&!Music.real){Music.gain.disconnect();Music.gain.connect(AU.master);}}catch(_){}
+
+    auApplyMix();
+
+    return r;
+
+  };
+
+})();
+
+
+
 /* ============================== PARTICLES / FLOATERS ============================== */
 
 function spawnParticles(x,y,color,n,scale,opts){/*FX-ASSETS-PATCH-RB sprite opts*/
