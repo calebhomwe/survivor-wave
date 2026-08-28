@@ -317,6 +317,13 @@ canvas{display:block;position:absolute;inset:0}
 
 .dailyBox .btn{margin-top:4px;font-size:16px;padding:11px 32px 8px}
 
+/* B059: daily share codes */
+.dailyShare{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,210,63,.25)} /* B059 */
+.dsLbl{font-family:'Luckiest Guy',cursive;font-size:14px;font-weight:400;color:#ffe9a0;letter-spacing:1px} /* B059 */
+.dsCode{margin-top:6px;font-family:monospace;font-size:13px;color:#ffd23f;background:rgba(0,0,0,.45);border:1px dashed #ffd23f;border-radius:8px;padding:7px 8px;word-break:break-all;-webkit-user-select:all;user-select:all} /* B059 */
+.dsIn{margin-top:6px;width:88%;font-family:monospace;font-size:13px;color:#ffd23f;background:rgba(0,0,0,.5);border:2px solid #ffd23f;border-radius:8px;padding:8px;outline:none;text-align:center} /* B059 */
+.dsMsg{font-size:13px;font-weight:700;margin-top:6px;min-height:16px;color:#a5f3a5} /* B059 */
+
 /* ==== UI-PATCH-RB UI SKIN x2 : frames texture hierarchy ==== */
 
 /* 1) hero card beveled frame: gradient ring + noise + corner accents + sheen */
@@ -643,6 +650,19 @@ background-repeat:no-repeat}
     <div class="dailyModDesc" id="dailyModDesc"></div>
 
     <div class="dailyStatus" id="dailyStatus"></div>
+
+    <!-- B059: daily share codes (export / import) -->
+    <div class="dailyShare">
+      <div class="dsLbl">SHARE TODAY'S CHALLENGE</div>
+      <div class="dsCode" id="dailyCodeTxt"></div>
+      <div class="dailyRow"><button class="btn" id="dailyCopyBtn" style="font-size:14px;padding:9px 24px 6px">&#10697; COPY CODE</button></div>
+    </div>
+    <div class="dailyShare">
+      <div class="dsLbl">IMPORT A SHARED CODE</div>
+      <input class="dsIn" id="dailyImportIn" placeholder="paste SW1.&hellip; code" maxlength="90" autocomplete="off" spellcheck="false">
+      <div class="dailyRow"><button class="btn green" id="dailyImportBtn" style="font-size:14px;padding:9px 24px 6px">&#10515; IMPORT &amp; PLAY</button></div>
+      <div class="dsMsg" id="dailyImportMsg"></div>
+    </div>
 
     <div class="dailyRow"><button class="btn green" id="dailyStartBtn">▶ START CHALLENGE</button></div>
 
@@ -2843,7 +2863,7 @@ function victory(){
 
   if(chBonus>0){const wg=document.getElementById('winGold');wg.textContent=gEarn+' (+'+chBonus+' FIRST CLEAR)';}
 
-  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone){dailyDone=true;try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+150 DAILY CHEST)';}
+  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone&&!dailyImported){dailyDone=true;/*B059: imported replays can't farm the daily chest*/try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+150 DAILY CHEST)';}
 
   if(perilRun){perilWins++;try{localStorage.setItem('survivorPerilW',String(perilWins));}catch(_){}const wg3=document.getElementById('winGold');if(wg3)wg3.textContent+=' · ☠ PERIL WON ('+perilWins+(perilWins%5===0?' — PERIL MASTER!':'')+')';if(perilWins%5===0)sfx('levelup');}
 
@@ -13138,6 +13158,124 @@ document.getElementById('dailyBtn').onclick=function(){
 document.getElementById('dailyCloseBtn').onclick=function(){hideEl('dailyOv');sfx('tick');};
 
 document.getElementById('dailyStartBtn').onclick=startDailyRun;
+
+/* ===== B059 : daily run share codes (export / import) ===== */
+
+const DSVER=1;                                   /* share-code format version */
+
+let dailyImported=false;                         /* true while running an IMPORTED daily replay (no rewards) */
+
+let siimp={};                                    /* imported seeds already played {seed:1}, key survivorDailyImports */
+
+try{siimp=JSON.parse(localStorage.getItem('survivorDailyImports'))||{};}catch(_){siimp={};}
+
+function dsChecksum(str){let h=7;for(let i=0;i<str.length;i++){h=(h*31+str.charCodeAt(i))>>>0;}return h.toString(36);}
+
+function dailyMakeCode(seed,modIdx){const b=btoa(JSON.stringify({v:DSVER,s:seed,m:modIdx}));return 'SW1.'+b+'.'+dsChecksum(DSVER+':'+b);}
+
+function dailyParseCode(code){
+
+  try{
+
+    code=(code||'').trim();
+
+    if(code.length>90||code.indexOf('SW1.')!==0)return null;
+
+    const p=code.split('.');
+
+    if(p.length!==3)return null;
+
+    if(dsChecksum(DSVER+':'+p[1])!==p[2])return null;   /* checksum also pins the version */
+
+    const o=JSON.parse(atob(p[1]));
+
+    if(o.v!==DSVER)return null;
+
+    if(typeof o.s!=='number'||o.s<20000101||o.s>29991231)return null;
+
+    if(typeof o.m!=='number'||o.m<0||o.m>=DMODS.length)return null;
+
+    return o;
+
+  }catch(_){return null;}
+
+}
+
+function dsFallbackCopy(t){                        /* offline-safe clipboard fallback */
+
+  const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
+
+  document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(_){}document.body.removeChild(ta);
+
+}
+
+function startImportedDailyRun(o){                 /* mirrors startDailyRun but flagged IMPORTED (no daily rewards) */
+
+  hideEl('dailyOv');
+
+  dailyImported=true;
+
+  dailyMod=DMODS[o.m];
+
+  dailyActive=true;
+
+  if(dailyMod.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(12,(sioc.stage||1)+dailyMod.st);}
+
+  startGame();
+
+  dailyActive=true;                                /* re-enable AFTER reset — mirrors daily/echo pattern */
+
+  siimp[o.s]=1;try{localStorage.setItem('survivorDailyImports',JSON.stringify(siimp));}catch(_){}
+
+  warn('IMPORTED DAILY: '+dailyMod.n);
+
+}
+
+(function(){                                       /* B059 wiring */
+
+  const codeEl=document.getElementById('dailyCodeTxt'),msgEl=document.getElementById('dailyImportMsg');
+
+  const todayCode=dailyMakeCode(dailySeed(),dailySeed()%DMODS.length);
+
+  const dbtn=document.getElementById('dailyCopyBtn'),ibtn=document.getElementById('dailyImportBtn');
+
+  const openOrig=document.getElementById('dailyBtn').onclick;
+
+  document.getElementById('dailyBtn').onclick=function(){if(openOrig)openOrig.call(this);codeEl.textContent=todayCode;msgEl.textContent='';};
+
+  const startOrig=document.getElementById('dailyStartBtn').onclick;
+
+  document.getElementById('dailyStartBtn').onclick=function(){dailyImported=false;if(startOrig)startOrig.call(this);};
+
+  dbtn.onclick=function(){
+
+    const done=function(){dbtn.textContent='\u2714 COPIED';setTimeout(function(){dbtn.textContent='\u29C9 COPY CODE';},1400);};
+
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(todayCode).then(done,function(){dsFallbackCopy(todayCode);done();});
+
+    else{dsFallbackCopy(todayCode);done();}
+
+    sfx('tick');
+
+  };
+
+  ibtn.onclick=function(){
+
+    const o=dailyParseCode(document.getElementById('dailyImportIn').value);
+
+    if(!o){msgEl.style.color='#fca5a5';msgEl.textContent='\u2716 INVALID CODE — wrong checksum, version or format';sfx('hit');return;}
+
+    msgEl.style.color='#a5f3a5';
+
+    const d=new Date(Math.floor(o.s/10000),(Math.floor((o.s%10000)/100)-1),(o.s%10000)%100);
+
+    msgEl.textContent=(siimp[o.s]?'\u21BB REPLAY ':'')+'IMPORTED '+(isNaN(d)?o.s:d.toLocaleDateString())+' \u2014 '+DMODS[o.m].n+' \u00b7 no daily rewards';
+
+    startImportedDailyRun(o);
+
+  };
+
+})();
 
 function setDailyRun(){
 
