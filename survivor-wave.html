@@ -2235,6 +2235,7 @@ function startGame(){
 
   /* DAILY-PATCH-R2 */dailyActive=false;
   if(runBounty)runBounty._start=runBounty.get();player.lampBuff=1;player._lampBuffed=false;player._lampTick=0;/*FUN-PATCH-RB rebaseline bounty from run start*/
+  achHitRun=0;/*B058-ACH reset flawless flag for the new run*/
   state='play';
   Music.start();
   hideEl('start');hideEl('over');hideEl('win');hideEl('lvlup');hideEl('pause');hideEl('chestOv');
@@ -2512,6 +2513,14 @@ function victory(){
   saveMeta();
 
   try{localStorage.setItem('survivorChapters',JSON.stringify(sioc));}catch(_){}
+
+  /* B058-ACH: no-hit chapter + lifetime gold, then immediate unlock check */
+
+  if(!achHitRun){achieves.lifeNH=(achieves.lifeNH||0)+1;}
+
+  achieves.lifeG=(achieves.lifeG||0)+gEarn+chBonus;
+
+  checkAchieves();
 
   const wsEl=document.getElementById('winStars');
 
@@ -4288,6 +4297,8 @@ function hurtPlayer(dmg){
   runStats.taken+=dmg;/*B041*/
   player.hp-=dmg;buzz(60);
 
+  achHitRun=1;/*B058-ACH flawless tracking*/
+
   hurtFx();
 
 }
@@ -4674,6 +4685,8 @@ function applyChoice(c){
     const w=ownedWeapon(c.id);
 
     w.evo=true;
+
+    achieves.lifeEvo=(achieves.lifeEvo||0)+1;/*B058-ACH*/
 
     {
 
@@ -10805,7 +10818,29 @@ const ACHIEVE_DEFS=[
 
   {id:'w5',   name:'WINS 5',    goal:5,    key:'lifeW', reward:400},
 
-  {id:'w25',  name:'WINS 25',   goal:25,   key:'lifeW', reward:1000}
+  {id:'w25',  name:'WINS 25',   goal:25,   key:'lifeW', reward:1000},
+
+  /* B058-ACH: appended v1 defs (do not reorder above) */
+
+  {id:'k50000',name:'POPS 50000', goal:50000, key:'lifeK',  reward:2500},
+
+  {id:'e100',  name:'ELITES 100', goal:100,   key:'lifeE',  reward:400},
+
+  {id:'b50',   name:'BOSSES 50',  goal:50,    key:'lifeB',  reward:800},
+
+  {id:'evo1',  name:'FIRST EVO',  goal:1,     key:'lifeEvo',reward:150},
+
+  {id:'evo10', name:'EVOS 10',    goal:10,    key:'lifeEvo',reward:600},
+
+  {id:'ch3',   name:'CHAPTERS 3', goal:3,     key:'chClr',  reward:300},
+
+  {id:'ch6',   name:'CHAPTERS 6', goal:6,     key:'chClr',  reward:700},
+
+  {id:'ch12',  name:'CHAPTERS 12',goal:12,    key:'chClr',  reward:2000},
+
+  {id:'nh1',   name:'FLAWLESS',   goal:1,     key:'lifeNH', reward:1000},
+
+  {id:'g25k',  name:'GOLD 25K',   goal:25000, key:'lifeG',  reward:500}
 
 ];
 
@@ -10834,6 +10869,12 @@ function checkAchieves(){
     achieves._pk=pk;achieves._pe=ec;achieves._pb=bc;
 
   }
+
+  /* B058-ACH: chapter-clear count derived from sioc stars each poll */
+
+  let chN=0;for(const k in sioc.stars){if(sioc.stars[k]&&sioc.stars[k].clr)chN++;}
+
+  achieves.chClr=chN;
 
   for(let i=0;i<ACHIEVE_DEFS.length;i++){
 
@@ -10888,6 +10929,10 @@ function showAchToast(msg){
 }
 
 /* ==================== END ACHIEVEMENTS SYSTEM ==================== */
+
+/* B058-ACH: run-scoped flag — set by hurtPlayer, reset at run start, read by victory() */
+
+let achHitRun=0;
 
 
 
@@ -11547,6 +11592,30 @@ renderHeroes();
       h+='<div class="shopRow"><div class="si">'+(on?'MEDAL':'—')+'</div><div><div class="sn">'+m[1]+'</div><div class="sd">'+jhVal(m[2])+'/'+m[3]+'</div></div></div>';
 
     }
+
+    /* B058-ACH: achievements section appended to the medals panel */
+
+    try{
+
+      if(typeof ACHIEVE_DEFS!=='undefined'&&typeof achieves!=='undefined'){
+
+        checkAchieves();
+
+        h+='<div class="shopRow" style="justify-content:center;padding:4px 12px;letter-spacing:3px;color:#ffd23f;font-family:\'Luckiest Guy\',cursive;opacity:.8;border-bottom:1px solid rgba(250,204,21,.25)">\u2014 ACHIEVEMENTS \u2014</div>';
+
+        for(var a2=0;a2<ACHIEVE_DEFS.length;a2++){
+
+          var dd=ACHIEVE_DEFS[a2],on2=!!achieves.done[dd.id];
+
+          var pv=on2?'DONE':((achieves[dd.key]|0)+'/'+dd.goal+' \u00b7 +'+dd.reward+'g');
+
+          h+='<div class="shopRow"><div class="si">'+(on2?'\uD83C\uDFC6':'\u2014')+'</div><div><div class="sn">'+dd.name+'</div><div class="sd">'+pv+'</div></div></div>';
+
+        }
+
+      }
+
+    }catch(e){}
 
     list.innerHTML=h;
 
