@@ -3012,6 +3012,9 @@ function makeEnemyBase(type){
 
   if(type==='baby')return Object.assign(base,{type,hp:6+d*2,maxHp:6+d*2,speed:96+d*4,dmg:4+d,r:8,xp:1,color:'#9cc95e'});
 
+  /*B020 charger: telegraph(0.5s) -> straight dash(0.4s @2.5x) -> recover(0.8s); normal enemy, chapter 2+ only*/
+  if(type==='charger')return Object.assign(base,{type,hp:(22+d*8)*late*lv,maxHp:(22+d*8)*late*lv,speed:60+d*3,dmg:11+d*1.6,r:15,xp:2,color:'#d98a3a',cSt:'chase',cT:1+Math.random(),cdx:0,cdy:0});
+
   /* BLIMP-PATCH: MOAB-style airship mini-boss, flies the elite cadence slot */
 
   if(type==='blimp'){
@@ -3098,6 +3101,9 @@ function directorTick(dt){
 
       else if(r<0.44&&gameTime>170)_bT='spitter';
 
+      /*B020 charger mixed into normal spawns: chapter 2+ only, chapter-scaled (~6%/ch, cap 18%); converts would-be grunts so ch1 + existing mix unchanged*/
+      if(_bCh>=2&&_bT==='grunt'&&Math.random()<Math.min(0.06*(_bCh-1),0.18))_bT='charger';
+
     }
 
     if(_bT){spawnFormation(_bT,count);}
@@ -3115,6 +3121,9 @@ function directorTick(dt){
       else if(r<0.36&&gameTime>140)t='splitter';
 
       else if(r<0.44&&gameTime>170)t='spitter';
+
+      /*B020 charger mixed into normal spawns (solo route): same chapter 2+ chapter-scaled roll as formations*/
+      if(_bCh>=2&&t==='grunt'&&Math.random()<Math.min(0.06*(_bCh-1),0.18))t='charger';
 
       const _me=makeEnemy(t);if(player.chHP){_me.hp*=player.chHP;_me.maxHp*=player.chHP;}enemies.push(_me);
 
@@ -3459,9 +3468,14 @@ function killEnemy(e){
 
   if(e.type==='splitter'){
 
-    for(let i=0;i<3;i++){
+    /*B020 spec: dies into 2 minis at 40% parent size/HP (baby-type, so they never split again)*/
+    for(let i=0;i<2;i++){
 
       const bb=makeEnemy('baby');
+
+      bb.hp=bb.maxHp=Math.max(4,e.maxHp*0.4);
+
+      bb.r=Math.max(6,e.r*0.4);
 
       bb.x=e.x+(Math.random()-0.5)*30;bb.y=e.y+(Math.random()-0.5)*30;bb.spawnT=0.25;bb.spawnMax=0.25;
 
@@ -4507,6 +4521,22 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
       }
 
+    }else if(e.type==='charger'){/*B020 state machine: chase -> wind(0.5s) -> dash(0.4s @2.5x straight) -> rec(0.8s)*/
+      if(e.cSt==='chase'){
+        e.x+=(dx/d)*e.spdM*dt;e.y+=(dy/d)*e.spdM*dt;
+        e.cT-=dt;
+        if(e.cT<=0&&d<340&&d>50){e.cSt='wind';e.cT=0.5;e.cdx=dx/d;e.cdy=dy/d;sfx('buzz');}
+      }else if(e.cSt==='wind'){
+        e.cT-=dt;
+        if(e.cT<=0){e.cSt='dash';e.cT=0.4;sfx('whoosh');}
+      }else if(e.cSt==='dash'){
+        e.x+=e.cdx*e.spdM*2.5*dt;e.y+=e.cdy*e.spdM*2.5*dt;
+        e.cT-=dt;
+        if(e.cT<=0){e.cSt='rec';e.cT=0.8;}
+      }else{/*rec*/
+        e.cT-=dt;
+        if(e.cT<=0){e.cSt='chase';e.cT=1.6+Math.random()*0.8;}
+      }
     }else{
 
       e.x+=(dx/d)*e.spdM*dt;e.y+=(dy/d)*e.spdM*dt;
@@ -7251,6 +7281,8 @@ function critterType(e){
 
   if(e.type==='spitter')return 'toad';
 
+  if(e.type==='charger')return 'charger';/*B020*/
+
   /*B024: Cinder Wastes skins (visual variants of existing roles, volcano group only)*/
   try{
     if(typeof themeFor==='function'&&themeFor().group==='volcano'){
@@ -8122,6 +8154,33 @@ function paintCritter(g,ty,x,y,ang,anim,r,flash,ghost){
     g.fillStyle='#2c2523';
     g.beginPath();g.moveTo(-r*0.3,-r*0.6);g.lineTo(-r*0.15,-r*0.95);g.lineTo(0,-r*0.55);g.closePath();g.fill();
     g.beginPath();g.moveTo(r*0.05,-r*0.6);g.lineTo(r*0.25,-r*0.92);g.lineTo(r*0.35,-r*0.5);g.closePath();g.fill();
+  }else if(ty==='charger'){ /*B020: horned beetle — compact sprinter body, ram horns, motion-read legs*/
+    E('rgba(20,14,8,0.3)',[0,r*0.5],r*0.85,r*0.3);
+    /* legs */
+    g.strokeStyle='#5a3a1c';g.lineWidth=Math.max(1.2,r*0.1);
+    g.beginPath();
+    for(let li=0;li<3;li++){
+      const lx=r*0.25-li*r*0.3,sw=Math.sin(anim*9+li*1.9)*r*0.22;
+      g.moveTo(lx,-r*0.4);g.lineTo(lx-r*0.12,-r*0.75+sw);
+      g.moveTo(lx,r*0.4);g.lineTo(lx-r*0.12,r*0.75-sw);
+    }
+    g.stroke();
+    /* elytra shell with split seam */
+    E('#a05a22',[0,0],r*0.92,r*0.7);
+    E('#c07a34',[r*0.08,0],r*0.62,r*0.5);
+    g.strokeStyle='rgba(60,32,10,0.8)';g.lineWidth=Math.max(1,r*0.08);
+    g.beginPath();g.moveTo(-r*0.7,0);g.lineTo(r*0.6,0);g.stroke();
+    /* ram horn plate at the front */
+    g.fillStyle='#e8d9a8';
+    g.beginPath();g.moveTo(r*0.55,-r*0.28);g.quadraticCurveTo(r*1.15,-r*0.5,r*1.05,-r*0.05);g.quadraticCurveTo(r*0.8,r*0.1,r*0.55,r*0.12);g.closePath();g.fill();
+    g.beginPath();g.moveTo(r*0.55,r*0.28);g.quadraticCurveTo(r*1.15,r*0.5,r*1.05,r*0.05);g.quadraticCurveTo(r*0.8,-r*0.1,r*0.55,-r*0.12);g.closePath();g.fill();
+    g.strokeStyle='rgba(120,90,30,0.7)';g.lineWidth=Math.max(1,r*0.07);
+    g.beginPath();g.moveTo(r*0.62,-r*0.2);g.quadraticCurveTo(r*1.05,-r*0.34,r*0.98,-r*0.1);g.stroke();
+    /* eyes */
+    g.fillStyle='#ffd23f';
+    g.beginPath();g.arc(r*0.42,-r*0.24,r*0.12,0,Math.PI*2);g.arc(r*0.42,r*0.24,r*0.12,0,Math.PI*2);g.fill();
+    g.fillStyle='#1c2430';
+    g.beginPath();g.arc(r*0.47,-r*0.24,r*0.06,0,Math.PI*2);g.arc(r*0.47,r*0.24,r*0.06,0,Math.PI*2);g.fill();
   }
 
   /* RB: consistent contact shading (dark underside arc, alpha 0.12) */
@@ -8143,6 +8202,7 @@ function paintCritter(g,ty,x,y,ang,anim,r,flash,ghost){
   else if(ty==='hornet'){ucx=-r*0.4;ucy=r*0.4;urx=r*1.0;ury=r*0.38;}
 
   else if(ty==='blimp'){ucx=-r*0.1;ucy=Math.sin(anim)*4+r*0.3;urx=r*0.86;ury=r*0.28;}
+  else if(ty==='charger'){ucx=-r*0.1;ucy=r*0.45;urx=r*0.85;ury=r*0.4;}/*B020*/
 
   if(urx>0){
 
@@ -11492,6 +11552,22 @@ function drawEnemy(e){
 
   ctx.globalAlpha=1;
 
+  /*B020 charger telegraph: pulsing red flash + '!' marker during 0.5s wind-up (skips tint in lowFx)*/
+  if(e.type==='charger'&&e.cSt==='wind'){
+    if(!settings.lowFx){
+      ctx.globalCompositeOperation='lighter';
+      ctx.globalAlpha=0.22+0.3*Math.abs(Math.sin(e.cT*40));
+      ctx.fillStyle='#ff5a3c';
+      ctx.beginPath();ctx.arc(px,py,e.r+3,0,Math.PI*2);ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=1;
+    }
+    ctx.fillStyle='#ffd23f';
+    ctx.font='bold 18px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('!',px,py-e.r-8);
+  }
+
   if(e.flash>0){
     ctx.globalCompositeOperation='lighter';
     ctx.globalAlpha=0.45;
@@ -13896,7 +13972,8 @@ killEnemy=function(e){
     {k:'blimp',   n:'Terror Blimp',   d:'Airship elite. Bursts into splitters.',     r:30},
     {k:'ashworm', n:'Ash Worm',       d:'CINDER. Basalt segments with ember veins.',  r:13},
     {k:'cinderling',n:'Cinderling',   d:'CINDER. Ember imp that hops on hot ash.',    r:10},
-    {k:'magmoth', n:'Magmoth',        d:'CINDER. Magma golem, cracks glow as it runs.',r:24}
+    {k:'magmoth', n:'Magmoth',        d:'CINDER. Magma golem, cracks glow as it runs.',r:24},
+    {k:'charger', n:'Ram Beetle',     d:'Shakes, then dashes in a straight line.',   r:15}/*B020*/
   ];
   var B={seen:{},kills:{},chap:{}};
   try{
