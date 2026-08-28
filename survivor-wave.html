@@ -689,6 +689,9 @@ background-repeat:no-repeat}
 
     <button class="btn" id="pQuit" style="font-size:15px;padding:11px 30px 8px">🏠 HUB</button>
 
+    <!-- B043: in-pause quick options row (full settings stay behind ⚙ SETTINGS) -->
+    <div id="pQuick" style="margin-top:12px;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;font-size:13px;color:#cdd6f4"></div>
+
   </div>
 
 </div>
@@ -15019,6 +15022,7 @@ render=function(){
 
 
 
+
 /* ============================== B032: LEVEL-UP MOMENT FX ============================== */
 
 /* Time-slow BEFORE the UI opens reuses the existing levelSlow dt-scaling in update()
@@ -15096,6 +15100,88 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
     }catch(_){}
 
   };
+
+/* ===== B043: in-pause quick options row =====
+   Compact live controls inside the pause box: SFX/Music volume sliders,
+   Screen Shake + Low FX toggles. Bound to the global settings object and
+   persisted via saveSettings(), so they stay in sync with the full gear
+   panel. Rendered by wrapping renderPauseBuild (same wrapper pattern as
+   the B074/B078 renderSettings patches) so values re-sync every pause. */
+(function(){
+
+  const box=document.getElementById('pQuick');if(!box)return;
+
+  /* clicks on the quick-options row must not bubble to #pause (which unpauses) */
+  box.addEventListener('click',e=>e.stopPropagation());
+
+  const LBL='font-weight:700;color:#9fb0d0;min-width:96px;text-align:left';
+
+  function rowQuick(label,inner,cls){
+
+    const r=document.createElement('div');
+
+    r.style.cssText='display:flex;align-items:center;gap:10px;justify-content:center'+(cls||'');
+
+    r.innerHTML='<span style="'+LBL+'">'+label+'</span>'+inner;
+
+    box.appendChild(r);return r;
+
+  }
+
+  function renderPauseQuick(){
+
+    box.innerHTML='';
+
+    const vols=[['sfxVol','SFX'],['musicVol','MUSIC']];
+
+    for(const vl of vols){
+
+      const r=rowQuick(vl[1]+' <span style="color:#ffd23f;min-width:30px">'+Math.round(settings[vl[0]]*100)+'%</span>',
+        '<input type="range" min="0" max="1" step="0.1" style="width:130px;accent-color:#ffd23f">');
+
+      const rg=r.querySelector('input'),vv=r.querySelector('span');
+
+      rg.value=settings[vl[0]];
+
+      rg.oninput=()=>{settings[vl[0]]=+rg.value;saveSettings();
+
+        if(vv)vv.textContent=Math.round(settings[vl[0]]*100)+'%';
+
+        if(vl[0]==='musicVol'&&typeof Music!=='undefined'&&Music.gain)Music.gain.gain.value=0.2*settings.musicVol;
+
+      };
+
+    }
+
+    const togs=[['shake','SHAKE'],['lowFx','LOW FX']];
+
+    for(const tg of togs){
+
+      const r=rowQuick(tg[1],'<input type="checkbox" style="accent-color:#ffd23f;width:20px;height:20px;cursor:pointer">');
+
+      const cb=r.querySelector('input');
+
+      cb.checked=!!settings[tg[0]];
+
+      cb.onchange=()=>{settings[tg[0]]=cb.checked;saveSettings();if(tg[0]==='lowFx')applyLowFx();sfx('tick');};
+
+    }
+
+    const hint=document.createElement('div');
+
+    hint.style.cssText='font-size:10px;color:#7a86a3;text-align:center';
+
+    hint.textContent='more in ⚙ SETTINGS';
+
+    box.appendChild(hint);
+
+  }
+
+  const _rpb=renderPauseBuild;
+
+  renderPauseBuild=function(){_rpb();try{renderPauseQuick();}catch(_){}};
+
+  renderPauseQuick();
 
 })();
 
