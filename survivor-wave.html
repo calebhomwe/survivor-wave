@@ -658,6 +658,9 @@ background-repeat:no-repeat}
 
     <h1>PAUSED</h1>
 
+    <!-- B042: current build list with stat tooltips -->
+    <div class="pbuild" id="pBuild"></div>
+
     <button class="btn green" id="pResume" style="font-size:18px;padding:13px 40px 10px">▶ RESUME</button>
 
     <button class="btn" id="pRestart" style="font-size:15px;padding:11px 30px 8px">↻ RESTART</button>
@@ -2666,7 +2669,7 @@ function togglePause(){
 
   if(state==='paused'&&typeof echoOv!=='undefined'&&document.getElementById('echoOv')&&!document.getElementById('echoOv').classList.contains('hidden'))return;
 
-  if(state==='play'){state='paused';showEl('pause');Music.stop();}
+  if(state==='play'){state='paused';showEl('pause');Music.stop();renderPauseBuild();/*B042*/}
 
   else if(state==='paused'){state='play';hideEl('pause');Music.start();}
 
@@ -4694,6 +4697,8 @@ function showLevelUp(){
 
   renderChoices();
 
+  /*B042*/{const _fb=document.querySelector('#lvlChoices .lc');if(_fb)_fb.focus();}
+
   showEl('lvlup');
 
 }
@@ -4765,6 +4770,16 @@ function renderChoices(){
     btn.innerHTML=`<span class="lc-i">${iconK?iconImg(iconK):icon}</span><span><span class="lc-n">${name}${lvTxt?`<span class="lc-lv">${lvTxt}</span>`:''}</span><span class="lc-d">${desc}</span></span>`;
 
     btn.onclick=()=>{applyChoice(c);};
+
+    /*B042*/btn.addEventListener('mouseenter',()=>b042ShowTT(btn,b042ChoiceHTML(c)));
+
+    /*B042*/btn.addEventListener('mouseleave',b042HideTT);
+
+    /*B042*/btn.addEventListener('focus',()=>b042ShowTT(btn,b042ChoiceHTML(c)));
+
+    /*B042*/btn.addEventListener('blur',b042HideTT);
+
+    /*B042*/btn.addEventListener('click',b042HideTT);
 
     list.appendChild(btn);
 
@@ -4876,6 +4891,332 @@ function announceEvo(name){
   b._t=setTimeout(()=>{b.classList.add('hidden');b.style.opacity='1';},2200);
 
 }
+
+
+
+/* ============================== B042: WEAPON/PASSIVE TOOLTIPS ============================== */
+
+/*B042 Shared inspect tooltip: level-up choices (mouse hover + arrow-key focus) and pause build list.
+
+  Data source: WEAPONS/PASSIVES defs + live weaponStats()/weaponCd() (already include passive
+
+  bonuses), so displayed numbers match real state. Evolution hints show evo name + required
+
+  passive only — no spoiler numbers pre-evo.*/
+
+(function(){
+
+  const s=document.createElement('style');
+
+  s.textContent=[
+
+    '#b042tt{position:fixed;z-index:300;pointer-events:none;min-width:238px;max-width:340px;',
+
+    'background:linear-gradient(168deg,#232f52,#101830);border:2.5px solid #3d5387;border-radius:14px;',
+
+    'box-shadow:0 6px 0 rgba(0,0,0,.45),0 0 24px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);',
+
+    'padding:10px 14px;color:#eef2f7;font-family:inherit;font-size:12.5px;font-weight:600;line-height:1.55}',
+
+    '#b042tt .tt-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;margin-bottom:3px}',
+
+    '#b042tt .tt-h img{width:22px;height:22px}',
+
+    '#b042tt .tt-lv{font-size:10.5px;font-weight:800;color:#9db8ff;background:rgba(59,130,246,.3);border:1px solid rgba(147,197,253,.35);padding:1px 7px;border-radius:7px}',
+
+    '#b042tt .tt-ev{color:#ffd23f}',
+
+    '#b042tt .tt-sec{margin-top:5px;color:#9db8ff;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800}',
+
+    '#b042tt .tt-row{display:flex;justify-content:space-between;gap:16px;color:#a8b6ce}',
+
+    '#b042tt .tt-row b{color:#eef2f7;font-weight:800}',
+
+    '#b042tt .tt-nx{color:#86efac;font-weight:800}',
+
+    '#b042tt .tt-evo{margin-top:6px;padding-top:5px;border-top:1px solid rgba(125,162,255,.25);color:#ffd23f;font-weight:700}',
+
+    '#b042tt .tt-note{margin-top:4px;color:#64748b;font-size:11px}',
+
+    '.pbuild{display:flex;flex-direction:column;gap:4px;margin:2px 0 10px;min-width:300px;max-width:340px;max-height:32vh;overflow:auto}',
+
+    '.pb-r{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:12px;cursor:help;text-align:left;',
+
+    'color:#eef2f7;font-family:inherit;font-weight:700;font-size:14px;',
+
+    'background:linear-gradient(168deg,#2b3a63,#141d36);border:2px solid #3d5387;transition:border-color .1s ease,box-shadow .1s ease}',
+
+    '.pb-r:hover,.pb-r:focus{border-color:#7da2ff;box-shadow:0 0 18px rgba(96,165,250,.4);outline:none}',
+
+    '.pb-r.gold{background:linear-gradient(168deg,#7a5a10,#3a2906);border-color:#ffd23f}',
+
+    '.pb-r .lc-i{width:34px;height:34px;font-size:20px;border-radius:9px;flex:none}',
+
+    '.pb-r .pb-n{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}'
+
+  ].join('');
+
+  document.head.appendChild(s);
+
+})();
+
+const B042_TT=document.createElement('div');
+
+B042_TT.id='b042tt';B042_TT.classList.add('hidden');
+
+document.body.appendChild(B042_TT);
+
+/*B042 projectiles/orbs/swings per fire — mirrors WEAPONS fire() counts; unknown ids default 1 (merge-safe)*/
+
+function b042Count(id,l,evo){
+
+  const a=l>=2?1:0,b=l>=4?1:0;
+
+  switch(id){
+
+    case 'kunai':return evo?8:1+a+b;
+
+    case 'lightchaser':return (evo?3:1)+a+b;
+
+    case 'lightning':return (evo?5:2)+a+b;
+
+    case 'forcefield':return (evo?5:2)+a+b;
+
+    case 'molotov':return (evo?3:1)+b;
+
+    case 'brick':return (evo?2:1)+b;
+
+    case 'shotgun':return evo?1:3+(l>=2?2:0)+(l>=4?2:0);
+
+    case 'katana':return evo?2:1;
+
+    case 'guardian':return evo?2:1;
+
+    default:return 1;
+
+  }
+
+}
+
+/*B042 display-only fire rate; forcefield is continuous, guardian fires on its own drone interval*/
+
+function b042RateTxt(id,l,evo,cdv){
+
+  if(id==='forcefield')return 'continuous orbit';
+
+  if(id==='guardian')return (evo?0.45:Math.max(0.4,0.72-0.05*l)).toFixed(2)+'s / shot';
+
+  return cdv.toFixed(2)+'s';
+
+}
+
+function b042R1(v){return (Math.round(v*10)/10).toString();}
+
+/*B042 weapon block: current + next-level stats derived from live weaponStats/weaponCd*/
+
+function b042WeaponHTML(id,lvl,evo,owned){
+
+  const def=WEAPONS[id];if(!def)return '';
+
+  const cur={id,lvl,evo};
+
+  const nl=Math.min(5,lvl+1);
+
+  const nxt={id,lvl:nl,evo};
+
+  const sc=weaponStats(cur),sn=weaponStats(nxt);
+
+  const cc=weaponCd(cur),cn=weaponCd(nxt);
+
+  const cN=b042Count(id,lvl,evo),nN=b042Count(id,nl,evo);
+
+  const dps=(d,n,cd)=>id==='forcefield'?(d*n/0.45):id==='guardian'?(d*n/(evo?0.45:Math.max(0.4,0.72-0.05*lvl))):(d*n/cd);
+
+  const buying=!owned||nl>lvl;
+
+  let h=`<div class="tt-h">${def.iconK?iconImg(def.iconK):def.evoIcon||''}<span>${evo?'<span class="tt-ev">'+def.evoName+'</span>':def.name}</span><span class="tt-lv">${evo?'EVO':'Lv.'+lvl}</span></div>`;
+
+  h+=`<div class="tt-sec">${owned?'Current stats':'Lv.1 stats'}</div>`;
+
+  h+=`<div class="tt-row"><span>Damage</span><span><b>${b042R1(sc.dmg)}</b>${buying&&sn.dmg>sc.dmg?' <span class="tt-nx">→ '+b042R1(sn.dmg)+'</span>':''}</span></div>`;
+
+  h+=`<div class="tt-row"><span>${id==='forcefield'?'Orbs':id==='guardian'?'Drones':'Count'}</span><span><b>${cN}</b>${buying&&nN>cN?' <span class="tt-nx">→ '+nN+'</span>':''}</span></div>`;
+
+  h+=`<div class="tt-row"><span>Fire rate</span><span><b>${b042RateTxt(id,lvl,evo,cc)}</b>${buying&&cn<cc-0.001?' <span class="tt-nx">→ '+b042RateTxt(id,nl,evo,cn)+'</span>':''}</span></div>`;
+
+  h+=`<div class="tt-row"><span>Est. DPS</span><span><b>~${Math.round(dps(sc.dmg,cN,cc))}</b>${buying?' <span class="tt-nx">→ ~'+Math.round(dps(sn.dmg,nN,cn))+'</span>':''}</span></div>`;
+
+  if(!evo)h+=`<div class="tt-evo">⭐ Evolves into ${def.evoName} — needs Lv.5 + ${PASSIVES[def.passive]?PASSIVES[def.passive].name:'its passive'}</div>`;
+
+  h+=`<div class="tt-note">Includes your passive bonuses.</div>`;
+
+  return h;
+
+}
+
+/*B042 cumulative passive effect derived from its per-level desc (cosmetic sum, fallback = raw desc)*/
+
+function b042PassTotal(id,lv){
+
+  if(lv<=0)return null;
+
+  const d=PASSIVES[id];if(!d)return null;
+
+  const m=d.desc.match(/^([+-])([\d.]+)\s*(%?)\s*([^&+]*?)(?:\s+per level.*|$)/);
+
+  if(!m)return d.desc;
+
+  const v=parseFloat(m[2])*lv;
+
+  return (v>0?'+':'')+v+(m[3]?'%':' ')+' '+m[4].trim();
+
+}
+
+function b042PassiveHTML(id,lv){
+
+  const def=PASSIVES[id];if(!def)return '';
+
+  const nl=lv+1;
+
+  let h=`<div class="tt-h">${def.iconK?iconImg(def.iconK):''}<span>${def.name}</span><span class="tt-lv">${lv>0?'Lv.'+lv:'NEW'}</span></div>`;
+
+  if(lv>0){
+
+    h+=`<div class="tt-sec">Current</div>`;
+
+    h+=`<div class="tt-row"><span>Effect</span><span><b>${b042PassTotal(id,lv)||def.desc}</b></span></div>`;
+
+  }
+
+  h+=`<div class="tt-sec">Next level adds</div>`;
+
+  h+=`<div class="tt-row"><span>Lv.${nl}</span><span class="tt-nx">${def.desc.replace(/ per level.*/,' per level')}</span></div>`;
+
+  for(const wid in WEAPONS){/*B042 which weapon this passive evolves*/
+
+    if(WEAPONS[wid].passive===id){h+=`<div class="tt-evo">⭐ Evolves ${WEAPONS[wid].name} into ${WEAPONS[wid].evoName} at weapon Lv.5</div>`;break;}
+
+  }
+
+  return h;
+
+}
+
+function b042ChoiceHTML(c){
+
+  try{
+
+    if(c.t==='w'||c.t==='nw')return b042WeaponHTML(c.id,c.t==='nw'?1:(ownedWeapon(c.id)?ownedWeapon(c.id).lvl:0),false,c.t==='w');
+
+    if(c.t==='evo')return b042WeaponHTML(c.id,5,true,true);
+
+    if(c.t==='p')return b042PassiveHTML(c.id,passiveLv(c.id));
+
+    return `<div class="tt-h">🍗 Roast Chicken</div><div class="tt-row"><span>Now</span><span><b>+50 HP</b> <span class="tt-nx">+10 max HP</span></span></div>`;
+
+  }catch(_){return '';}
+
+}
+
+function b042ShowTT(anchor,html){
+
+  if(!html||!anchor)return;
+
+  B042_TT.innerHTML=html;
+
+  B042_TT.classList.remove('hidden');
+
+  const r=anchor.getBoundingClientRect(),tw=B042_TT.offsetWidth,th=B042_TT.offsetHeight;
+
+  let x=r.left+r.width/2-tw/2;
+
+  x=Math.max(8,Math.min(innerWidth-tw-8,x));
+
+  let y=r.top-th-10;
+
+  if(y<8)y=Math.min(innerHeight-th-8,r.bottom+10);
+
+  B042_TT.style.left=x+'px';B042_TT.style.top=y+'px';
+
+}
+
+function b042HideTT(){B042_TT.classList.add('hidden');}
+
+/*B042 pause build list: weapons + taken passives, hover/focus for the same tooltip*/
+
+function renderPauseBuild(){
+
+  const el=document.getElementById('pBuild');if(!el)return;
+
+  el.innerHTML='';
+
+  const add=(inner,c,gold)=>{
+
+    const r=document.createElement('button');
+
+    r.className='pb-r'+(gold?' gold':'');
+
+    r.innerHTML=inner;
+
+    r.addEventListener('mouseenter',()=>b042ShowTT(r,b042ChoiceHTML(c)));
+
+    r.addEventListener('mouseleave',b042HideTT);
+
+    r.addEventListener('focus',()=>b042ShowTT(r,b042ChoiceHTML(c)));
+
+    r.addEventListener('blur',b042HideTT);
+
+    r.addEventListener('click',e=>{e.stopPropagation();});
+
+    el.appendChild(r);
+
+  };
+
+  for(const w of player.weapons){
+
+    const def=WEAPONS[w.id];if(!def)continue;
+
+    add(`<span class="lc-i">${def.iconK?iconImg(def.iconK):''}</span><span class="pb-n">${w.evo?def.evoName:def.name}<span class="tt-lv">${w.evo?'EVO':'Lv.'+w.lvl}</span></span>`,{t:'w',id:w.id},w.evo);
+
+  }
+
+  for(const id in player.passives){
+
+    const lv=player.passives[id];if(lv<=0)continue;
+
+    const def=PASSIVES[id];if(!def)continue;
+
+    add(`<span class="lc-i">${def.iconK?iconImg(def.iconK):''}</span><span class="pb-n">${def.name}<span class="tt-lv">Lv.${lv}</span></span>`,{t:'p',id});
+
+  }
+
+  if(!el.children.length)el.innerHTML='<div style="color:#8fa2c0;font-size:13px;font-weight:700;padding:4px 2px">No items yet — grab gems to level up!</div>';
+
+}
+
+/*B042 keyboard navigation in the level-up menu: arrows cycle choices, Enter/Space picks (native button)*/
+
+window.addEventListener('keydown',e=>{
+
+  if(state!=='levelup')return;
+
+  if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;
+
+  const bs=document.querySelectorAll('#lvlChoices .lc');
+
+  if(!bs.length)return;
+
+  let i=0;
+
+  for(let k=0;k<bs.length;k++)if(bs[k]===document.activeElement)i=k;
+
+  const j=((i+(e.key==='ArrowDown'?1:-1))%bs.length+bs.length)%bs.length;
+
+  bs[j].focus();
+
+  e.preventDefault();
+
+});
 
 
 
