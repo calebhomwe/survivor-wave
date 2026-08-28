@@ -13332,4 +13332,176 @@ function drawThreatChevron(x,y,isBoss){
 
 })();
 
+/* ============================== B082: BOOT LOADING PROGRESS ============================== */
+
+/* Gold-ring progress overlay while boot assets (fonts/sprites/particles/sfx) decode.
+
+ * NEVER blocks the game: finishes when core assets (fonts+images) are settled,
+
+ * gives audio a short grace window, and hard-caps at ~2.2s regardless. Missing
+
+ * assets count as loaded-with-N-missing (OK) — headless/missing-file boots still work. */
+
+(function(){
+
+  const done={n:0,total:0},missing={n:0},core={n:0,total:0};
+
+  let finished=false;
+
+  function tick(isCore,err){ /*PATCH-TAG B082*/
+
+    if(err)missing.n++;
+
+    done.n++;
+
+    if(isCore)core.n++;
+
+    paint();
+
+    if(core.n>=core.total&&core.total>0)setTimeout(finish,350); /* core ready -> don't wait on audio */
+
+  }
+
+  /* fonts */
+
+  core.total++;
+
+  (function(){
+
+    const f=()=>tick(true,false);
+
+    if(window.fontsReady)f();
+
+    else{ /* fontsReady flips via existing promise; poll cheaply as fallback */
+
+      let w=0;const iv=setInterval(()=>{if(window.fontsReady||++w>40){clearInterval(iv);f();}},50);
+
+    }
+
+  })();
+
+  function watch(el,isCore,isAudio){ /*PATCH-TAG B082*/
+
+    done.total++;
+
+    if(isCore)core.total++;
+
+    let settled=false;
+
+    const ok=()=>{if(settled)return;settled=true;tick(isCore,false);};
+
+    const bad=()=>{if(settled)return;settled=true;tick(isCore,true);};
+
+    try{
+
+      if(el.complete&&el.naturalWidth>0){ok();return;}
+
+      if(isAudio&&el.readyState>=3){ok();return;}
+
+      el.addEventListener('load',ok);
+
+      el.addEventListener('canplaythrough',ok);
+
+      el.addEventListener('error',bad);
+
+      if(isAudio)el.addEventListener('stalled',ok); /* stalled preload still plays later; count it */
+
+    }catch(_){ok();}
+
+  }
+
+  /* build overlay (DOM, gold-ring style to match UI) */
+
+  const ov=document.createElement('div');
+
+  ov.id='bootLoad';
+
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:radial-gradient(ellipse at 50% 42%,#1c1533 0%,#0b0817 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:\'Baloo 2\',cursive;transition:opacity .45s ease;opacity:1';
+
+  const R=54,C=2*Math.PI*R;
+
+  ov.innerHTML='<div style="position:relative;width:150px;height:150px">'
+
+    +'<svg width="150" height="150" viewBox="0 0 150 150" style="transform:rotate(-90deg)">'
+
+    +'<circle cx="75" cy="75" r="'+R+'" fill="none" stroke="rgba(255,210,63,.15)" stroke-width="10"/>'
+
+    +'<circle id="bootRing" cx="75" cy="75" r="'+R+'" fill="none" stroke="#ffd23f" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'" style="filter:drop-shadow(0 0 8px rgba(255,210,63,.6));transition:stroke-dashoffset .18s ease"/>'
+
+    +'</svg>'
+
+    +'<div id="bootPct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ffd23f;font-weight:800;font-size:26px;text-shadow:0 2px 0 #4a2d02">0%</div>'
+
+    +'</div>'
+
+    +'<div id="bootLbl" style="margin-top:18px;color:#e7d9b8;font-size:15px;letter-spacing:1px">warming up the horde\u2026</div>'
+
+    +'<div id="bootMiss" style="margin-top:6px;color:#a3854d;font-size:12px"></div>';
+
+  (document.body||document.documentElement).appendChild(ov);
+
+  const ring=document.getElementById('bootRing'),pct=document.getElementById('bootPct'),lbl=document.getElementById('bootLbl'),miss=document.getElementById('bootMiss');
+
+  const names=['fonts\u2026','sprites\u2026','particles\u2026','sfx\u2026','music\u2026'];
+
+  function paint(){ /*PATCH-TAG B082*/
+
+    if(finished||!ring)return;
+
+    const p=done.total?Math.min(1,done.n/done.total):1;
+
+    ring.style.strokeDashoffset=(C*(1-p)).toFixed(1);
+
+    pct.textContent=Math.round(p*100)+'%';
+
+    lbl.textContent=names[Math.min(names.length-1,Math.floor(p*names.length))];
+
+    miss.textContent=missing.n?(''+missing.n+' asset'+(missing.n>1?'s':'')+' missing \u2014 OK'):'';
+
+  }
+
+  function finish(){ /*PATCH-TAG B082*/
+
+    if(finished)return;finished=true;
+
+    if(ov){
+
+      if(missing.n>0)lbl.textContent='loaded with '+missing.n+' missing (OK)';
+
+      else lbl.textContent='ready!';
+
+      ring.style.strokeDashoffset='0';pct.textContent='100%';
+
+      ov.style.pointerEvents='none';
+
+      ov.style.opacity='0';
+
+      setTimeout(()=>{try{ov.remove();}catch(_){}},500);
+
+    }
+
+  }
+
+  /* register actual boot assets (same script tick, before async load events fire) */
+
+  try{for(const k in IMGS)watch(IMGS[k],true,false);}catch(_){}
+
+  try{for(const k in PARTS)watch(PARTS[k],true,false);}catch(_){}
+
+  try{for(const k in SFXP)watch(SFXP[k],false,true);}catch(_){}
+
+  try{for(const k in SFX2P)watch(SFX2P[k],false,true);}catch(_){}
+
+  /* zero-asset safety + absolute cap: never block boot */
+
+  if(done.total===0)setTimeout(finish,0);
+
+  setTimeout(finish,2200);
+
+  paint();
+
+})();
+
+
+
 </script>
