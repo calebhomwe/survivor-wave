@@ -1665,6 +1665,16 @@ function rebuildGrid(){for(let i=0;i<gridUsed.length;i++){egrid.get(gridUsed[i])
 
 function eachNear(x,y,r,fn){const x0=(x-r)>>6,x1=(x+r)>>6,y0=(y-r)>>6,y1=(y+r)>>6;for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const a=egrid.get((cx&1023)|((cy&1023)<<10));if(a)for(let i=0;i<a.length;i++)fn(a[i]);}}
 
+/*B068: spatial-hash broadphase for enemy queries. EGRID_PAD covers max enemy radius (46) so
+  circle tests (r+e.r) never miss a cell; grid holds frame-start positions + mid-frame spawns
+  inserted via gridAdd, and consumers still filter e.hp<=0 exactly as the old full scans did.*/
+
+const EGRID_PAD=48;
+
+function eachNearPad(x,y,r,fn){eachNear(x,y,r+EGRID_PAD,fn);}
+
+function gridAdd(e){const k=gridKey(e.x,e.y);let a=egrid.get(k);if(!a){a=[];egrid.set(k,a);}if(a.length===0)gridUsed.push(k);a.push(e);}
+
 
 
 /* ============================== SKILL DEFS ============================== */
@@ -1929,13 +1939,13 @@ const WEAPONS={
 
       const dmg=w.evo?st.dmg*1.5:st.dmg;
 
-      for(const e of enemies){
+      eachNearPad(player.x,player.y,reach,e=>{/*B068*/
 
-        if(e.hp<=0)continue;
+        if(e.hp<=0)return;
 
         const dx=e.x-player.x,dy=e.y-player.y;
 
-        if(dx*dx+dy*dy>(reach+e.r)*(reach+e.r))continue;
+        if(dx*dx+dy*dy>(reach+e.r)*(reach+e.r))return;
 
         let da=Math.atan2(dy,dx)-a;
 
@@ -1943,7 +1953,7 @@ const WEAPONS={
 
         while(da<-Math.PI)da+=Math.PI*2;
 
-        if(Math.abs(da)>arc/2)continue;
+        if(Math.abs(da)>arc/2)return;
 
         dealDamage(e,dmg,player.x-Math.cos(a)*30,player.y-Math.sin(a)*30,rsWpn(w));/*B041*/
 
@@ -1953,7 +1963,7 @@ const WEAPONS={
 
         if(w.evo&&e.type!=='boss'&&e.type!=='elite')e.stun=0.7;
 
-      }
+      });
 
       return true;},
 
@@ -2444,15 +2454,15 @@ function mortarStrike(){
 
     let n=0;
 
-    for(const o of enemies){
+    eachNear(e.x,e.y,130,o=>{/*B068*/
 
-      if(o===e||o.hp<=0)continue;
+      if(o===e||o.hp<=0)return;
 
       const dx=o.x-e.x,dy=o.y-e.y;
 
       if(dx*dx+dy*dy<130*130)n++;
 
-    }
+    });
 
     if(n>bn){bn=n;best=e;}
 
@@ -3042,9 +3052,25 @@ function warn(msg){warnMsg=msg;warnT=2.2;}
 
 /* ============================== COMBAT HELPERS ============================== */
 
-function nearestEnemy(x,y,maxD){
+function nearestEnemy(x,y,maxD){/*B068: grid query when bounded (all callers pass maxD); unbounded falls back to full scan*/
 
   let near=null,nd=(maxD||1e9)*(maxD||1e9);
+
+  if(maxD){
+
+    eachNear(x,y,maxD,e=>{
+
+      if(e.hp<=0)return;
+
+      const dx=e.x-x,dy=e.y-y,d2=dx*dx+dy*dy;
+
+      if(d2<nd){nd=d2;near=e;}
+
+    });
+
+    return near;
+
+  }
 
   for(const e of enemies){
 
@@ -3115,15 +3141,15 @@ function strikeLightning(x,y,rad,dmg){
 
   sfx('buzz');
 
-  for(const e of enemies){
+  eachNearPad(x,y,rad,e=>{/*B068*/
 
-    if(e.hp<=0)continue;
+    if(e.hp<=0)return;
 
     const dx=e.x-x,dy=e.y-y;
 
     if(dx*dx+dy*dy<(rad+e.r)*(rad+e.r))dealDamage(e,dmg,undefined,undefined,'Lightning');/*B041*/
 
-  }
+  });
 
 }
 
@@ -3161,7 +3187,7 @@ function killEnemy(e){
 
       bb.x=e.x+(Math.random()-0.5)*30;bb.y=e.y+(Math.random()-0.5)*30;bb.spawnT=0.25;bb.spawnMax=0.25;
 
-      enemies.push(bb);
+      enemies.push(bb);gridAdd(bb);/*B068 keep mid-frame spawns queryable*/
 
     }
 
@@ -3171,7 +3197,7 @@ function killEnemy(e){
 
   if(e.type==='blimp'){
 
-    for(let i=0;i<3;i++){const sp2=makeEnemy('splitter');sp2.spawnT=0.25;sp2.spawnMax=0.25;sp2.x=e.x+(Math.random()-0.5)*60;sp2.y=e.y+(Math.random()-0.5)*60;enemies.push(sp2);}
+    for(let i=0;i<3;i++){const sp2=makeEnemy('splitter');sp2.spawnT=0.25;sp2.spawnMax=0.25;sp2.x=e.x+(Math.random()-0.5)*60;sp2.y=e.y+(Math.random()-0.5)*60;enemies.push(sp2);gridAdd(sp2);/*B068*/}
 
     for(let i=0;i<5;i++)pickups.push({kind:'coin',x:e.x+(Math.random()-0.5)*100,y:e.y+(Math.random()-0.5)*100,r:8,v:15});
 
@@ -3488,15 +3514,15 @@ function update(dt){
 
       let novaHits=0;
 
-      for(const e of enemies){
+      eachNearPad(player.x,player.y,rr,e=>{/*B068*/
 
-        if(e.hp<=0)continue;
+        if(e.hp<=0)return;
 
         const ndx=e.x-player.x,ndy=e.y-player.y;
 
 if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Relic Nova');novaHits++;}/*B041*/
 
-      }
+      });
 
       glow(player.x,player.y,rr,'#f0abfc',0.5);
 
@@ -3576,27 +3602,27 @@ if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Relic
 
         const ox=player.x+Math.cos(a)*orbR,oy=player.y+Math.sin(a)*orbR;
 
-        for(const e of enemies){
+        eachNearPad(ox,oy,13,e=>{/*B068*/
 
-          if(e.hp<=0||e.ffCd>0)continue;
+          if(e.hp<=0||e.ffCd>0)return;
 
           const dx=e.x-ox,dy=e.y-oy;
 
 if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,player.y,rsWpn(w));e.ffCd=0.45;}/*B041*/
 
-        }
+        });
 
         if(w.evo){
 
           const la=a, ex=ox+Math.cos(la)*150,ey=oy+Math.sin(la)*150;
 
-          for(const e of enemies){
+          eachNearPad(ox,oy,159,e=>{/*B068*/
 
-            if(e.hp<=0||e.ffCd>0)continue;
+            if(e.hp<=0||e.ffCd>0)return;
 
 if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player.y,rsWpn(w));e.ffCd=0.4;}/*B041*/
 
-          }
+          });
 
         }
 
@@ -3700,15 +3726,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
         sfx('boom');
 
-        for(const e of enemies){
+        eachNearPad(p.x,p.y,88,e=>{/*B068*/
 
-          if(e.hp<=0)continue;
+          if(e.hp<=0)return;
 
           const dx=e.x-p.x,dy=e.y-p.y;
 
           if(dx*dx+dy*dy<88*88)dealDamage(e,p.dmg,p.x-p.vx*0.05,p.y-p.vy*0.05,'Turret');/*B041*/
 
-        }
+        });
 
         continue;
 
@@ -3734,15 +3760,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
         sfx('boom');
 
-        for(const e of enemies){
+        eachNearPad(p.x,p.y,p.blast,e=>{/*B068*/
 
-          if(e.hp<=0)continue;
+          if(e.hp<=0)return;
 
           const dx=e.x-p.x,dy=e.y-p.y;
 
           if(dx*dx+dy*dy<(p.blast+e.r)*(p.blast+e.r))dealDamage(e,p.dmg,p.x,p.y,p.tw?'Turret':'RPG');/*B041*/
 
-        }
+        });
 
         continue;
 
@@ -3818,15 +3844,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
         sfx('boom');
 
-        for(const e of enemies){
+        eachNearPad(z.x,z.y,150,e=>{/*B068*/
 
-          if(e.hp<=0)continue;
+          if(e.hp<=0)return;
 
           const dx=e.x-z.x,dy=e.y-z.y;
 
           if(dx*dx+dy*dy<150*150)dealDamage(e,z.dmg,z.x,z.y,'Zone');/*B041*/
 
-        }
+        });
 
         if(decals.length<40)decals.push({x:z.x,y:z.y,r:34,life:7,max:7,seed:(Math.random()*9999)|0});
 
@@ -3842,9 +3868,9 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
     if(z.kind==='void'){
 
-      for(const e of enemies){
+      eachNearPad(z.x,z.y,z.r*1.9,e=>{/*B068*/
 
-        if(e.hp<=0)continue;
+        if(e.hp<=0)return;
 
         const dx=z.x-e.x,dy=z.y-e.y;
 
@@ -3858,20 +3884,21 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
         }
 
-      }
+      });
 
       if(z.tick<=0){
 
         z.tick=0.4;
 
-        for(const e of enemies){
+        eachNearPad(z.x,z.y,z.r,e=>{/*B068*/
 
-          if(e.hp<=0)continue;
+          if(e.hp<=0)return;
 
           const dx=e.x-z.x,dy=e.y-z.y;
 
           if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg,z.x,z.y,'Void Power');/*B041*/
-        }
+
+        });
 
         const a2=Math.random()*Math.PI*2;
 
@@ -3887,15 +3914,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
         sfx('boom');
 
-        for(const e of enemies){
+        eachNearPad(z.x,z.y,z.r,e=>{/*B068*/
 
-          if(e.hp<=0)continue;
+          if(e.hp<=0)return;
 
           const dx=e.x-z.x,dy=e.y-z.y;
 
           if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*6,undefined,undefined,'Void Power');/*B041*/
 
-        }
+        });
 
       }
 
@@ -3907,15 +3934,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
       z.tick=0.5;
 
-      for(const e of enemies){
+      eachNearPad(z.x,z.y,z.r,e=>{/*B068*/
 
-        if(e.hp<=0)continue;
+        if(e.hp<=0)return;
 
         const dx=e.x-z.x,dy=e.y-z.y;
 
         if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*0.5,z.x,z.y,'Zone');/*B041*/
 
-      }
+      });
 
       if(Math.random()<0.6)spawnParticles(z.x+(Math.random()-0.5)*z.r*1.6,z.y+(Math.random()-0.5)*z.r*1.6,'#fb923c',1,0.6,{sprite:'ember',size:12});
 
@@ -4250,15 +4277,15 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
           let hit2=0;
 
-          for(const e of enemies){
+          eachNearPad(t.x,t.y,rng,e=>{/*B068*/
 
-            if(e.hp<=0)continue;
+            if(e.hp<=0)return;
 
             const dx=e.x-t.x,dy=e.y-t.y;
 
             if(dx*dx+dy*dy<rng*rng){e.frostT=1.7;hit2++;}
 
-          }
+          });
 
           if(hit2>0){
 
@@ -4794,15 +4821,15 @@ function applyChoice(c){
 
       const surgeD=weaponStats(w).dmg*8;
 
-      for(const e of enemies){
+      eachNearPad(player.x,player.y,220,e=>{/*B068*/
 
-        if(e.hp<=0)continue;
+        if(e.hp<=0)return;
 
         const dx=e.x-player.x,dy=e.y-player.y;
 
         if(dx*dx+dy*dy<220*220)dealDamage(e,surgeD,undefined,undefined,'Ultimate');/*B041*/
 
-      }
+      });
 
       player.iframes=1.5;
 
