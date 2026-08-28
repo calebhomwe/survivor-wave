@@ -734,6 +734,10 @@ background-repeat:no-repeat}
 
 
 <script>
+/*B087 code-health helpers (no behavior change)*/
+function dist2(ax,ay,bx,by){const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;}
+function rand(a,b){return a+Math.random()*(b-a);}
+function randi(a,b){return Math.floor(rand(a,b+1));}
 
 'use strict';/*BAL-PATCH-R2*/
 
@@ -1719,7 +1723,7 @@ function setBountyText(t){
   for(let i=0;i<els.length;i++)els[i].textContent=t;
 }
 function rollBounty(){/*FUN-PATCH-RB seed a personal goal for the next run*/
-  runBounty=BOUNTIES[Math.floor(Math.random()*BOUNTIES.length)];
+  runBounty=BOUNTIES[randi(0,BOUNTIES.length-1)];
   runBounty._start=runBounty.get();
   setBountyText('NEXT RUN BOUNTY: '+runBounty.txt+' \u2014 reward 100g');
 }
@@ -2725,9 +2729,7 @@ function mortarStrike(){
 
       if(o===e||o.hp<=0)return;
 
-      const dx=o.x-e.x,dy=o.y-e.y;
-
-      if(dx*dx+dy*dy<130*130)n++;
+      if(dist2(o.x,o.y,e.x,e.y)<130*130)n++;
 
     });
 
@@ -2771,11 +2773,9 @@ function tryRevive(){
 
     if(e.hp<=0)continue;
 
-    const dx=e.x-player.x,dy=e.y-player.y;
-
     if(e.echo)continue;
 
-    if(dx*dx+dy*dy<400*400)e.hp=0;
+    if(dist2(e.x,e.y,player.x,player.y)<400*400)e.hp=0;
 
   }
 
@@ -3078,7 +3078,7 @@ function makeEnemyBase(type){
 
   if(type==='tank')return Object.assign(base,{type,hp:(60+d*22)*late*lv,maxHp:(60+d*22)*late*lv,speed:30,dmg:14+d*2,r:24,xp:5,color:'#8b6fc9'});
 
-  if(type==='spitter')return Object.assign(base,{type,hp:(16+d*6)*late*lv,maxHp:(16+d*6)*late*lv,speed:48,dmg:0,r:14,xp:3,color:'#3fa8a0',shootCd:2+Math.random()});
+  if(type==='spitter')return Object.assign(base,{type,hp:(16+d*6)*late*lv,maxHp:(16+d*6)*late*lv,speed:48,dmg:0,r:14,xp:3,color:'#3fa8a0',shootCd:rand(2,3)});
 
   if(type==='splitter')return Object.assign(base,{type,hp:34+d*14,maxHp:34+d*14,speed:44+d*2,dmg:9+d*1.5,r:19,xp:3,color:'#7fae4a'});
 
@@ -3502,9 +3502,7 @@ function strikeLightning(x,y,rad,dmg){
 
     if(e.hp<=0)return;
 
-    const dx=e.x-x,dy=e.y-y;
-
-    if(dx*dx+dy*dy<(rad+e.r)*(rad+e.r))dealDamage(e,dmg,undefined,undefined,'Lightning');/*B041*/
+    if(dist2(e.x,e.y,x,y)<(rad+e.r)*(rad+e.r))dealDamage(e,dmg,undefined,undefined,'Lightning');/*B041*/
 
   });
 
@@ -3514,7 +3512,7 @@ function killEnemy(e){
 
   e.hp=0;
 
-  if(decals.length<40)decals.push({x:e.x,y:e.y,r:e.r*0.95,life:7,max:7,seed:Math.floor(Math.random()*9999)});
+  if(decals.length<40)decals.push({x:e.x,y:e.y,r:e.r*0.95,life:7,max:7,seed:randi(0,9998)});
 
   {
 
@@ -3931,9 +3929,7 @@ function update(dt){
 
     for(const L of window.visLamps){
 
-      const dx=L.x-player.x,dy=L.y-player.y;
-
-      if(dx*dx+dy*dy<95*95){inLamp=true;break;}
+      if(dist2(L.x,L.y,player.x,player.y)<95*95){inLamp=true;break;}
 
     }
 
@@ -4068,9 +4064,7 @@ if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Relic
 
           if(e.hp<=0||e.ffCd>0)return;
 
-          const dx=e.x-ox,dy=e.y-oy;
-
-if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,player.y,rsWpn(w));e.ffCd=0.45;}/*B041*/
+if(dist2(e.x,e.y,ox,oy)<(e.r+13)*(e.r+13)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,player.y,rsWpn(w));e.ffCd=0.45;}/*B041*/
 
         });
 
@@ -4112,9 +4106,7 @@ if(distToSeg(e.x,e.y,ox,oy,ex,ey)<e.r+9){dealDamage(e,st.dmg*0.9,player.x,player
 
           if(e.hp<=0||e.obCd>0)return;
 
-          const dx=e.x-bx,dy=e.y-by;
-
-if(dx*dx+dy*dy<(e.r+br)*(e.r+br)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,player.y,rsWpn(w));e.obCd=0.4;}
+if(dist2(e.x,e.y,bx,by)<(e.r+br)*(e.r+br)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,player.y,rsWpn(w));e.obCd=0.4;}
 
         });
 
@@ -4152,9 +4144,7 @@ if(dx*dx+dy*dy<(e.r+br)*(e.r+br)){dealDamage(e,st.dmg*(w.evo?1.6:1),player.x,pla
 
             if(e.hp<=0||e.obCd>0)return;
 
-            const dx=e.x-fb.x,dy=e.y-fb.y;
-
-if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w));e.obCd=0.4;}
+if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w));e.obCd=0.4;}
 
           });
 
@@ -4286,9 +4276,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
           if(e.hp<=0)return;
 
-          const dx=e.x-p.x,dy=e.y-p.y;
-
-          if(dx*dx+dy*dy<88*88)dealDamage(e,p.dmg,p.x-p.vx*0.05,p.y-p.vy*0.05,'Turret');/*B041*/
+          if(dist2(e.x,e.y,p.x,p.y)<88*88)dealDamage(e,p.dmg,p.x-p.vx*0.05,p.y-p.vy*0.05,'Turret');/*B041*/
 
         });
 
@@ -4320,9 +4308,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
           if(e.hp<=0)return;
 
-          const dx=e.x-p.x,dy=e.y-p.y;
-
-          if(dx*dx+dy*dy<(p.blast+e.r)*(p.blast+e.r))dealDamage(e,p.dmg,p.x,p.y,p.tw?'Turret':'RPG');/*B041*/
+          if(dist2(e.x,e.y,p.x,p.y)<(p.blast+e.r)*(p.blast+e.r))dealDamage(e,p.dmg,p.x,p.y,p.tw?'Turret':'RPG');/*B041*/
 
         });
 
@@ -4356,9 +4342,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
       }else{
 
-        const dx=e.x-p.x,dy=e.y-p.y;
-
-        if(dx*dx+dy*dy<(e.r+p.r)*(e.r+p.r))hit=true;
+        if(dist2(e.x,e.y,p.x,p.y)<(e.r+p.r)*(e.r+p.r))hit=true;
 
       }
 
@@ -4404,9 +4388,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
           if(e.hp<=0)return;
 
-          const dx=e.x-z.x,dy=e.y-z.y;
-
-          if(dx*dx+dy*dy<150*150)dealDamage(e,z.dmg,z.x,z.y,'Zone');/*B041*/
+          if(dist2(e.x,e.y,z.x,z.y)<150*150)dealDamage(e,z.dmg,z.x,z.y,'Zone');/*B041*/
 
         });
 
@@ -4450,9 +4432,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
           if(e.hp<=0)return;
 
-          const dx=e.x-z.x,dy=e.y-z.y;
-
-          if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg,z.x,z.y,'Void Power');/*B041*/
+          if(dist2(e.x,e.y,z.x,z.y)<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg,z.x,z.y,'Void Power');/*B041*/
 
         });
 
@@ -4474,9 +4454,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
           if(e.hp<=0)return;
 
-          const dx=e.x-z.x,dy=e.y-z.y;
-
-          if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*6,undefined,undefined,'Void Power');/*B041*/
+          if(dist2(e.x,e.y,z.x,z.y)<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*6,undefined,undefined,'Void Power');/*B041*/
 
         });
 
@@ -4494,9 +4472,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
         if(e.hp<=0)return;
 
-        const dx=e.x-z.x,dy=e.y-z.y;
-
-        if(dx*dx+dy*dy<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*0.5,z.x,z.y,'Zone');/*B041*/
+        if(dist2(e.x,e.y,z.x,z.y)<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*0.5,z.x,z.y,'Zone');/*B041*/
 
       });
 
@@ -4657,9 +4633,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
 
-    const dx=p.x-player.x,dy=p.y-player.y;
-
-    if(dx*dx+dy*dy<(player.r+7)*(player.r+7)&&player.iframes<=0){
+    if(dist2(p.x,p.y,player.x,player.y)<(player.r+7)*(player.r+7)&&player.iframes<=0){
 
       hurtPlayer(p.dmg);player.iframes=0.5;p.life=0;
 
@@ -4899,9 +4873,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
             if(e.hp<=0)return;
 
-            const dx=e.x-t.x,dy=e.y-t.y;
-
-            if(dx*dx+dy*dy<rng*rng){e.frostT=1.7;hit2++;}
+            if(dist2(e.x,e.y,t.x,t.y)<rng*rng){e.frostT=1.7;hit2++;}
 
           });
 
@@ -4917,9 +4889,7 @@ if(dx*dx+dy*dy<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,player.y,rsWpn(w)
 
         }else{
 
-          const dx=player.x-t.x,dy=player.y-t.y;
-
-          if(dx*dx+dy*dy<rng*rng&&player.hp<player.maxHp){
+          if(dist2(player.x,player.y,t.x,t.y)<rng*rng&&player.hp<player.maxHp){
 
             player.hp=Math.min(player.maxHp,player.hp+2+t.tier*1.5);
 
@@ -5186,7 +5156,7 @@ function updateBoss(b,dt){
 
     if(b.bT<=0){
 
-      b.bState='chase';b.bT=2.2+Math.random();
+      b.bState='chase';b.bT=rand(2.2,3.2);
 
       const rad=130;
 
@@ -5194,9 +5164,7 @@ function updateBoss(b,dt){
 
       spawnParticles(b.x,b.y,'#f87171',26,1.6,{sprite:'smoke',size:52});
 
-      const dx=player.x-b.x,dy=player.y-b.y;
-
-      if(dx*dx+dy*dy<rad*rad&&player.iframes<=0){hurtPlayer(b.dmg*1.4);player.iframes=0.6;}
+      if(dist2(player.x,player.y,b.x,b.y)<rad*rad&&player.iframes<=0){hurtPlayer(b.dmg*1.4);player.iframes=0.6;}
 
     }
 
@@ -5212,11 +5180,9 @@ function updateBoss(b,dt){
 
     spawnParticles(b.x,b.y,'#c94842',2,0.8);
 
-    const dx=player.x-b.x,dy=player.y-b.y;
+    if(dist2(player.x,player.y,b.x,b.y)<(b.r+player.r)*(b.r+player.r)&&player.iframes<=0){hurtPlayer(b.dmg);player.iframes=0.6;}
 
-    if(dx*dx+dy*dy<(b.r+player.r)*(b.r+player.r)&&player.iframes<=0){hurtPlayer(b.dmg);player.iframes=0.6;}
-
-    if(b.bT<=0){b.bState='chase';b.bT=2.4+Math.random();}
+    if(b.bT<=0){b.bState='chase';b.bT=rand(2.4,3.4);}
 
   }
 
@@ -5537,9 +5503,7 @@ function applyChoice(c){
 
         if(e.hp<=0)return;
 
-        const dx=e.x-player.x,dy=e.y-player.y;
-
-        if(dx*dx+dy*dy<220*220)dealDamage(e,surgeD,undefined,undefined,'Ultimate');/*B041*/
+        if(dist2(e.x,e.y,player.x,player.y)<220*220)dealDamage(e,surgeD,undefined,undefined,'Ultimate');/*B041*/
 
       });
 
@@ -5981,7 +5945,7 @@ function chestReward(){
 
   }
 
-  const c=pool[Math.floor(Math.random()*pool.length)];
+  const c=pool[randi(0,pool.length-1)];
 
   if(c.t==='w'){ownedWeapon(c.id).lvl++;const d=WEAPONS[c.id];return {icon:'',iconK:d.iconK,name:d.name+' Lv.'+ownedWeapon(c.id).lvl,desc:d.lvlDesc(ownedWeapon(c.id).lvl)};}
 
@@ -6450,9 +6414,7 @@ const MI={lg:null,parent:null,threat:0,boss:false,tau:0.7,
 
           if(e.hp<=0)return;
 
-          const dx=e.x-player.x,dy=e.y-player.y;
-
-          if(dx*dx+dy*dy<420*420)n+=e.isBoss?6:e.isElite?3:1;
+          if(dist2(e.x,e.y,player.x,player.y)<420*420)n+=e.isBoss?6:e.isElite?3:1;
 
         });
 
@@ -7082,7 +7044,7 @@ function spawnParticles(x,y,color,n,scale,opts){/*FX-ASSETS-PATCH-RB sprite opts
 
     const a=Math.random()*Math.PI*2,s=(60+Math.random()*140)*(scale||1);
 
-    const pt=poolGet(POOLS.particles,o=>{o.x=x;o.y=y;o.vx=Math.cos(a)*s;o.vy=Math.sin(a)*s-60*(scale||1);o.life=0.35+Math.random()*0.35;o.color=color;o.conf=false;o.sp=0;o.sz=0;o.rot=0;o.vr=0;});/*B069 pool*//*FX-ASSETS-PATCH-RB*/
+    const pt=poolGet(POOLS.particles,o=>{o.x=x;o.y=y;o.vx=Math.cos(a)*s;o.vy=Math.sin(a)*s-60*(scale||1);o.life=rand(0.35,0.7);o.color=color;o.conf=false;o.sp=0;o.sz=0;o.rot=0;o.vr=0;});/*B069 pool*//*FX-ASSETS-PATCH-RB*/
 
     if(o&&o.sprite){pt.sp=o.sprite;pt.sz=o.size||24;pt.rot=Math.random()*6.283;pt.vr=(Math.random()-0.5)*5;}
 
@@ -7098,7 +7060,7 @@ function spawnConfetti(){
 
   const cols=['#f87171','#facc15','#4ade80','#38bdf8','#c084fc'];
 
-  particles.push(poolGet(POOLS.particles,o=>{o.x=cam.x+Math.random()*W;o.y=cam.y-10;o.vx=(Math.random()-0.5)*80;o.vy=80+Math.random()*120;o.life=2+Math.random()*1.5;o.color=cols[Math.floor(Math.random()*5)];o.conf=true;o.sp=0;o.sz=0;o.rot=0;o.vr=0;}));/*B069 pool*/
+  particles.push(poolGet(POOLS.particles,o=>{o.x=cam.x+Math.random()*W;o.y=cam.y-10;o.vx=(Math.random()-0.5)*80;o.vy=rand(80,200);o.life=rand(2,3.5);o.color=cols[randi(0,4)];o.conf=true;o.sp=0;o.sz=0;o.rot=0;o.vr=0;}));/*B069 pool*/
 
 }
 
@@ -7111,8 +7073,7 @@ function addDmgFloater(x,y,amount,crit){
   for(let i=floaters.length-1;i>=0;i--){ /* merge into a recent damage floater within 48px */
     const f=floaters[i];
     if(!f.dmg||f.life<=0)continue;
-    const dx=f.x-x,dy=f.y-y;
-    if(dx*dx+dy*dy<48*48){
+    if(dist2(f.x,f.y,x,y)<48*48){
       f.val+=amount;f.hits++;
       f.crit=f.crit||crit;
       f.life=Math.min(1.1,Math.max(f.life,crit?0.7:0.5)); /* refresh, capped so stacks expire */
@@ -9105,7 +9066,7 @@ function ensureLavaPools(){
     const lx=60+Math.random()*(WORLD.w-120),ly=60+Math.random()*(WORLD.h-120);
     if(Math.hypot(lx-WORLD.w/2,ly-WORLD.h/2)<420)continue;
     if(nearAnyRoad(lx,ly,60))continue;
-    lavaPools.push({x:lx,y:ly,r:42+Math.random()*34,ph:Math.random()*6.28});
+    lavaPools.push({x:lx,y:ly,r:rand(42,76),ph:Math.random()*6.28});
   }
 }
 
@@ -13448,9 +13409,9 @@ function biomeTick(dt){
 
       for(let i=0;i<lavaPools.length;i++){
 
-        const L=lavaPools[i],dx=player.x-L.x,dy=player.y-L.y,rr=L.r-8;
+        const L=lavaPools[i],rr=L.r-8;
 
-        if(dx*dx+dy*dy<rr*rr){
+        if(dist2(player.x,player.y,L.x,L.y)<rr*rr){
 
           player._lava=0;
 
