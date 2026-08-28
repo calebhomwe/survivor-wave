@@ -11,14 +11,30 @@ auto-dismisses level-up / chest / pause / death overlays, then asserts:
 Screenshots -> tools/shots/{menu,mid,late,end}.png
 Final line: SMOKE {"pass": ..., "checks": {...}, "errors": [...]}  exit 0/1.
 """
-import argparse, json, math, os, sys, time
+import argparse, json, math, os, socket, sys, threading, time
+from functools import partial
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_URL = (ROOT / "survivor-wave.html").as_uri()
 SHOTS = ROOT / "tools" / "shots"
+
+
+def _serve_root():
+    """Serve ROOT over 127.0.0.1 on a free port. file:// taints the canvas
+    (Chromium opaque origins), which breaks getImageData checks."""
+    class _Q(SimpleHTTPRequestHandler):
+        def log_message(self, *a, **k):
+            pass
+    handler = partial(_Q, directory=str(ROOT))
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    srv = ThreadingHTTPServer(("127.0.0.1", port), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, port
 
 FATAL_CONSOLE_PATTERNS = ("uncaught", "syntaxerror", "referenceerror", "typeerror",
                           "is not defined", "cannot read", "failed to load resource")
@@ -30,7 +46,8 @@ def main():
     ap.add_argument("--url", type=Path, default=None, help="file:// or http:// URL of the page")
     args = ap.parse_args()
 
-    url = args.url.as_uri() if args.url is not None and not str(args.url).startswith(("file://", "http")) else (str(args.url) if args.url else DEFAULT_URL)
+    srv, port = _serve_root()
+    url = str(args.url) if args.url else f"http://127.0.0.1:{port}/survivor-wave.html"
     SHOTS.mkdir(parents=True, exist_ok=True)
 
     page_errors, console_errors, warnings = [], [], []
