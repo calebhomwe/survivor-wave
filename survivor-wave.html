@@ -6429,6 +6429,321 @@ const MI={lg:null,parent:null,threat:0,boss:false,tau:0.7,
 
 
 
+/* ============================== B039 BIOME AMBIENT LOOPS ============================== */
+
+/* Subtle procedural ambience per biome group (themeFor().group):
+
+   grass/streets = soft wind + occasional bird chirps + rare distant car horn,
+
+   sand          = dry low wind (desert variant, no birds),
+
+   snow          = resonant wind howl (two swept bandpasses),
+
+   scorch/volcano= low ember rumble + crackle bursts.
+
+   Each biome is a chain of WebAudio nodes fed from ONE shared looping noise buffer;
+
+   chains are built lazily and cached; a biome change crossfades gains over ~2s
+
+   (setTargetAtTime tau 0.85). One-shot events (horns/birds/crackle) are fired from a
+
+   200ms poll, only while the chain is audible. Master ambience gain is LOW
+
+   (0.10 * settings.musicVol, clamped into 0.05..0.12 territory) and routed through
+
+   AU.master so B036 ducking + limiter apply upstream. Respects settings.musicVol live
+
+   and settings.lowFx (loops never built) and muted. Start on run start (state==='play'),
+
+   fade out on menu/game-over; headless-safe: everything try/caught, no-op without audioCtx. */
+
+const AMB={chains:{},cur:null,buf:null,gain:null,nextEvt:0,tau:0.85,
+
+  ensure(){ /* build shared buffer + master ambience gain once */
+
+    try{
+
+      if(!audioCtx||this.gain)return;
+
+      auMaster(); /* B036: make sure the limiter chain exists */
+
+      const n=Math.floor(audioCtx.sampleRate*2),b=audioCtx.createBuffer(1,n,audioCtx.sampleRate),d=b.getChannelData(0);
+
+      for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+
+      this.buf=b;
+
+      this.gain=audioCtx.createGain();this.gain.gain.value=0;
+
+      this.gain.connect(AU.master||audioCtx.destination);
+
+    }catch(_){}
+
+  },
+
+  noise(dst){ /* looping noise source -> dst */
+
+    const s=audioCtx.createBufferSource();
+
+    s.buffer=AMB.buf;s.loop=true;s.playbackRate.value=0.9+Math.random()*0.2;
+
+    s.connect(dst);s.start();
+
+    return s;
+
+  },
+
+  lfo(param,f,depth){ /* slow sine LFO onto an AudioParam (wind movement) */
+
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+
+    o.type='sine';o.frequency.value=f;g.gain.value=depth;
+
+    o.connect(g);g.connect(param);o.start();
+
+    return o;
+
+  },
+
+  band(f,q,g0,lfoF,lfoD){ /* bandpass voice: noise -> filter -> gain -> chain gain */
+
+    const fl=audioCtx.createBiquadFilter();
+
+    fl.type='bandpass';fl.frequency.value=f;fl.Q.value=q;
+
+    const g=audioCtx.createGain();g.gain.value=g0;
+
+    this.noise(fl);fl.connect(g);g.connect(this.ch.g);
+
+    if(lfoF)this.lfo(fl.frequency,lfoF,lfoD);
+
+    if(lfoF)this.lfo(g.gain,lfoF*0.7,g0*0.45);
+
+    return g;
+
+  },
+
+  build(key){ /* per-biome chain; returns {g,ev} where ev() fires one-shot events */
+
+    const ch={g:audioCtx.createGain(),srcs:[]};
+
+    ch.g.gain.value=0;ch.g.connect(this.gain);
+
+    const save=this.ch;this.ch=ch; /* band() hooks chain gain via this.ch */
+
+    if(key==='grass'){ /* park: wind + birds */
+
+      this.band(520,0.5,0.34,0.06,240);
+
+      this.band(140,0.7,0.28,0.04,60);
+
+      ch.ev=()=>{ /* bird chirp: 2-3 quick sine sweeps */
+
+        try{
+          const t=audioCtx.currentTime;
+
+          for(let c=0;c<2+((Math.random()*2)|0);c++){
+
+            const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t0=t+c*0.16+Math.random()*0.05;
+
+            o.type='sine';
+
+            o.frequency.setValueAtTime(2400+Math.random()*700,t0);
+
+            o.frequency.exponentialRampToValueAtTime(3200+Math.random()*600,t0+0.07);
+
+            o.frequency.exponentialRampToValueAtTime(2100+Math.random()*300,t0+0.14);
+
+            g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(0.11,t0+0.02);
+
+            g.gain.linearRampToValueAtTime(0,t0+0.15);
+
+            o.connect(g);g.connect(ch.g);o.start(t0);o.stop(t0+0.2);
+
+          }
+
+        }catch(_){}
+
+      };
+
+      ch.evtEvery=()=>5+Math.random()*9;
+
+      ch.evHorn=true;
+
+    }else if(key==='sand'){ /* desert: dry wind, slower + duller */
+
+      this.band(380,0.6,0.4,0.035,200);
+
+      this.band(120,0.8,0.3,0.025,50);
+
+      ch.ev=null;ch.evtEvery=()=>999;
+
+    }else if(key==='snow'){ /* tundra: two resonant swept bands = howl */
+
+      this.band(340,4,0.5,0.045,190);
+
+      this.band(860,8,0.22,0.03,260);
+
+      this.band(90,0.7,0.3,0.02,30);
+
+      ch.ev=null;ch.evtEvery=()=>999;
+
+    }else{ /* scorch/volcano: ember rumble + crackle */
+
+      const fl=audioCtx.createBiquadFilter();
+
+      fl.type='lowpass';fl.frequency.value=95;fl.Q.value=0.7;
+
+      const g=audioCtx.createGain();g.gain.value=0.8;
+
+      this.noise(fl);fl.connect(g);g.connect(ch.g);
+
+      this.lfo(fl.frequency,0.06,35);
+
+      ch.ev=()=>{ /* crackle: 2-4 tiny highpassed noise bursts */
+
+        try{
+
+          const t=audioCtx.currentTime;
+
+          for(let c=0;c<2+((Math.random()*3)|0);c++){
+
+            const t0=t+c*(0.05+Math.random()*0.12);
+
+            const s=audioCtx.createBufferSource();s.buffer=AMB.buf;s.playbackRate.value=2.2+Math.random();
+
+            const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=1800;
+
+            const gg=audioCtx.createGain();
+
+            gg.gain.setValueAtTime(0,t0);gg.gain.linearRampToValueAtTime(0.09+Math.random()*0.07,t0+0.004);
+
+            gg.gain.exponentialRampToValueAtTime(0.001,t0+0.03+Math.random()*0.05);
+
+            s.connect(hp);hp.connect(gg);gg.connect(ch.g);s.start(t0);s.stop(t0+0.12);
+
+          }
+
+        }catch(_){}
+
+      };
+
+      ch.evtEvery=()=>0.5+Math.random()*1.1;
+
+    }
+
+    this.ch=save;
+
+    if(ch.evHorn)ch.hornAt=performance.now()+8000+Math.random()*9000;
+
+    return ch;
+
+  },
+
+  horn(){ /* distant city horn: detuned dyad, muffled */
+
+    try{
+
+      const t=audioCtx.currentTime,ch=this.chains[this.cur];
+
+      const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;
+
+      const g=audioCtx.createGain();
+
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+0.05);
+
+      g.gain.setValueAtTime(0.16,t+0.3);g.gain.linearRampToValueAtTime(0,t+0.55);
+
+      lp.connect(g);g.connect(ch.g);
+
+      [233,311].forEach(f=>{ /* minor-ish dyad, far away */
+
+        const o=audioCtx.createOscillator();o.type='square';o.frequency.value=f*(0.99+Math.random()*0.02);
+
+        o.connect(lp);o.start(t);o.stop(t+0.6);
+
+      });
+
+    }catch(_){}
+
+  },
+
+  group(){ /* biome group for the current run, '' when not in a run */
+
+    try{
+
+      if(typeof state==='undefined'||state!=='play')return '';
+
+      const g=themeFor().group;
+
+      return (g==='scorch'||g==='volcano')?'ember':g;
+
+    }catch(_){return '';}
+
+  },
+
+  tick(){ /* 200ms poll: build/crossfade chains, fire one-shots, master volume */
+
+    try{
+
+      if(!audioCtx||muted||typeof settings!=='undefined'&&settings.lowFx){this.stop();return;}
+
+      const key=this.group();
+
+      if(!key){this.stop();return;}
+
+      this.ensure();
+
+      if(!this.gain)return;
+
+      const mv=(typeof settings!=='undefined'&&settings.musicVol!==undefined?settings.musicVol:0.6);
+
+      const base=Math.max(0.05,Math.min(0.12,0.10*(mv?Math.max(0.35,mv):1))); /* LOW: 0.05..0.12 */
+
+      const t=audioCtx.currentTime;
+
+      this.gain.gain.setTargetAtTime(base,t,0.3);
+
+      if(!this.chains[key])this.chains[key]=this.build(key);
+
+      for(const k in this.chains){ /* ~2s crossfade */
+
+        const tgt=(k===key)?1:0;
+
+        this.chains[k].g.gain.setTargetAtTime(tgt,t,this.tau);
+
+      }
+
+      this.cur=key;
+
+      const ch=this.chains[key],now=performance.now();
+
+      if(ch.ev&&ch.g.gain.value>0.25&&now>this.nextEvt){ch.ev();this.nextEvt=now+ch.evtEvery()*1000;}
+
+      if(ch.evHorn&&ch.g.gain.value>0.25&&now>ch.hornAt){this.horn();ch.hornAt=now+12000+Math.random()*16000;}
+
+    }catch(_){}
+
+  },
+
+  stop(){ /* fade master to silence; chains stay cached for the next run */
+
+    try{
+
+      if(audioCtx&&this.gain)this.gain.gain.setTargetAtTime(0,audioCtx.currentTime,0.4);
+
+      this.cur=null;this.nextEvt=0;
+
+    }catch(_){}
+
+  }
+
+};
+
+setInterval(()=>{try{AMB.tick();}catch(_){}},200);
+
+
+
 /* ============================== B038 FIVE NEW SYNTHESIZED SFX ============================== */
 
 /* elitesting (low braaam) / chestopen (rising sparkle arp) / evofanfare (major 3-note) /
