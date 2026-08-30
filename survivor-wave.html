@@ -17200,3 +17200,240 @@ setInterval(function(){
 },1500);
 })();
 </script>
+<script>
+/* ============================== ITER BATCH D (5 towers + T5 merge) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_D)return;window.__ITER_D=1;
+var TD=window.TOWERSYS.defs;
+/* new tower defs (upgrades cost OIL) */
+TD.pitch={name:'PITCH THROWER',cost:90, range:150, rate:1.6, dmg:3, up2:20, up3:44, up3txt:'tar pool slows 40%', col:'#a3a3a3', col2:'#525252', desc:'slows enemies in range'};
+TD.spike={name:'SPIKE SMITH',cost:70, range:110, rate:1.1, dmg:8, up2:16, up3:36, up3txt:'spikes linger as traps', col:'#d6d3d1', col2:'#78716c', desc:'ground spikes shred feet'};
+TD.crier={name:'TOWN CRIER',cost:130, range:190, rate:1, dmg:0, up2:24, up3:52, up3txt:'+15% tower dmg aura', col:'#fda4af', col2:'#9f1239', desc:'buffs nearby towers'};
+TD.apoth={name:'APOTHECARY',cost:160, range:170, rate:1, dmg:0, up2:26, up3:58, up3txt:'heal 2 HP/s in aura', col:'#86efac', col2:'#166534', desc:'heals the hero nearby'};
+TD.craft={name:'CRAFTSMAN',cost:180, range:160, rate:1, dmg:0, up2:28, up3:62, up3txt:'+25% fire rate nearby', col:'#fdba74', col2:'#9a3412', desc:'speeds nearby towers'};
+/* T5: merge two PARAGONS -> GLORY (2x dmg, +30% range) */
+setInterval(function(){
+  try{
+    if(!window.TOWERSYS)return;
+    var ts=window.TOWERSYS.towers;
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];
+      if((t.tier||0)===4&&typeof t.__mg!=='number')t.__mg=0;
+    }
+  }catch(_){}
+},2000);
+var _openSell=null;
+/* patch sell popover: allow merge when both tier>=4 (T5) — reuse TOWERSYS.mergeTowers via wrapper */
+var _mt=window.TOWERSYS.mergeTowers;
+window.TOWERSYS.mergeTowers=function(t,p){
+  var tier=(t.tier||1);
+  var res=_mt(t,p);
+  try{
+    var ts=window.TOWERSYS.towers;
+    var nt=ts[ts.length-1];
+    if(nt&&nt.tier===4&&tier>=4){nt.tier=5;} /*GLORY T5: merging two Paragons*/
+  }catch(_){}
+  return res;
+};
+/* fire behavior + aura tick: handled via a poll reading TOWERSYS.towers */
+var SLOWED=new Set();
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    var ts=window.TOWERSYS.towers;
+    var dt=0.25;
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];
+      var D=TD[t.ty];if(!D)continue;
+      var tier=t.tier||1;
+      var R=D.range*(tier>=4?1.2:tier>=5?1.5:1);
+      t.cd=(t.cd||0);
+      if(t.ty==='pitch'){
+        t.cd-=dt;
+        if(t.cd<=0){
+          var hit=false;
+          eachNear(t.x,t.y,R,function(e){
+            if(e.hp<=0)return;
+            var dx=e.x-t.x,dy=e.y-t.y;
+            if(dx*dx+dy*dy<R*R){hit=true;
+              e.frostT=Math.max(e.frostT||0,tier>=2?1.5:1);
+              if(tier>=3){e.pitchTar=(e.pitchTar||0)+2;}
+              dealDamage(e,D.dmg*(tier>=4?1.6:1),undefined,undefined,'Tower:Pitch');}
+          });
+          if(hit){t.cd=D.rate/(tier>=2?1.6:1);}
+          else t.cd=0.2;
+        }
+      }else if(t.ty==='spike'){
+        t.cd-=dt;
+        if(t.cd<=0){
+          var hit2=false;
+          eachNear(t.x,t.y,R,function(e){
+            if(e.hp<=0)return;
+            var dx=e.x-t.x,dy=e.y-t.y;
+            if(dx*dx+dy*dy<R*R){hit2=true;
+              dealDamage(e,D.dmg*(tier>=4?1.6:1),undefined,undefined,'Tower:Spike');}
+          });
+          if(hit2){t.cd=D.rate/(tier>=2?1.6:1);
+            if(!settings.lowFx)spawnParticles(t.x+(Math.random()-0.5)*R,t.y+(Math.random()-0.5)*R,'#d6d3d1',1,0.4);}
+          else t.cd=0.2;
+        }
+      }else if(t.ty==='crier'){
+        /* aura: +15%/tier2, +30% t3 dmg to towers within range — applied as temp multiplier */
+        for(var k=0;k<ts.length;k++){
+          var o=ts[k];if(o===t)continue;
+          var oD=TD[o.ty];if(!oD||!oD.dmg)continue;
+          var dx=o.x-t.x,dy=o.y-t.y;
+          if(dx*dx+dy*dy<R*R)o.__crier=tier>=3?1.3:(tier>=2?1.15:1.08);
+        }
+      }else if(t.ty==='apoth'){
+        t.cd-=dt;
+        if(t.cd<=0){
+          t.cd=1;
+          var dxp=player.x-t.x,dyp=player.y-t.y;
+          if(dxp*dxp+dyp*dyp<R*R&&player.hp>0&&player.hp<player.maxHp){
+            player.hp=Math.min(player.maxHp,player.hp+(tier>=3?2:1));
+            if(!settings.lowFx&&Math.random()<0.3)spawnParticles(player.x,player.y-10,'#86efac',2,0.6);
+          }
+        }
+      }else if(t.ty==='craft'){
+        for(var k2=0;k2<ts.length;k2++){
+          var o2=ts[k2];if(o2===t)continue;
+          var dx2=o2.x-t.x,dy2=o2.y-t.y;
+          if(dx2*dx2+dy2*dy2<R*R)o2.__craft=tier>=3?0.75:(tier>=2?0.85:0.92);
+        }
+      }
+    }
+    /* apply crier/craft multipliers in fireTower via cd & dmg hooks: simplest — adjust cd each tick */
+    for(var j=0;j<ts.length;j++){
+      var tt=ts[j];
+      if(tt.__craft){/* fire rate handled in fireTower? no — approximate by shaving cd */
+        tt.cd=Math.max(0,(tt.cd||0)-(0.25*(1-tt.__craft)));
+      }
+    }
+  }catch(_){}
+},250);
+/* damage aura for crier: wrap dealDamage globally once */
+if(!window.__crierHook){
+  window.__crierHook=1;
+  var _dd=dealDamage;
+  dealDamage=function(e,dmg,x,y,tag){
+    try{
+      if(typeof tag==='string'&&tag.indexOf('Tower:')===0&&window.TOWERSYS){
+        var ts=window.TOWERSYS.towers;
+        for(var i=0;i<ts.length;i++){
+          var t=ts[i];
+          if(t.ty==='crier'&&t.__near){dmg*=1+((t.tier||1)>=3?0.3:(t.tier||1)>=2?0.15:0.08);}
+        }
+      }
+    }catch(_){}
+    return _dd(e,dmg,x,y,tag);
+  };
+}
+/* mark towers near a crier each tick */
+setInterval(function(){
+  try{
+    if(state!=='play'||!window.TOWERSYS)return;
+    var ts=window.TOWERSYS.towers;
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];
+      t.__near=false;
+      if(t.ty==='crier')continue;
+      for(var k=0;k<ts.length;k++){
+        var c=ts[k];
+        if(c.ty!=='crier')continue;
+        var dx=t.x-c.x,dy=t.y-c.y;
+        var R=TD.crier.range*((c.tier||1)>=4?1.2:1);
+        if(dx*dx+dy*dy<R*R){t.__near=true;break;}
+      }
+    }
+  }catch(_){}
+},400);
+/* new tower card icons + draw shapes: patch drawTower via closure? drawTower is closed. Use canvas overlay draws in renderHUD for new types instead. */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    ctx.save();ctx.translate(-cam.x,-cam.y);
+    var ts=window.TOWERSYS.towers;
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];
+      var D=TD[t.ty];if(!D)continue;
+      if(!['pitch','spike','crier','apoth','craft'].includes(t.ty))continue;
+      var tier=t.tier||1;
+      var sc=1+(tier-1)*0.12;
+      /* base (all draw over the generic square base already drawn) */
+      if(t.ty==='pitch'){
+        ctx.fillStyle='#525252';ctx.beginPath();ctx.arc(t.x,t.y,14*sc,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#a3a3a3';ctx.beginPath();ctx.arc(t.x,t.y,8*sc,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#3f3f3f';var an=t.ang||0;ctx.fillRect(t.x+Math.cos(an)*10*sc-2,t.y+Math.sin(an)*10*sc-2,8,4);
+      }else if(t.ty==='spike'){
+        ctx.fillStyle='#78716c';ctx.beginPath();ctx.arc(t.x,t.y,13*sc,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#d6d3d1';
+        for(var s2=0;s2<8;s2++){var a2=s2*Math.PI/4;
+          ctx.beginPath();ctx.moveTo(t.x+Math.cos(a2)*6*sc,t.y+Math.sin(a2)*6*sc);
+          ctx.lineTo(t.x+Math.cos(a2)*15*sc,t.y+Math.sin(a2)*15*sc);
+          ctx.lineTo(t.x+Math.cos(a2+0.3)*6*sc,t.y+Math.sin(a2+0.3)*6*sc);
+          ctx.closePath();ctx.fill();}
+      }else if(t.ty==='crier'){
+        ctx.fillStyle='#9f1239';ctx.fillRect(t.x-10*sc,t.y-20*sc,20*sc,26*sc);
+        ctx.fillStyle='#fda4af';ctx.fillRect(t.x-12*sc,t.y-24*sc,24*sc,6*sc);
+        var pu=8+Math.sin(performance.now()/300+t.x)*2;
+        ctx.strokeStyle='rgba(253,164,175,0.5)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(t.x,t.y-8,pu*sc,0,Math.PI*2);ctx.stroke();
+      }else if(t.ty==='apoth'){
+        ctx.fillStyle='#166534';ctx.fillRect(t.x-11*sc,t.y-16*sc,22*sc,24*sc);
+        ctx.fillStyle='#86efac';ctx.fillRect(t.x-2.5*sc,t.y-12*sc,5*sc,16*sc);
+        ctx.fillRect(t.x-8*sc,t.y-7*sc,16*sc,5*sc);
+      }else if(t.ty==='craft'){
+        ctx.fillStyle='#9a3412';ctx.fillRect(t.x-12*sc,t.y-12*sc,24*sc,20*sc);
+        ctx.fillStyle='#fdba74';ctx.fillRect(t.x-14*sc,t.y-18*sc,8*sc,8*sc);
+        ctx.fillRect(t.x+6*sc,t.y-18*sc,8*sc,8*sc);
+        ctx.strokeStyle='#fdba74';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(t.x,t.y-2,(16+Math.sin(performance.now()/250)*3)*sc,0,Math.PI*2);ctx.stroke();
+      }
+      /* tier pips */
+      for(var p2=0;p2<3;p2++){
+        ctx.beginPath();ctx.arc(t.x+(p2-1)*7,t.y+31,2.2,0,Math.PI*2);
+        if(p2<Math.min(tier,3)){ctx.fillStyle='#fbbf24';ctx.fill();ctx.strokeStyle='#78350f';ctx.lineWidth=1;ctx.stroke();}
+        else{ctx.fillStyle='rgba(10,16,30,0.55)';ctx.fill();}
+      }
+      if(tier>=5){ctx.strokeStyle='#ffd23f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(t.x,t.y,29+Math.sin(performance.now()/180)*3,0,Math.PI*2);ctx.stroke();}
+    }
+    /* auras */
+    for(var i2=0;i2<ts.length;i2++){
+      var t2=ts[i2];var D2=TD[t2.ty];if(!D2)continue;
+      if(t2.ty==='crier'||t2.ty==='apoth'||t2.ty==='craft'){
+        var R2=D2.range*((t2.tier||1)>=4?1.2:1);
+        var col=t2.ty==='crier'?'253,164,175':t2.ty==='apoth'?'134,239,172':'253,186,116';
+        ctx.fillStyle='rgba('+col+',0.05)';
+        ctx.beginPath();ctx.arc(t2.x,t2.y,R2,0,Math.PI*2);ctx.fill();
+      }
+    }
+    ctx.restore();
+  }catch(_){}
+};
+/* extend build bar: add 5 cards dynamically + hotkeys 7-0 */
+setInterval(function(){
+  try{
+    if(window.__iterDCards)return;
+    var bars=[...document.querySelectorAll('div')].filter(d=>d.style.display==='flex'&&d.textContent.indexOf('[T] build')>=0);
+    if(!bars.length)return;
+    window.__iterDCards=1;
+    var bar=bars[0];
+    var news=[['pitch','7'],['spike','8'],['crier','9'],['apoth','0'],['craft','6']];
+    news.forEach(function(pair){
+      var key=pair[0],D=TD[key];
+      var c=document.createElement('div');
+      c.style.cssText='width:96px;cursor:pointer;text-align:center;background:#0d1526;border:2px solid #2a3f6b;border-radius:10px;padding:6px 4px;color:#dbe6ff;userSelect:none';
+      c.innerHTML='<div style="font-weight:bold;font-size:11px">'+D.name+'</div><div style="font-size:9px;color:#93a3c9;margin:2px 0">'+D.desc+'</div><div style="font-size:11px;color:#fbbf24;font-weight:bold">'+D.cost+'g</div>';
+      c.onclick=function(ev){ev.stopPropagation();window.TOWERSYS.startPlace(key);};
+      bar.appendChild(c);
+    });
+    var hint=[...document.querySelectorAll('div')].find(d=>d.textContent.indexOf('[T] build')===0);
+    if(hint)hint.textContent='[T] build \u00b7 1-6,6/7/8/9/0 pick \u00b7 click place \u00b7 Esc cancel \u00b7 click tower: anoint/sell \u00b7 two T3 = PARAGON, two T4 = GLORY';
+  }catch(_){}
+},1500);
+})();
+</script>
