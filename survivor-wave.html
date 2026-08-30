@@ -16238,10 +16238,11 @@ renderHUD=function(){
       ctx.restore();
     }
   }catch(_){}
+  _renderHUD();
   /* oil HUD bar (screen space, under gold pill) */
   try{
     if(state==='play'||state==='pause'){
-      var w=130,h=9,x=16,y=112;
+      var w=130,h=9,x=16,y=140;
       ctx.fillStyle='rgba(8,12,26,0.72)';
       ctx.beginPath();
       if(ctx.roundRect)ctx.roundRect(x,y,w,h,h/2);else ctx.rect(x,y,w,h);
@@ -16259,5 +16260,221 @@ renderHUD=function(){
   }catch(_){}
   _renderHUD();
 };
+})();
+</script>
+<script>
+/* =====================================================================
+   KSC-PHASE1.3: Clash enemy types + Spud the Unruly miniboss
+   doc: DESIGN-KingdomSurvivorClash §4  (web build)
+   - BARBARIAN SWARMER: ch2+, converts some grunts into packs of 5 tiny
+   - P.E.K.K.A KNIGHT: slow tank that damages TOWERS (towers get 100hp)
+   - ELECTRO SERPENT: pulses every 4s, disables towers 2.5s (300px)
+   - SPUD THE UNRULY: rolls at increasing speed, splits into 3 minis at
+     50% hp, starch trail slows the player. Big loot on death.
+   All self-contained: makeEnemy wrap + poll + renderHUD overlay.
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.KSC_CLASH)return;window.KSC_CLASH=1;
+
+var CLR={pekka:'#cbd5e1',serpent:'#fde047',spud:'#b98a4e'};
+var towersArr=function(){return (window.TOWERSYS&&window.TOWERSYS.towers)||[];};
+
+/* ---------- makeEnemy wrap: convert ~8% of ch2+ spawns ---------- */
+var _me=makeEnemy;
+makeEnemy=function(type){
+  var e=_me.apply(null,arguments);
+  try{
+    if(e&&!e.kscType&&typeof chapterSel!=='undefined'&&(chapterSel||player.chapter||1)>=2
+       &&(type==='grunt'||type==='fast')&&Math.random()<0.08){
+      var roll=Math.random();
+      if(roll<0.45){ /* BARBARIAN SWARMER */
+        e.kscType='swarmer';e.hp*=0.4;e.maxHp*=0.4;e.speed*=1.2;e.r=Math.max(7,e.r*0.75);e.xp=1;e.color='#d4b483';
+        for(var i=0;i<4;i++){var m=_me(type);
+          m.kscType='swarmer';m.hp*=0.4;m.maxHp*=0.4;m.speed*=1.2;m.r=Math.max(7,m.r*0.75);m.xp=1;m.color='#d4b483';
+          m.x=e.x+(Math.random()-0.5)*70;m.y=e.y+(Math.random()-0.5)*70;enemies.push(m);}
+      }else if(roll<0.75){ /* P.E.K.K.A KNIGHT */
+        e.kscType='pekka';e.hp*=1.6;e.maxHp*=1.6;e.speed*=0.6;e.r*=1.15;e.xp=6;e.dmg*=1.5;
+      }else{ /* ELECTRO SERPENT */
+        e.kscType='serpent';e.hp*=1.2;e.maxHp*=1.2;e.speed*=1.1;e.xp=4;e.serpPulse=4;e.serpT=0;
+      }
+    }
+  }catch(_){}
+  return e;
+};
+
+/* ---------- Spud the Unruly ---------- */
+var spudDone=false;
+function spawnSpud(){
+  var e=makeEnemy('tank');
+  e.kscType='spud';e.isSpud=true;
+  e.hp*=4;e.maxHp*=4;e.speed=34;e.r=34;e.xp=40;e.dmg*=1.4;
+  e.spudSt='chase';e.spudT=1.5;e.spudDir=Math.random()*Math.PI*2;e.spudSpd=0;e.splitDone=false;e.trailT=0;
+  e.x=player.x+(Math.random()<0.5?-1:1)*700;e.y=player.y+(Math.random()-0.5)*500;
+  enemies.push(e);
+  try{warn('\u{1F954} SPUD THE UNRULY ROLLS IN!');sfx('elitesting');}catch(_){}
+  return e;
+}
+var starch=[];/* {x,y,life} */
+
+/* ---------- poll ---------- */
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    /* spud spawn: midpoint of the 10-min run */
+    if(!spudDone&&gameTime>=150){spudDone=true;spawnSpud();}
+    for(var i=enemies.length-1;i>=0;i--){
+      var e=enemies[i];
+      if(!e||!e.kscType||e.hp<=0)continue;
+      /* pekka: tower crushing */
+      if(e.kscType==='pekka'){
+        var ts=towersArr();
+        for(var k=ts.length-1;k>=0;k--){var t=ts[k];
+          if(t.hp===undefined)t.hp=100;
+          var dx=t.x-e.x,dy=t.y-e.y;
+          if(dx*dx+dy*dy<48*48){t.hp-=60*0.2;/*poll tick 200ms -> 12dmg*/
+            if(t.hp<=0){ts.splice(k,1);addFloater(t.x,t.y-24,'TOWER DOWN','#f87171',1.2,14);
+              if(!settings.lowFx)spawnParticles(t.x,t.y,'#94a3b8',12,1);try{sfx('boom');}catch(_){}}}
+        }
+      }
+      /* serpent: disable pulse */
+      if(e.kscType==='serpent'){
+        e.serpPulse-=0.2;e.serpT=Math.max(0,(e.serpT||0)-0.2);
+        if(e.serpPulse<=0){e.serpPulse=4;e.serpT=0.5;
+          var ts2=towersArr();
+          for(var k2=0;k2<ts2.length;k2++){var t2=ts2[k2];
+            var dx2=t2.x-e.x,dy2=t2.y-e.y;
+            if(dx2*dx2+dy2*dy2<300*300)t2.kscOff=2.5;}
+          if(!settings.lowFx)spawnParticles(e.x,e.y,'#fde047',10,0.8);}
+      }
+      /* spud behavior override */
+      if(e.kscType==='spud'){
+        var dxp=player.x-e.x,dyp=player.y-e.y,distP=Math.sqrt(dxp*dxp+dyp*dyp)||1;
+        if(e.spudSt==='chase'){
+          e.spudT-=0.2;
+          e.x+=dxp/distP*e.speed*0.2;e.y+=dyp/distP*e.speed*0.2;
+          if(e.spudT<=0){e.spudSt='windup';e.spudT=0.6;e.spudDir=Math.atan2(dyp,dxp);e.spudSpd=260;}
+        }else if(e.spudSt==='windup'){
+          e.spudT-=0.2;
+          if(e.spudT<=0){e.spudSt='roll';e.spudT=0.9;}
+        }else if(e.spudSt==='roll'){
+          e.spudT-=0.2;e.spudSpd+=380*0.2;/*accelerates*/
+          e.x+=Math.cos(e.spudDir)*e.spudSpd*0.2;e.y+=Math.sin(e.spudDir)*e.spudSpd*0.2;
+          e.trailT-=0.2;
+          if(e.trailT<=0){e.trailT=0.12;starch.push({x:e.x,y:e.y,life:3});}
+          if(e.spudT<=0){e.spudSt='stunned';e.spudT=0.7;}
+        }else{/* stunned */
+          e.spudT-=0.2;
+          if(e.spudT<=0){e.spudSt='chase';e.spudT=1.2+Math.random();}
+        }
+        /* split at 50% */
+        if(!e.splitDone&&e.hp<e.maxHp*0.5){
+          e.splitDone=true;e.hp=e.maxHp*0.5;
+          for(var s=0;s<3;s++){var m=makeEnemy('tank');
+            m.kscType='spud';m.isSpudling=true;
+            m.hp*=0.55;m.maxHp*=0.55;m.speed=44;m.r=18;m.xp=10;m.dmg*=0.8;
+            m.spudSt='chase';m.spudT=1;const sa=Math.random()*Math.PI*2;
+            m.x=e.x+Math.cos(sa)*50;m.y=e.y+Math.sin(sa)*50;
+            enemies.push(m);}
+          addFloater(e.x,e.y-50,'SPLIT!','#ffe9a3',1.3,16);
+        }
+        /* death loot */
+        if(e.hp<=0&&!e.kscLooted){e.kscLooted=true;
+          window.gainOil(25);gold+=80;
+          addFloater(e.x,e.y-40,'+80 SILVER +25 OIL','#ffd23f',1.5,15);
+          if(!settings.lowFx)spawnParticles(e.x,e.y,'#b98a4e',20,1.2);}
+      }
+    }
+    /* starch puddles: slow player */
+    var inStarch=false;
+    for(var p=starch.length-1;p>=0;p--){var pd=starch[p];pd.life-=0.2;
+      if(pd.life<=0){starch.splice(p,1);continue;}
+      var dx3=pd.x-player.x,dy3=pd.y-player.y;
+      if(dx3*dx3+dy3*dy3<34*34)inStarch=true;}
+    if(inStarch)player.gustSlow=Math.min(player.gustSlow,0.7);
+    /* towers: disabled stall + default hp */
+    var ts3=towersArr();
+    for(var k3=0;k3<ts3.length;k3++){var t3=ts3[k3];
+      if(t3.hp===undefined)t3.hp=100;
+      if(t3.kscOff>0){t3.kscOff-=0.2;t3.cd=Math.max(t3.cd||0,0.22);}}
+  }catch(_){}
+},200);
+
+/* ---------- overlays (world space, on top of enemies) ---------- */
+var _renderHUD=renderHUD;
+renderHUD=function(){
+  try{
+    if(state==='play'||state==='pause'){
+      ctx.save();ctx.translate(-cam.x,-cam.y);
+      /* starch puddles */
+      for(var p=0;p<starch.length;p++){var pd=starch[p];
+        ctx.globalAlpha=Math.min(0.4,pd.life*0.15);
+        ctx.fillStyle='#e7d8b8';
+        ctx.beginPath();ctx.arc(pd.x,pd.y,26,0,Math.PI*2);ctx.fill();}
+      ctx.globalAlpha=1;
+      for(var i=0;i<enemies.length;i++){var e=enemies[i];
+        if(!e||!e.kscType||e.hp<=0)continue;
+        if(e.kscType==='pekka'){
+          ctx.strokeStyle=CLR.pekka;ctx.lineWidth=3;
+          ctx.beginPath();ctx.arc(e.x,e.y,e.r+3,Math.PI*0.15,Math.PI*0.85);ctx.stroke();/*iron helm*/
+          ctx.fillStyle=CLR.pekka;ctx.font='900 9px "Baloo 2",system-ui';ctx.textAlign='center';
+          ctx.fillText('PEKKA',e.x,e.y-e.r-8);
+          if((e.twr||0)<100){/*tower-damaged tint*/}
+        }else if(e.kscType==='serpent'){
+          ctx.strokeStyle=CLR.serpent;ctx.lineWidth=2;
+          ctx.beginPath();
+          for(var z=0;z<3;z++){var zz=e.x-8+z*8,zy=e.y-e.r-8+((z%2)?4:-4);z?ctx.lineTo(zz,zy):ctx.moveTo(zz,zy);}
+          ctx.stroke();
+          if(e.serpT>0){ctx.strokeStyle='rgba(253,224,71,'+(e.serpT)+')';
+            ctx.beginPath();ctx.arc(e.x,e.y,300*(1-e.serpT*1.6),0,Math.PI*2);ctx.stroke();}
+        }else if(e.kscType==='spud'){
+          /* potato body covers base critter */
+          ctx.fillStyle=CLR.spud;
+          ctx.beginPath();ctx.arc(e.x,e.y,e.r+8,0,Math.PI*2);ctx.fill();
+          ctx.strokeStyle='#8a6437';ctx.lineWidth=3;ctx.stroke();
+          ctx.fillStyle='#8a6437';
+          ctx.beginPath();ctx.arc(e.x-e.r*0.4,e.y-e.r*0.3,4,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(e.x+e.r*0.5,e.y+e.r*0.15,3,0,Math.PI*2);ctx.fill();
+          /* eyes */
+          ctx.fillStyle='#fff';
+          ctx.beginPath();ctx.arc(e.x-9,e.y-8,5,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(e.x+9,e.y-8,5,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#1f2937';
+          var ang=e.spudSt==='roll'?e.spudDir:Math.atan2(player.y-e.y,player.x-e.x);
+          ctx.beginPath();ctx.arc(e.x-9+Math.cos(ang)*2,e.y-8+Math.sin(ang)*2,2.4,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(e.x+9+Math.cos(ang)*2,e.y-8+Math.sin(ang)*2,2.4,0,Math.PI*2);ctx.fill();
+          /* sprout */
+          ctx.strokeStyle='#4ade80';ctx.lineWidth=3;
+          ctx.beginPath();ctx.moveTo(e.x,e.y-e.r);ctx.quadraticCurveTo(e.x+6,e.y-e.r-10,e.x+12,e.y-e.r-8);ctx.stroke();
+          if(e.spudSt==='windup'){
+            ctx.fillStyle='#f87171';ctx.font='900 16px "Baloo 2",system-ui';ctx.textAlign='center';
+            ctx.fillText('!',e.x,e.y-e.r-16);}
+          if(e.spudSt==='stunned'){
+            ctx.fillStyle='#fde047';ctx.font='900 14px "Baloo 2",system-ui';ctx.textAlign='center';
+            ctx.fillText('\u2B50',e.x,e.y-e.r-14);}
+          ctx.fillStyle='#fca5a5';ctx.font='900 10px "Baloo 2",system-ui';ctx.textAlign='center';
+          ctx.fillText(e.isSpudling?'SPUDLING':'SPUD THE UNRULY',e.x,e.y-e.r-20);
+        }else if(e.kscType==='swarmer'){
+          ctx.strokeStyle='rgba(212,180,131,0.7)';ctx.lineWidth=1;
+          ctx.beginPath();ctx.arc(e.x,e.y,e.r+2,0,Math.PI*2);ctx.stroke();
+        }
+      }
+      /* disabled tower sparks */
+      var ts=towersArr();
+      for(var k=0;k<ts.length;k++){var t=ts[k];
+        if(t.kscOff>0){
+          ctx.strokeStyle='#fde047';ctx.lineWidth=2;
+          ctx.beginPath();
+          for(var q=0;q<4;q++){var qx=t.x-10+q*7,qy=t.y-20+((q%2)?5:-5);q?ctx.lineTo(qx,qy):ctx.moveTo(qx,qy);}
+          ctx.stroke();
+          if(t.hp<100){/*damaged bar*/
+            ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(t.x-16,t.y-34,32,4);
+            ctx.fillStyle='#4ade80';ctx.fillRect(t.x-16,t.y-34,32*Math.max(0,t.hp/100),4);}
+        }
+      }
+      ctx.restore();
+    }
+  }catch(_){}
+};  /*KSC: oil bar drawn after native HUD*/
 })();
 </script>
