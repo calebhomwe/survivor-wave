@@ -15846,8 +15846,8 @@ function upCost(t){const D=TD[t.ty];return tierOf(t)>=3?0:(tierOf(t)===1?D.up2:D
 function doUpgradeTower(t){
   const c=upCost(t);
   if(!c)return false;
-  if(gold<c){try{sfx('buzz');}catch(_){}addFloater(t.x,t.y-30,'NEED '+c+' GOLD','#f87171',1,13);return false;}
-  gold-=c;t.tier=tierOf(t)+1;t.invested=(t.invested||TD[t.ty].cost)+c;
+  if((window.oil||0)<c){try{sfx('buzz');}catch(_){}addFloater(t.x,t.y-30,'NEED '+c+' OIL','#f87171',1,13);return false;}
+  window.oil-=c;t.tier=tierOf(t)+1;t.invested=(t.invested||TD[t.ty].cost)+c;
   addFloater(t.x,t.y-30,'TIER '+t.tier+'!','#fbbf24',1.1,14);
   spawnParticles(t.x,t.y,TD[t.ty].col,8,0.9);
   try{sfx('pop');}catch(_){}
@@ -15859,8 +15859,8 @@ function openSell(t){
   const D=TD[t.ty],val=Math.round((t.invested||D.cost)*SELL_BACK),tier=tierOf(t),uc=upCost(t);
   mkEl('div',{fontWeight:'bold',marginBottom:'2px'},sellPop).textContent=D.name+' — TIER '+tier+'/3';
   mkEl('div',{color:'#93a3c9',fontSize:'10px',marginBottom:'6px'},sellPop).textContent=tier<3?('NEXT: '+(tier===2?D.up3txt:'+60% fire rate')+' ('+uc+'g)'):'fully upgraded';
-  const bu=mkEl('button',{cursor:tier<3?'pointer':'default',display:'block',width:'100%',marginBottom:'6px',background:tier<3?(gold>=uc?'#365314':'#1f2937'):'#1f2937',color:tier<3?(gold>=uc?'#d9f99d':'#6b7280'):'#4b5563',border:'1px solid '+(tier<3&&gold>=uc?'#a3e635':'#374151'),borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
-  bu.textContent=tier<3?('UPGRADE '+uc+'g'):'MAX TIER';
+  const bu=mkEl('button',{cursor:tier<3?'pointer':'default',display:'block',width:'100%',marginBottom:'6px',background:tier<3?((window.oil||0)>=uc?'#365314':'#1f2937'):'#1f2937',color:tier<3?((window.oil||0)>=uc?'#d9f99d':'#6b7280'):'#4b5563',border:'1px solid '+(tier<3&&(window.oil||0)>=uc?'#a3e635':'#374151'),borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
+  bu.textContent=tier<3?('ANOINT '+uc+' OIL'):'MAX TIER';
   if(tier<3)bu.onclick=ev=>{ev.stopPropagation();if(doUpgradeTower(t))openSell(t);};
   mkEl('div',{color:'#fbbf24',marginBottom:'8px'},sellPop).textContent='SELL: +'+val+' gold';
   const by=mkEl('button',{cursor:'pointer',margin:'0 3px',background:'#7f1d1d',color:'#fecaca',border:'1px solid #f87171',borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
@@ -16098,5 +16098,166 @@ if(pb&&pb.parentNode){
   b2.addEventListener('click',function(){if(!document.getElementById('kscBoardOv'))buildPanel();renderBoard();document.getElementById('kscBoardOv').classList.remove('hidden');try{sfx('tap');}catch(_){}});
   pb.parentNode.appendChild(b2);
 }
+})();
+</script>
+<script>
+/* =====================================================================
+   KSC-PHASE1.2: Anointing Oil + Altar Points + Covenant Radius
+   - oil: per-run resource, regen, amber HUD bar, globals oil/gainOil/spendOil
+   - towers upgrade with OIL (TOWERSYS block edited to read window.oil)
+   - altars: 6 per run; activate with E nearby (60 silver) -> build zone
+     + heal aura; towers may ONLY be placed near hero (covenant 260px)
+     or near an ACTIVATED altar (90px)  [doc: DESIGN-KingdomSurvivorClash §2]
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.KSC_OIL_ALTARS)return;window.KSC_OIL_ALTARS=1;
+
+/* ---------- oil ---------- */
+window.oil=30;window.OIL_CAP=100;
+window.gainOil=function(n){window.oil=Math.min(window.OIL_CAP,(window.oil||0)+n);};
+window.spendOil=function(n){if((window.oil||0)>=n){window.oil-=n;return true;}return false;};
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    window.OIL_CAP=100+5*Math.max(0,(player.level||1)-1);
+    window.gainOil(0.25);/* 1 per 2s */
+  }catch(_){}
+},500);
+/* loot hooks: elites +10, bosses +25 */
+var _dd=dealDamage;
+dealDamage=function(e,dmg,x,y,tag){
+  var was=e&&e.hp>0,wasBoss=e&&e.isBoss,wasElite=e&&e.isElite;
+  var r=_dd.apply(null,arguments);
+  try{
+    if(r!==false&&was&&e&&e.hp<=0){
+      if(wasBoss)window.gainOil(25);else if(wasElite)window.gainOil(10);
+    }
+  }catch(_){}
+  return r;
+};
+
+/* ---------- altars ---------- */
+var ALTARS=[];
+function seedAltars(){
+  ALTARS.length=0;
+  var bx=player.x||640,by=player.y||360;
+  var R=window.worldW?window.worldW:3200, R2=window.worldH?window.worldH:3200;
+  for(var i=0;i<6;i++){
+    var a=i/6*Math.PI*2+Math.random()*0.7, d=520+Math.random()*900;
+    var x=Math.max(140,Math.min(R-140,bx+Math.cos(a)*d));
+    var y=Math.max(140,Math.min(R2-140,by+Math.sin(a)*d));
+    ALTARS.push({x:x,y:y,on:false,pulse:Math.random()*6});
+  }
+}
+var _sg=startGame;
+startGame=function(){
+  _sg.apply(null,arguments);
+  window.oil=30;
+  try{seedAltars();}catch(_){}
+};
+function nearAltar(x,y,r){
+  for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];
+    if(a.on){var dx=a.x-x,dy=a.y-y;if(dx*dx+dy*dy<r*r)return a;}}
+  return null;
+}
+/* covenant radius gate on placement */
+if(window.TOWERSYS){
+  var _add=window.TOWERSYS.addTower.bind(window.TOWERSYS);
+  window.TOWERSYS.addTower=function(ty,x,y){
+    try{
+      var dx=x-player.x,dy=y-player.y;
+      var inCov=dx*dx+dy*dy<=260*260;
+      var inAlt=!!nearAltar(x,y,90);
+      if(!inCov&&!inAlt){
+        addFloater(x,y-30,'BUILD NEAR HERO OR ALTARS','#fbbf24',1,12);
+        return false;
+      }
+    }catch(_){}
+    return _add(ty,x,y);
+  };
+}
+/* activation: E near an altar */
+document.addEventListener('keydown',function(ev){
+  try{
+    if(state!=='play')return;
+    var k=(ev.key||'').toLowerCase();
+    if(k!=='e')return;
+    var best=null,bd=120*120;
+    for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];if(a.on)continue;
+      var dx=a.x-player.x,dy=a.y-player.y,d2=dx*dx+dy*dy;
+      if(d2<bd){bd=d2;best=a;}}
+    if(!best)return;
+    if(gold<60){addFloater(best.x,best.y-40,'NEED 60 SILVER','#f87171',1,13);return;}
+    gold-=60;best.on=true;
+    addFloater(best.x,best.y-46,'ALTAR CONSECRATED','#ffe9a3',1.4,15);
+    if(!settings.lowFx)spawnParticles(best.x,best.y-10,'#ffe9a3',14,1);
+    try{sfx('levelup');}catch(_){}
+  }catch(_){}
+});
+/* heal aura + altar tick (poll) */
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];
+      if(!a.on)continue;
+      a.pulse+=0.05;
+      var dx=a.x-player.x,dy=a.y-player.y;
+      if(dx*dx+dy*dy<200*200&&player.hp>0&&player.hp<player.maxHp)player.hp=Math.min(player.maxHp,player.hp+0.2);/*+1/s*/
+    }
+  }catch(_){}
+},200);
+
+/* ---------- drawing ---------- */
+var _renderHUD=renderHUD;
+renderHUD=function(){
+  try{
+    if(state==='play'||state==='pause'){
+      ctx.save();ctx.translate(-cam.x,-cam.y);
+      for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];
+        /* aura */
+        if(a.on){
+          ctx.fillStyle='rgba(255,233,163,0.05)';
+          ctx.beginPath();ctx.arc(a.x,a.y,200,0,Math.PI*2);ctx.fill();
+          ctx.strokeStyle='rgba(255,210,63,0.5)';ctx.setLineDash([8,8]);
+          ctx.beginPath();ctx.arc(a.x,a.y,90,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+        }
+        /* pedestal */
+        ctx.fillStyle='rgba(0,0,0,0.28)';ctx.beginPath();ctx.ellipse(a.x,a.y+14,22,9,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#e8e4da';ctx.fillRect(a.x-14,a.y-10,28,22);
+        ctx.fillStyle='#cfc9ba';ctx.fillRect(a.x-17,a.y-16,34,8);
+        ctx.fillStyle=a.on?'#ffd23f':'#8fa1c7';
+        ctx.globalAlpha=a.on?0.85+0.15*Math.sin(a.pulse*2):0.5;
+        ctx.beginPath();ctx.arc(a.x,a.y-24,7,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+        if(!a.on){
+          ctx.font='800 10px "Baloo 2",system-ui,sans-serif';ctx.textAlign='center';
+          ctx.fillStyle='#ffe9a3';ctx.fillText('E — CONSECRATE (60)',a.x,a.y-40);
+        }
+      }
+      ctx.restore();
+    }
+  }catch(_){}
+  /* oil HUD bar (screen space, under gold pill) */
+  try{
+    if(state==='play'||state==='pause'){
+      var w=130,h=9,x=16,y=112;
+      ctx.fillStyle='rgba(8,12,26,0.72)';
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(x,y,w,h,h/2);else ctx.rect(x,y,w,h);
+      ctx.fill();
+      ctx.strokeStyle='rgba(251,191,36,0.85)';ctx.lineWidth=1.5;ctx.stroke();
+      var f=Math.max(0,Math.min(1,(window.oil||0)/window.OIL_CAP));
+      ctx.fillStyle='#fbbf24';
+      if(f>0){ctx.beginPath();
+        if(ctx.roundRect)ctx.roundRect(x+2,y+2,(w-4)*f,h-4,(h-4)/2);else ctx.rect(x+2,y+2,(w-4)*f,h-4);
+        ctx.fill();}
+      ctx.font='800 10px "Baloo 2",system-ui,sans-serif';ctx.textAlign='left';
+      ctx.fillStyle='#fde68a';
+      ctx.fillText('\uD83D\uDD37 OIL '+Math.floor(window.oil||0)+'/'+window.OIL_CAP,x+w+8,y+h-1);
+    }
+  }catch(_){}
+  _renderHUD();
+};
 })();
 </script>
