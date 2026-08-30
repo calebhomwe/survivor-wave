@@ -16835,3 +16835,120 @@ gameOver=function(){
 try{if(typeof settings.fps==='undefined')settings.fps=false;}catch(_){}
 })();
 </script>
+<script>
+/* ============================== ITER BATCH B (10 juice/world items) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_B)return;window.__ITER_B=1;
+/* B1: player movement dust puffs */
+/* B2: biome-tinted screen vignette */
+/* B3: elite death = bigger gilded burst */
+/* B4: kill combo flare ring on player at thresholds (visual only, combo system exists) */
+/* B5: gem sparkle shimmer on large/star gems */
+/* B6: parallax dust motes drifting over world */
+/* B7: dash trail afterimages */
+/* B8: turret/tower muzzle flashes (gatling) via hook on shake? -> simpler: ghost placement snap sound + flash on place already; do: level-up ring exists; do tower KILL feedback: floaters on tower destroy exist; B8 = heal green +Numbers when regen ticks */
+/* B9: rain of sparks during GOLD RUSH */
+/* B10: screen-edge arrows pointing to nearest altar when placing towers */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    /* B2: biome vignette */
+    if(!settings.lowFx){
+      var th=themeFor().id;
+      var tint={streets:'rgba(30,30,60,',park:'rgba(20,50,20,',snow:'rgba(180,200,255,',cinder:'rgba(80,20,10,'}[th];
+      if(tint){
+        var gr=ctx.createRadialGradient(W/2,H/2,H*0.45,W/2,H/2,H*0.85);
+        gr.addColorStop(0,tint+'0)');gr.addColorStop(1,tint+'0.16)');
+        ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+      }
+    }
+    ctx.save();ctx.translate(-cam.x,-cam.y);
+    /* B6: dust motes */
+    if(!settings.lowFx){
+      var t=performance.now()/1000;
+      ctx.fillStyle='rgba(255,255,255,0.18)';
+      for(var i=0;i<14;i++){
+        var mx=cam.x+((i*713+t*40)%W), my=cam.y+((i*331+Math.sin(t+i)*30+t*13)%H);
+        ctx.fillRect(mx,my,2,2);
+      }
+    }
+    /* B1: movement dust */
+    if(player.moving&&!settings.lowFx&&Math.random()<0.35){
+      spawnParticles(player.x-player.moveDirX*10+(Math.random()-0.5)*8,player.y+12,'rgba(180,170,140,1)',1,0.4);
+    }
+    /* B7: dash trail */
+    try{
+      if(player.dashT>0&&!settings.lowFx){
+        ctx.globalAlpha=0.35;
+        ctx.fillStyle='#ffe9a3';
+        ctx.beginPath();ctx.arc(player.x-Math.cos(player.dashAng||0)*18,player.y-Math.sin(player.dashAng||0)*18,player.r*0.8,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+      }
+    }catch(_){}
+    /* B5: big gem shimmer */
+    for(var g2=0;g2<gems.length;g2++){
+      var gm=gems[g2];
+      if(gm.xp>=8&&!settings.lowFx&&Math.random()<0.08){
+        ctx.fillStyle='rgba(255,255,255,0.75)';
+        ctx.fillRect(gm.x+(Math.random()-0.5)*gm.r*2.4,gm.y+(Math.random()-0.5)*gm.r*2.4,1.6,1.6);
+      }
+    }
+    /* B3: elite death burst handled in poll below */
+    /* B10: altar direction arrows while placing */
+    try{
+      if(window.TOWERSYS&&(window.TOWERSYS.ghost||typeof ghost!=='undefined'&&ghost)&&typeof ALTARS!=='undefined'){
+        for(var a3=0;a3<ALTARS.length;a3++){
+          var al=ALTARS[a3];if(al.on)continue;
+          var dx=al.x-player.x,dy=al.y-player.y;
+          var d=Math.hypot(dx,dy);
+          if(d>420){
+            var ex=player.x+dx/d*380,ey=player.y+dy/d*380;
+            var an=Math.atan2(dy,dx);
+            ctx.save();ctx.translate(ex,ey);ctx.rotate(an);
+            ctx.fillStyle='rgba(255,210,63,0.65)';
+            ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.closePath();ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+    }catch(_){}
+    ctx.restore();
+  }catch(_){}
+};
+/* B3: elite death gilded burst + B4 combo rings + B9 gold rush sparks via dealDamage wrap */
+var _dd=dealDamage;
+dealDamage=function(e,dmg,x,y,tag){
+  var was=e&&e.hp>0,wasElite=e&&e.isElite,wasBoss=e&&e.isBoss;
+  var r=_dd.apply(null,arguments);
+  try{
+    if(r!==false&&was&&e&&e.hp<=0&&(wasElite||wasBoss)&&!settings.lowFx){
+      var col=wasBoss?'#fbbf24':'#ffd23f';
+      spawnParticles(e.x,e.y,col,wasBoss?26:16,1.3);
+      spawnParticles(e.x,e.y,'#fff7cc',8,0.9);
+    }
+  }catch(_){}
+  return r;
+};
+/* B4: combo flare (visual ring on player when combo tiers up) */
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    var c=typeof b31Combo!=='undefined'?b31Combo:0;
+    if(c>0&&c%25===0&&!window.__b4seen){window.__b4seen=1;
+      if(!settings.lowFx)spawnParticles(player.x,player.y,'#ffd23f',14,1);}
+    if(c===0)window.__b4seen=0;
+  }catch(_){}
+},300);
+/* B9: gold rush sparks */
+setInterval(function(){
+  try{
+    if(state==='play'&&goldRush&&!settings.lowFx){
+      spawnParticles(player.x+(Math.random()-0.5)*500,player.y+(Math.random()-0.5)*400,'#ffd23f',2,0.8);
+    }
+  }catch(_){}
+},400);
+})();
+</script>
