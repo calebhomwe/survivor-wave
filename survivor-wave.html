@@ -15354,17 +15354,20 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
 /* ============================== BTD: TOWER PLACEMENT SYSTEM (w5t) ==============================
    Additive layer: gatling/tesla/mortar towers, T-key build bar, ghost placement w/ range circle,
    sell-for-60%. Fully separate from WEAPONS/heroes/turrets; invulnerable; cleared per run.
+   w5d: 2 upgrade tiers per tower (T2 = +60% fire rate; T3 = gatling twin-shot spread / tesla +2
+   chains + 0.2s stun / mortar +50% blast + burning ground 2s), tier pips, sell refunds 60% of
+   TOTAL invested (base+upgrades). Max tier 3.
    Exposes window.TOWERSYS. Draws world-space via renderHUD() wrapper, ticks via update() wrapper. */
 (function(){
 'use strict';
 const TAG='Tower:';
-const MAXT=15, MIN_GAP=70, SELL_BACK=0.6;
+const MAXT=15, MIN_GAP=70, SELL_BACK=0.6, T2_RATE=1.6, T3_SIZE=0.12, BURN_DUR=2;
 const TD={
-  gatling:{name:'GATLING',cost:50, range:175, rate:0.22, dmg:6, col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
-  tesla:{name:'TESLA',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
-  mortar:{name:'MORTAR',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, col:'#fbbf24', col2:'#b45309', desc:'long-range splash'}
+  gatling:{name:'GATLING',cost:50, range:175, rate:0.22, dmg:6, up2:60, up3:100, up3txt:'twin-shot spread', col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
+  tesla:{name:'TESLA',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:145, up3:240, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
+  mortar:{name:'MORTAR',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:240, up3:400, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'}
 };
-let towers=[], tproj=[], tbolt=[], tsplash=[], ghost=null, barOpen=false, sellAsk=null, mx=0, my=0, placedCount=0;
+let towers=[], tproj=[], tbolt=[], tsplash=[], tburn=[], ghost=null, barOpen=false, sellAsk=null, mx=0, my=0, placedCount=0;
 
 /* ---------- helpers ---------- */
 function towerAt(wx,wy){for(let i=towers.length-1;i>=0;i--){const t=towers[i];const dx=wx-t.x,dy=wy-t.y;if(dx*dx+dy*dy<28*28)return t;}return null;}
@@ -15386,7 +15389,7 @@ function nearestInRange(t,rng){
   return best;
 }
 function fireTower(t,dt){
-  const D=TD[t.ty];
+  const D=TD[t.ty],tier=t.tier||1,rate=D.rate/(tier>=2?T2_RATE:1);/*T2: +60% fire rate*/
   if(!t.target||t.target.hp<=0||((t.target.x-t.x)*(t.target.x-t.x)+(t.target.y-t.y)*(t.target.y-t.y))>D.range*D.range)t.target=nearestInRange(t,D.range);
   if(t.target){
     const want=Math.atan2(t.target.y-t.y,t.target.x-t.x);
@@ -15394,16 +15397,20 @@ function fireTower(t,dt){
     t.ang+=da*Math.min(1,dt*12);
     t.cd-=dt;
     if(t.cd<=0){
-      t.cd=D.rate;
+      t.cd=rate;
       if(t.ty==='gatling'){
-        tproj.push({x:t.x+Math.cos(t.ang)*20,y:t.y+Math.sin(t.ang)*20,vx:Math.cos(t.ang)*540,vy:Math.sin(t.ang)*540,dmg:D.dmg,life:0.8,tag:TAG+'Gatling'});
+        /*T3 twin-shot spread: two bullets at +-0.09 rad*/
+        const angs=tier>=3?[t.ang-0.09,t.ang+0.09]:[t.ang];
+        for(const a of angs)tproj.push({x:t.x+Math.cos(a)*20,y:t.y+Math.sin(a)*20,vx:Math.cos(a)*540,vy:Math.sin(a)*540,dmg:D.dmg,life:0.8,tag:TAG+'Gatling'});
         if(!settings.lowFx)spawnParticles(t.x+Math.cos(t.ang)*22,t.y+Math.sin(t.ang)*22,D.col,2,0.4);
       }else if(t.ty==='tesla'){
-        /* chain: up to D.chain targets, each within chainR of previous */
+        /* chain: up to D.chain targets, each within chainR of previous; T3: +2 chains + stun */
+        const chains=D.chain+(tier>=3?2:0);
         let prev={x:t.x,y:t.y},used=new Set(),cur=t.target;
-        for(let i=0;i<D.chain&&cur;i++){
+        for(let i=0;i<chains&&cur;i++){
           used.add(cur);
           dealDamage(cur,D.dmg*(i===0?1:0.75),undefined,undefined,TAG+'Tesla');
+          if(tier>=3&&cur.type!=='boss'&&cur.type!=='elite')cur.stun=Math.max(cur.stun||0,0.2);/*T3 stun 0.2s (boss/elite immune, matches game stun rules)*/
           tbolt.push({x0:prev.x,y0:prev.y,x1:cur.x,y1:cur.y,life:0.14,max:0.14});
           prev=cur;
           let nx=null,nd=D.chainR*D.chainR;
@@ -15414,10 +15421,10 @@ function fireTower(t,dt){
           });
           cur=nx;
         }
-      }else{ /* mortar: lob shell at target's current pos */
+      }else{ /* mortar: lob shell at target's current pos; T3: +50% blast + burning ground */
         const dist=Math.hypot(t.target.x-t.x,t.target.y-t.y);
         if(dist>=D.minR){
-          tproj.push({lob:true,x:t.x,y:t.y,x0:t.x,y0:t.y,tx:t.target.x,ty:t.target.y,p:0,dur:0.55+dist/900,dmg:D.dmg,r:D.splash,tag:TAG+'Mortar'});
+          tproj.push({lob:true,x:t.x,y:t.y,x0:t.x,y0:t.y,tx:t.target.x,ty:t.target.y,p:0,dur:0.55+dist/900,dmg:D.dmg,r:tier>=3?D.splash*1.5:D.splash,burn:tier>=3,tag:TAG+'Mortar'});
           if(!settings.lowFx)spawnParticles(t.x,t.y,D.col,4,0.6);
         }else t.cd=0.2; /* too close - retry shortly */
       }
@@ -15431,6 +15438,7 @@ function tickProjectiles(dt){
       p.p+=dt/p.dur;
       if(p.p>=1){
         tsplash.push({x:p.tx,y:p.ty,r:p.r,life:0.25,max:0.25});
+        if(p.burn)tburn.push({x:p.tx,y:p.ty,r:p.r*0.8,life:BURN_DUR,max:BURN_DUR,tick:0,dmg:Math.max(4,Math.round(p.dmg*0.15))});/*T3 burning ground 2s*/
         eachNear(p.tx,p.ty,p.r,e=>{
           if(e.hp<=0)return;
           const rr=p.r+e.r;
@@ -15453,12 +15461,28 @@ function tickProjectiles(dt){
   for(let i=tbolt.length-1;i>=0;i--){tbolt[i].life-=dt;if(tbolt[i].life<=0)tbolt.splice(i,1);}
   for(let i=tsplash.length-1;i>=0;i--){tsplash[i].life-=dt;if(tsplash[i].life<=0)tsplash.splice(i,1);}
 }
+function tickBurn(dt){/*T3 mortar burning ground: dot ticks every 0.4s for BURN_DUR seconds*/
+  for(let i=tburn.length-1;i>=0;i--){
+    const b=tburn[i];b.life-=dt;b.tick-=dt;
+    if(b.tick<=0){
+      b.tick=0.4;
+      eachNear(b.x,b.y,b.r,e=>{
+        if(e.hp<=0)return;
+        const rr=b.r+e.r;
+        if((e.x-b.x)*(e.x-b.x)+(e.y-b.y)*(e.y-b.y)<rr*rr)dealDamage(e,b.dmg,undefined,undefined,TAG+'Burn');
+      });
+      if(!settings.lowFx)spawnParticles(b.x+(Math.random()-0.5)*b.r*1.4,b.y+(Math.random()-0.5)*b.r*1.4,'#fb923c',1,0.5);
+    }
+    if(b.life<=0)tburn.splice(i,1);
+  }
+}
 
 /* ---------- drawing (world space, called just before renderHUD) ---------- */
 function drawTower(g,t,ghosted){
-  const D=TD[t.ty];
+  const D=TD[t.ty],tier=t.tier||1;
   g.save();g.translate(t.x,t.y);
   g.globalAlpha=ghosted?0.6:1;
+  g.scale(1+(tier-1)*T3_SIZE,1+(tier-1)*T3_SIZE);/*slightly bigger draw per tier*/
   g.fillStyle='rgba(0,0,0,0.3)';g.beginPath();g.ellipse(2,6,20,10,0,0,Math.PI*2);g.fill();
   g.fillStyle='#1b2a4a';g.strokeStyle='#0d1526';g.lineWidth=2;
   if(t.ty==='gatling'){
@@ -15481,10 +15505,24 @@ function drawTower(g,t,ghosted){
     g.fillStyle=D.col;g.beginPath();g.arc(0,-24,7,0,Math.PI*2);g.fill();
   }
   g.restore();
+  if(t.tier){/*tier pips: filled dots = current tier (real towers only, not card/ghost mocks)*/
+    for(let i=0;i<3;i++){
+      g.beginPath();g.arc(t.x+(i-1)*7,t.y+31,2.2,0,Math.PI*2);
+      if(i<tier){g.fillStyle='#fbbf24';g.fill();g.strokeStyle='#78350f';g.lineWidth=1;g.stroke();}
+      else{g.fillStyle='rgba(10,16,30,0.55)';g.fill();}
+    }
+  }
 }
 function drawWorld(){
   const g=ctx;
   g.save();g.translate(-cam.x,-cam.y);
+  for(const b of tburn){/*burning ground (ground-level FX, under towers)*/
+    const f=b.life/b.max,fl=settings.lowFx?1:0.65+0.35*Math.sin(performance.now()/90+b.x*0.7);
+    g.fillStyle='rgba(249,115,22,'+(0.15*f).toFixed(2)+')';
+    g.beginPath();g.arc(b.x,b.y,b.r,0,Math.PI*2);g.fill();
+    g.strokeStyle='rgba(251,146,60,'+(0.55*f*fl).toFixed(2)+')';g.lineWidth=2;
+    g.beginPath();g.arc(b.x,b.y,b.r*0.92,0,Math.PI*2);g.stroke();
+  }
   for(const t of towers)drawTower(g,t,false);
   g.fillStyle='#bfdbfe';
   for(const p of tproj){
@@ -15538,7 +15576,7 @@ const bar=mkEl('div',{position:'fixed',left:'50%',bottom:'86px',transform:'trans
   background:'linear-gradient(180deg,#1b2a4a,#101a30)',border:'2px solid #f59e0b',borderRadius:'14px',padding:'10px 12px',
   boxShadow:'0 6px 24px rgba(0,0,0,0.5)',flexWrap:'wrap',maxWidth:'420px'});
 const hint=mkEl('div',{fontSize:'11px',color:'#93a3c9',width:'100%',textAlign:'center',marginBottom:'4px'},bar);
-hint.textContent='[T] build - 1/2/3 pick - click place - Esc/right-click cancel - click a tower to sell';
+hint.textContent='[T] build - 1/2/3 pick - click place - Esc/right-click cancel - click a tower to upgrade/sell';
 const cards={};
 for(const key of ['gatling','tesla','mortar']){
   const D=TD[key];
@@ -15566,14 +15604,31 @@ const buildBtn=mkEl('button',{position:'fixed',right:'16px',bottom:'16px',zIndex
 buildBtn.textContent='BUILD [T]';
 buildBtn.onclick=ev=>{ev.stopPropagation();toggleBar();};
 const sellPop=mkEl('div',{position:'fixed',display:'none',zIndex:'61',background:'linear-gradient(180deg,#1b2a4a,#101a30)',
-  border:'2px solid #f87171',borderRadius:'10px',padding:'10px',color:'#dbe6ff',fontSize:'12px',textAlign:'center',
-  boxShadow:'0 6px 18px rgba(0,0,0,0.5)'});
+  border:'2px solid #f59e0b',borderRadius:'10px',padding:'10px',color:'#dbe6ff',fontSize:'12px',textAlign:'center',
+  boxShadow:'0 6px 18px rgba(0,0,0,0.5)',minWidth:'150px'});
+/* ---------- upgrade tiers (w5d) ---------- */
+function tierOf(t){return t.tier||1;}
+function upCost(t){const D=TD[t.ty];return tierOf(t)>=3?0:(tierOf(t)===1?D.up2:D.up3);}
+function doUpgradeTower(t){
+  const c=upCost(t);
+  if(!c)return false;
+  if(gold<c){try{sfx('buzz');}catch(_){}addFloater(t.x,t.y-30,'NEED '+c+' GOLD','#f87171',1,13);return false;}
+  gold-=c;t.tier=tierOf(t)+1;t.invested=(t.invested||TD[t.ty].cost)+c;
+  addFloater(t.x,t.y-30,'TIER '+t.tier+'!','#fbbf24',1.1,14);
+  spawnParticles(t.x,t.y,TD[t.ty].col,8,0.9);
+  try{sfx('pop');}catch(_){}
+  return true;
+}
 function openSell(t){
   sellAsk=t;
   sellPop.innerHTML='';
-  const D=TD[t.ty],val=Math.round(D.cost*SELL_BACK);
-  mkEl('div',{fontWeight:'bold',marginBottom:'4px'},sellPop).textContent='SELL '+D.name+'?';
-  mkEl('div',{color:'#fbbf24',marginBottom:'8px'},sellPop).textContent='+'+val+' gold';
+  const D=TD[t.ty],val=Math.round((t.invested||D.cost)*SELL_BACK),tier=tierOf(t),uc=upCost(t);
+  mkEl('div',{fontWeight:'bold',marginBottom:'2px'},sellPop).textContent=D.name+' — TIER '+tier+'/3';
+  mkEl('div',{color:'#93a3c9',fontSize:'10px',marginBottom:'6px'},sellPop).textContent=tier<3?('NEXT: '+(tier===2?D.up3txt:'+60% fire rate')+' ('+uc+'g)'):'fully upgraded';
+  const bu=mkEl('button',{cursor:tier<3?'pointer':'default',display:'block',width:'100%',marginBottom:'6px',background:tier<3?(gold>=uc?'#365314':'#1f2937'):'#1f2937',color:tier<3?(gold>=uc?'#d9f99d':'#6b7280'):'#4b5563',border:'1px solid '+(tier<3&&gold>=uc?'#a3e635':'#374151'),borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
+  bu.textContent=tier<3?('UPGRADE '+uc+'g'):'MAX TIER';
+  if(tier<3)bu.onclick=ev=>{ev.stopPropagation();if(doUpgradeTower(t))openSell(t);};
+  mkEl('div',{color:'#fbbf24',marginBottom:'8px'},sellPop).textContent='SELL: +'+val+' gold';
   const by=mkEl('button',{cursor:'pointer',margin:'0 3px',background:'#7f1d1d',color:'#fecaca',border:'1px solid #f87171',borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
   by.textContent='SELL';by.onclick=ev=>{ev.stopPropagation();doSell();};
   const bn=mkEl('button',{cursor:'pointer',margin:'0 3px',background:'#1e3a5f',color:'#bfdbfe',border:'1px solid #2a3f6b',borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
@@ -15584,13 +15639,13 @@ function openSell(t){
 function positionSell(){
   if(!sellAsk)return;
   const sx=sellAsk.x-cam.x,sy=sellAsk.y-cam.y-40;
-  sellPop.style.left=Math.max(8,Math.min(window.innerWidth-160,sx-70))+'px';
-  sellPop.style.top=Math.max(8,sy-60)+'px';
+  sellPop.style.left=Math.max(8,Math.min(window.innerWidth-230,sx-90))+'px';
+  sellPop.style.top=Math.max(8,sy-120)+'px';
 }
 function closeSell(){sellAsk=null;sellPop.style.display='none';}
 function doSell(){
   if(!sellAsk)return;
-  const D=TD[sellAsk.ty],val=Math.round(D.cost*SELL_BACK);
+  const D=TD[sellAsk.ty],val=Math.round((sellAsk.invested||D.cost)*SELL_BACK);/*60% of TOTAL invested*/
   const i=towers.indexOf(sellAsk);
   if(i>=0){towers.splice(i,1);gold+=val;addFloater(sellAsk.x,sellAsk.y-30,'+'+val+' GOLD','#fbbf24',1,14);sfx('coin');}
   closeSell();
@@ -15618,7 +15673,7 @@ function tryPlace(){
     return;
   }
   gold-=D.cost;
-  towers.push({ty:ghost,x:wx,y:wy,ang:0,cd:0.4,target:null});
+  towers.push({ty:ghost,x:wx,y:wy,ang:0,cd:0.4,target:null,tier:1,invested:D.cost});
   placedCount++;
   addFloater(wx,wy-34,D.name+' BUILT','#93c5fd',1.1,14);
   spawnParticles(wx,wy,D.col,10,1);
@@ -15656,10 +15711,11 @@ window.addEventListener('contextmenu',ev=>{if(ghost){ev.preventDefault();}},{cap
 const _update=update;
 update=function(dt){
   _update(dt);
-  if(state==='over'||state==='win'){towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;ghost=null;closeSell();if(barOpen){barOpen=false;bar.style.display='none';}return;}
+  if(state==='over'||state==='win'){towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;tburn.length=0;ghost=null;closeSell();if(barOpen){barOpen=false;bar.style.display='none';}return;}
   if(state!=='play')return;
   for(const t of towers)fireTower(t,dt);
   tickProjectiles(dt);
+  tickBurn(dt);
 };
 const _renderHUD=renderHUD;
 renderHUD=function(){
@@ -15669,7 +15725,7 @@ renderHUD=function(){
 const _startGame=startGame;
 startGame=function(){
   _startGame();
-  towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;ghost=null;placedCount=0;closeSell();
+  towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;tburn.length=0;ghost=null;placedCount=0;closeSell();
   if(barOpen){barOpen=false;bar.style.display='none';}
 };
 
@@ -15677,7 +15733,8 @@ startGame=function(){
 window.TOWERSYS={
   defs:TD,towers:towers,place:tryPlace,startPlace:startPlace,cancel:cancelPlace,toggleBar:toggleBar,
   get ghost(){return ghost;},get barOpen(){return barOpen;},get placed(){return placedCount;},
-  addTower(ty,x,y){if(!TD[ty])return false;if(!validSpot(ty,x,y))return false;gold-=TD[ty].cost;towers.push({ty,x,y,ang:0,cd:0.3,target:null});return true;},
+  tierOf:tierOf,upCost:upCost,upgradeTower:doUpgradeTower,
+  addTower(ty,x,y){if(!TD[ty])return false;if(!validSpot(ty,x,y))return false;gold-=TD[ty].cost;towers.push({ty,x,y,ang:0,cd:0.3,target:null,tier:1,invested:TD[ty].cost});return true;},
   sellAll(){while(towers.length){sellAsk=towers[0];doSell();}sellAsk=null;}
 };
 })();
