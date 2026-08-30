@@ -15599,7 +15599,10 @@ const MAXT=15, MIN_GAP=70, SELL_BACK=0.6, T2_RATE=1.6, T3_SIZE=0.12, BURN_DUR=2;
 const TD={
   gatling:{name:'SLING THROWER',cost:50, range:175, rate:0.22, dmg:6, up2:60, up3:100, up3txt:'twin-shot spread', col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
   tesla:{name:'PROPHET HERALD',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:145, up3:240, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
-  mortar:{name:'BOMBARDIER',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:240, up3:400, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'}
+  mortar:{name:'BOMBARDIER',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:240, up3:400, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'},
+  tack:{name:'TACK DEFENDER',cost:80, range:135, rate:0.85, dmg:5, up2:18, up3:40, up3txt:'12 spikes + faster', col:'#fca5a5', col2:'#b91c1c', desc:'spikes in all directions'},
+  watch:{name:'WATCHTOWER',cost:150, range:165, rate:2.4, dmg:6, up2:28, up3:60, up3txt:'deeper freeze + 0.5s stun', col:'#93c5fd', col2:'#1e3a8a', desc:'freezing holy pulse'},
+  tithe:{name:'TITHE COLLECTOR',cost:100, range:0, rate:2, dmg:0, up2:22, up3:48, up3txt:'+4 silver per cycle', col:'#fbbf24', col2:'#92400e', desc:'generates silver over time'}
 };
 let towers=[], tproj=[], tbolt=[], tsplash=[], tburn=[], ghost=null, barOpen=false, sellAsk=null, mx=0, my=0, placedCount=0;
 
@@ -15624,7 +15627,51 @@ function nearestInRange(t,rng){
 }
 function fireTower(t,dt){
   const D=TD[t.ty],tier=t.tier||1,rate=D.rate/(tier>=2?T2_RATE:1);/*T2: +60% fire rate*/
-  if(!t.target||t.target.hp<=0||((t.target.x-t.x)*(t.target.x-t.x)+(t.target.y-t.y)*(t.target.y-t.y))>D.range*D.range)t.target=nearestInRange(t,D.range);
+  const TMUL=tier>=4?1.6:1;/*PARAGON T4: +60% damage (merge two T3)*/
+  if(t.pulseT)t.pulseT=Math.max(0,t.pulseT-dt);
+  if(t.ty==='tack'){
+    t.cd-=dt;
+    if(t.cd<=0){
+      if(nearestInRange(t,D.range)){
+        t.cd=D.rate/(tier>=2?T2_RATE:1);
+        const dirs=tier>=3?12:8;
+        for(let i=0;i<dirs;i++){const a=i/dirs*Math.PI*2;
+          tproj.push({x:t.x+Math.cos(a)*16,y:t.y+Math.sin(a)*16,vx:Math.cos(a)*380,vy:Math.sin(a)*380,dmg:D.dmg*TMUL,life:0.5,tag:TAG+'Tack'});}
+        if(!settings.lowFx)spawnParticles(t.x,t.y,D.col,3,0.5);
+      }else t.cd=0.15;
+    }
+    return;
+  }
+  if(t.ty==='watch'){
+    t.cd-=dt;
+    if(t.cd<=0){
+      let any=false;
+      eachNear(t.x,t.y,D.range,e=>{
+        if(e.hp<=0)return;
+        const dx=e.x-t.x,dy=e.y-t.y;
+        if(dx*dx+dy*dy<D.range*D.range){any=true;
+          e.frostT=Math.max(e.frostT||0,tier>=2?1.6:1.1);
+          if(tier>=3&&!e.isBoss&&!e.isElite)e.stun=Math.max(e.stun||0,0.5);
+          dealDamage(e,D.dmg*TMUL,undefined,undefined,TAG+'Watch');}
+      });
+      if(any){t.cd=D.rate;t.pulseT=0.45;try{sfx('pop');}catch(_){}}
+      else t.cd=0.2;
+    }
+    return;
+  }
+  if(t.ty==='tithe'){
+    t.cd-=dt;
+    if(t.cd<=0){
+      t.cd=2;
+      const inc=Math.round((tier>=3?4:tier>=2?2:1)*(tier>=4?1.5:1));
+      gold+=inc;t._tithe=(t._tithe||0)+inc;
+      if(!settings.lowFx&&t._tithe>=8){t._tithe=0;addFloater(t.x,t.y-26,'+'+inc+' TITHE','#fbbf24',0.9,12);}
+      if(!settings.lowFx)spawnParticles(t.x,t.y-8,'#fbbf24',1,0.6);
+    }
+    return;
+  }
+  const TR=D.range*(tier>=4?1.2:1);/*PARAGON: +20% range*/
+  if(!t.target||t.target.hp<=0||((t.target.x-t.x)*(t.target.x-t.x)+(t.target.y-t.y)*(t.target.y-t.y))>TR*TR)t.target=nearestInRange(t,TR);
   if(t.target){
     const want=Math.atan2(t.target.y-t.y,t.target.x-t.x);
     let da=want-t.ang;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
@@ -15635,7 +15682,7 @@ function fireTower(t,dt){
       if(t.ty==='gatling'){
         /*T3 twin-shot spread: two bullets at +-0.09 rad*/
         const angs=tier>=3?[t.ang-0.09,t.ang+0.09]:[t.ang];
-        for(const a of angs)tproj.push({x:t.x+Math.cos(a)*20,y:t.y+Math.sin(a)*20,vx:Math.cos(a)*540,vy:Math.sin(a)*540,dmg:D.dmg,life:0.8,tag:TAG+'Gatling'});
+        for(const a of angs)tproj.push({x:t.x+Math.cos(a)*20,y:t.y+Math.sin(a)*20,vx:Math.cos(a)*540,vy:Math.sin(a)*540,dmg:D.dmg*TMUL,life:0.8,tag:TAG+'Gatling'});
         if(!settings.lowFx)spawnParticles(t.x+Math.cos(t.ang)*22,t.y+Math.sin(t.ang)*22,D.col,2,0.4);
       }else if(t.ty==='tesla'){
         /* chain: up to D.chain targets, each within chainR of previous; T3: +2 chains + stun */
@@ -15643,7 +15690,7 @@ function fireTower(t,dt){
         let prev={x:t.x,y:t.y},used=new Set(),cur=t.target;
         for(let i=0;i<chains&&cur;i++){
           used.add(cur);
-          dealDamage(cur,D.dmg*(i===0?1:0.75),undefined,undefined,TAG+'Tesla');
+          dealDamage(cur,D.dmg*TMUL*(i===0?1:0.75),undefined,undefined,TAG+'Tesla');
           if(tier>=3&&cur.type!=='boss'&&cur.type!=='elite')cur.stun=Math.max(cur.stun||0,0.2);/*T3 stun 0.2s (boss/elite immune, matches game stun rules)*/
           tbolt.push({x0:prev.x,y0:prev.y,x1:cur.x,y1:cur.y,life:0.14,max:0.14});
           prev=cur;
@@ -15658,7 +15705,7 @@ function fireTower(t,dt){
       }else{ /* mortar: lob shell at target's current pos; T3: +50% blast + burning ground */
         const dist=Math.hypot(t.target.x-t.x,t.target.y-t.y);
         if(dist>=D.minR){
-          tproj.push({lob:true,x:t.x,y:t.y,x0:t.x,y0:t.y,tx:t.target.x,ty:t.target.y,p:0,dur:0.55+dist/900,dmg:D.dmg,r:tier>=3?D.splash*1.5:D.splash,burn:tier>=3,tag:TAG+'Mortar'});
+          tproj.push({lob:true,x:t.x,y:t.y,x0:t.x,y0:t.y,tx:t.target.x,ty:t.target.y,p:0,dur:0.55+dist/900,dmg:D.dmg*TMUL,r:tier>=3?D.splash*1.5:D.splash,burn:tier>=3,tag:TAG+'Mortar'});
           if(!settings.lowFx)spawnParticles(t.x,t.y,D.col,4,0.6);
         }else t.cd=0.2; /* too close - retry shortly */
       }
@@ -15731,6 +15778,20 @@ function drawTower(g,t,ghosted){
     g.fillStyle=D.col;g.beginPath();g.arc(0,-2,5,0,Math.PI*2);g.fill();
     g.strokeStyle=D.col;g.lineWidth=2;
     g.beginPath();g.arc(0,-2,8+Math.sin(performance.now()/140+t.x)*1.5,0,Math.PI*2);g.stroke();
+  }else if(t.ty==='tack'){
+    g.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4;if(i)g.lineTo(Math.cos(a)*17,Math.sin(a)*17);else g.moveTo(Math.cos(a)*17,Math.sin(a)*17);}g.closePath();g.fill();g.stroke();
+    g.fillStyle='#3a1a1a';g.beginPath();g.arc(0,0,9,0,Math.PI*2);g.fill();
+    g.fillStyle=D.col;for(let i=0;i<8;i++){const a=i*Math.PI/4;g.beginPath();g.moveTo(Math.cos(a)*10,Math.sin(a)*10);g.lineTo(Math.cos(a)*16,Math.sin(a)*16);g.lineTo(Math.cos(a+0.25)*10,Math.sin(a+0.25)*10);g.closePath();g.fill();}
+  }else if(t.ty==='watch'){
+    g.fillStyle='#e8e4da';g.fillRect(-9,-22,18,30);g.strokeRect(-9,-22,18,30);
+    g.fillStyle=D.col2;g.fillRect(-11,-26,22,6);g.strokeRect(-11,-26,22,6);
+    g.fillStyle=D.col;g.beginPath();g.arc(0,-29,4,0,Math.PI*2);g.fill();
+    if(t.pulseT){const f=1-t.pulseT/0.45;g.strokeStyle='rgba(147,197,253,'+(0.6*(1-f)).toFixed(2)+')';g.lineWidth=2;g.beginPath();g.arc(0,0,D.range*f,0,Math.PI*2);g.stroke();}
+  }else if(t.ty==='tithe'){
+    g.fillStyle='#6b4a1f';g.fillRect(-13,-10,26,20);g.strokeRect(-13,-10,26,20);
+    g.fillStyle='#8a6437';g.fillRect(-13,-10,26,7);
+    g.fillStyle=D.col;g.beginPath();g.arc(0,-14,6,0,Math.PI*2);g.fill();
+    g.fillStyle='#fde68a';g.font='900 11px "Baloo 2",system-ui';g.textAlign='center';g.fillText('\u20AA',0,5);
   }else{
     g.fillRect(-15,-15,30,30);g.strokeRect(-15,-15,30,30);
     g.fillStyle='#4a3510';g.fillRect(-10,-10,20,20);
@@ -15742,9 +15803,10 @@ function drawTower(g,t,ghosted){
   if(t.tier){/*tier pips: filled dots = current tier (real towers only, not card/ghost mocks)*/
     for(let i=0;i<3;i++){
       g.beginPath();g.arc(t.x+(i-1)*7,t.y+31,2.2,0,Math.PI*2);
-      if(i<tier){g.fillStyle='#fbbf24';g.fill();g.strokeStyle='#78350f';g.lineWidth=1;g.stroke();}
+      if(i<Math.min(tier,3)){g.fillStyle='#fbbf24';g.fill();g.strokeStyle='#78350f';g.lineWidth=1;g.stroke();}
       else{g.fillStyle='rgba(10,16,30,0.55)';g.fill();}
     }
+    if(tier>=4){g.strokeStyle='#ffd23f';g.lineWidth=2;g.beginPath();g.arc(t.x,t.y,27+Math.sin(performance.now()/200)*2,0,Math.PI*2);g.stroke();}
   }
 }
 function drawWorld(){
@@ -15810,9 +15872,9 @@ const bar=mkEl('div',{position:'fixed',left:'50%',bottom:'86px',transform:'trans
   background:'linear-gradient(180deg,#1b2a4a,#101a30)',border:'2px solid #f59e0b',borderRadius:'14px',padding:'10px 12px',
   boxShadow:'0 6px 24px rgba(0,0,0,0.5)',flexWrap:'wrap',maxWidth:'420px'});
 const hint=mkEl('div',{fontSize:'11px',color:'#93a3c9',width:'100%',textAlign:'center',marginBottom:'4px'},bar);
-hint.textContent='[T] build - 1/2/3 pick - click place - Esc/right-click cancel - click a tower to upgrade/sell';
+hint.textContent='[T] build \u00b7 1-6 pick \u00b7 click place \u00b7 Esc cancel \u00b7 click tower: anoint/sell \u00b7 two T3 = PARAGON';
 const cards={};
-for(const key of ['gatling','tesla','mortar']){
+for(const key of ['gatling','tesla','mortar','tack','watch','tithe']){
   const D=TD[key];
   const c=mkEl('div',{width:'108px',cursor:'pointer',textAlign:'center',background:'#0d1526',border:'2px solid #2a3f6b',borderRadius:'10px',padding:'8px 6px',color:'#dbe6ff',userSelect:'none'},bar);
   const cv2=mkEl('canvas',{display:'block',margin:'0 auto 4px'},c);cv2.width=48;cv2.height=48;
@@ -15853,15 +15915,36 @@ function doUpgradeTower(t){
   try{sfx('pop');}catch(_){}
   return true;
 }
+/*PARAGON: merge two adjacent T3 towers of the same type into a T4*/
+function mergePartner(t){
+  for(const o of towers){if(o!==t&&o.ty===t.ty&&(o.tier||1)>=3&&(t.tier||1)>=3){
+    const dx=o.x-t.x,dy=o.y-t.y;
+    if(dx*dx+dy*dy<140*140)return o;}}
+  return null;
+}
+function doMerge(t,p){
+  const mx2=(t.x+p.x)/2,my2=(t.y+p.y)/2;
+  const inv=(t.invested||TD[t.ty].cost)+(p.invested||TD[t.ty].cost);
+  towers.splice(towers.indexOf(t),1);towers.splice(towers.indexOf(p),1);
+  towers.push({ty:t.ty,x:mx2,y:my2,ang:0,cd:0.3,target:null,tier:4,invested:inv});
+  addFloater(mx2,my2-30,'PARAGON!','#ffd23f',1.4,15);
+  if(!settings.lowFx)spawnParticles(mx2,my2,'#ffd23f',18,1.1);
+  try{sfx('evofanfare');}catch(_){}
+  closeSell();
+}
 function openSell(t){
   sellAsk=t;
   sellPop.innerHTML='';
   const D=TD[t.ty],val=Math.round((t.invested||D.cost)*SELL_BACK),tier=tierOf(t),uc=upCost(t);
-  mkEl('div',{fontWeight:'bold',marginBottom:'2px'},sellPop).textContent=D.name+' — TIER '+tier+'/3';
-  mkEl('div',{color:'#93a3c9',fontSize:'10px',marginBottom:'6px'},sellPop).textContent=tier<3?('NEXT: '+(tier===2?D.up3txt:'+60% fire rate')+' ('+uc+'g)'):'fully upgraded';
+  mkEl('div',{fontWeight:'bold',marginBottom:'2px'},sellPop).textContent=D.name+' — '+(tier>=4?'PARAGON':'TIER '+tier+'/3');
+  mkEl('div',{color:'#93a3c9',fontSize:'10px',marginBottom:'6px'},sellPop).textContent=tier<3?('NEXT: '+(tier===2?D.up3txt:'+60% fire rate')+' ('+uc+' oil)'):(tier>=4?'PARAGON — apex form':'MAX — merge two T3 for PARAGON');
   const bu=mkEl('button',{cursor:tier<3?'pointer':'default',display:'block',width:'100%',marginBottom:'6px',background:tier<3?((window.oil||0)>=uc?'#365314':'#1f2937'):'#1f2937',color:tier<3?((window.oil||0)>=uc?'#d9f99d':'#6b7280'):'#4b5563',border:'1px solid '+(tier<3&&(window.oil||0)>=uc?'#a3e635':'#374151'),borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
   bu.textContent=tier<3?('ANOINT '+uc+' OIL'):'MAX TIER';
   if(tier<3)bu.onclick=ev=>{ev.stopPropagation();if(doUpgradeTower(t))openSell(t);};
+  if(tier>=3){const mp=mergePartner(t);
+    if(mp){const bm=mkEl('button',{cursor:'pointer',display:'block',width:'100%',marginBottom:'6px',background:'#3b2f14',color:'#ffe9a3',border:'1px solid #d4af37',borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
+    bm.textContent='MERGE \u2192 PARAGON T4';
+    bm.onclick=ev=>{ev.stopPropagation();doMerge(t,mp);};}}
   mkEl('div',{color:'#fbbf24',marginBottom:'8px'},sellPop).textContent='SELL: +'+val+' gold';
   const by=mkEl('button',{cursor:'pointer',margin:'0 3px',background:'#7f1d1d',color:'#fecaca',border:'1px solid #f87171',borderRadius:'6px',padding:'5px 10px',fontFamily:'inherit'},sellPop);
   by.textContent='SELL';by.onclick=ev=>{ev.stopPropagation();doSell();};
@@ -15921,7 +16004,7 @@ window.addEventListener('keydown',ev=>{
   if(k==='t'&&state==='play'){toggleBar();ev.stopImmediatePropagation();ev.preventDefault();return;}
   if(!barOpen&&!ghost&&!sellAsk)return;
   if(k==='escape'){if(ghost)cancelPlace();else if(sellAsk)closeSell();else if(barOpen)toggleBar();ev.stopImmediatePropagation();return;}
-  if(barOpen&&(k==='1'||k==='2'||k==='3')){startPlace(['gatling','tesla','mortar'][+k-1]);ev.stopImmediatePropagation();return;}
+  if(barOpen&&k>='1'&&k<='6'){startPlace(['gatling','tesla','mortar','tack','watch','tithe'][+k-1]);ev.stopImmediatePropagation();return;}
 },{capture:true});
 window.addEventListener('mousemove',ev=>{mx=ev.clientX+cam.x;my=ev.clientY+cam.y;if(sellAsk)positionSell();});
 window.addEventListener('mousedown',ev=>{
@@ -15967,7 +16050,7 @@ startGame=function(){
 window.TOWERSYS={
   defs:TD,towers:towers,place:tryPlace,startPlace:startPlace,cancel:cancelPlace,toggleBar:toggleBar,
   get ghost(){return ghost;},get barOpen(){return barOpen;},get placed(){return placedCount;},
-  tierOf:tierOf,upCost:upCost,upgradeTower:doUpgradeTower,
+  tierOf:tierOf,upCost:upCost,upgradeTower:doUpgradeTower,mergePartner:mergePartner,mergeTowers:doMerge,
   addTower(ty,x,y){if(!TD[ty])return false;if(!validSpot(ty,x,y))return false;gold-=TD[ty].cost;towers.push({ty,x,y,ang:0,cd:0.3,target:null,tier:1,invested:TD[ty].cost});return true;},
   sellAll(){while(towers.length){sellAsk=towers[0];doSell();}sellAsk=null;}
 };
@@ -16378,11 +16461,6 @@ setInterval(function(){
             enemies.push(m);}
           addFloater(e.x,e.y-50,'SPLIT!','#ffe9a3',1.3,16);
         }
-        /* death loot */
-        if(e.hp<=0&&!e.kscLooted){e.kscLooted=true;
-          window.gainOil(25);gold+=80;
-          addFloater(e.x,e.y-40,'+80 SILVER +25 OIL','#ffd23f',1.5,15);
-          if(!settings.lowFx)spawnParticles(e.x,e.y,'#b98a4e',20,1.2);}
       }
     }
     /* starch puddles: slow player */
@@ -16476,5 +16554,107 @@ renderHUD=function(){
     }
   }catch(_){}
 };  /*KSC: oil bar drawn after native HUD*/
+})();
+</script>
+<script>
+/* =====================================================================
+   KSC-BOSS2: Sir Peel-a-Lot (doc: DESIGN-KingdomSurvivorClash #4.2)
+   Teleporting banana knight miniboss @5:00. Drops slip peels that slow
+   the hero; enrages (<33% hp) with 1.8s teleports. Also owns reliable
+   loot for both funny bosses via a killEnemy wrap (200ms polls can miss
+   the sweep). Web build, additive only.
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.KSC_BOSS2)return;window.KSC_BOSS2=1;
+var spawned=false,peels=[];
+
+/* reliable boss loot */
+var _ke=null;
+try{_ke=killEnemy;}catch(_){_ke=null;}
+if(_ke){killEnemy=function(){
+  try{
+    var e=arguments[0];
+    if(e&&!e.kscLooted&&(e.kscType==='peel'||e.kscType==='spud')){
+      e.kscLooted=true;
+      var isPeel=e.kscType==='peel';
+      var sg=isPeel?120:80,ol=isPeel?15:25;
+      gold+=sg;window.gainOil(ol);
+      addFloater(e.x,e.y-40,'+'+sg+' SILVER +'+ol+' OIL','#ffd23f',1.5,15);
+      if(!settings.lowFx)spawnParticles(e.x,e.y,isPeel?'#ffe135':'#b98a4e',16,1.1);
+    }
+  }catch(_){}
+  return _ke.apply(null,arguments);
+};}
+
+function spawnPeel(){
+  var e=makeEnemy('tank');
+  e.kscType='peel';e.isPeel=true;
+  e.hp*=3.2;e.maxHp*=3.2;e.speed=42;e.r=30;e.xp=45;e.dmg*=1.3;
+  e.tpT=3.2;e.tpFast=false;
+  e.x=player.x+(Math.random()<0.5?-1:1)*680;e.y=player.y+(Math.random()-0.5)*480;
+  enemies.push(e);
+  try{warn('\u{1F34C} SIR PEEL-A-LOT APPEARS!');sfx('elitesting');}catch(_){}
+}
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    if(!spawned&&gameTime>=300){spawned=true;spawnPeel();}
+    for(var i=enemies.length-1;i>=0;i--){
+      var e=enemies[i];
+      if(!e||e.kscType!=='peel'||e.hp<=0)continue;
+      if(e.hp<=e.maxHp*0.33)e.tpFast=true;
+      e.tpT-=0.2;
+      if(e.tpT<=0){
+        e.tpT=e.tpFast?1.8:3.2;
+        if(!settings.lowFx)spawnParticles(e.x,e.y,'#ffe135',10,0.8);
+        peels.push({x:e.x,y:e.y,life:4});
+        var a=Math.random()*Math.PI*2,d=320+Math.random()*160;
+        e.x=player.x+Math.cos(a)*d;e.y=player.y+Math.sin(a)*d;
+        if(!settings.lowFx)spawnParticles(e.x,e.y,'#ffe135',10,0.8);
+        try{sfx('tap');}catch(_){}
+      }
+    }
+    for(var p=peels.length-1;p>=0;p--){var pd=peels[p];pd.life-=0.2;
+      if(pd.life<=0){peels.splice(p,1);continue;}
+      var dx=pd.x-player.x,dy=pd.y-player.y;
+      if(dx*dx+dy*dy<32*32)player.gustSlow=Math.min(player.gustSlow,0.6);}
+  }catch(_){}
+},200);
+var _renderHUD=renderHUD;
+renderHUD=function(){
+  try{
+    if(state==='play'||state==='pause'){
+      ctx.save();ctx.translate(-cam.x,-cam.y);
+      for(var p=0;p<peels.length;p++){var pd=peels[p];
+        ctx.globalAlpha=Math.min(0.85,pd.life*0.3);
+        ctx.fillStyle='#ffe135';
+        ctx.beginPath();ctx.ellipse(pd.x,pd.y,16,7,0.5,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#b45309';ctx.lineWidth=2;ctx.stroke();}
+      ctx.globalAlpha=1;
+      for(var i2=0;i2<enemies.length;i2++){var e2=enemies[i2];
+        if(!e2||e2.kscType!=='peel'||e2.hp<=0)continue;
+        ctx.fillStyle='#ffe135';
+        ctx.beginPath();ctx.ellipse(e2.x,e2.y,e2.r,e2.r*0.82,0,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#b45309';ctx.lineWidth=3;ctx.stroke();
+        ctx.fillStyle='#7c5a12';
+        ctx.beginPath();ctx.ellipse(e2.x-e2.r*0.7,e2.y+e2.r*0.3,5,4,0.8,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.arc(e2.x-8,e2.y-6,4.5,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(e2.x+8,e2.y-6,4.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#1f2937';
+        ctx.beginPath();ctx.arc(e2.x-8,e2.y-6,2.2,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(e2.x+8,e2.y-6,2.2,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffd23f';
+        ctx.beginPath();ctx.moveTo(e2.x-10,e2.y-e2.r-2);ctx.lineTo(e2.x-6,e2.y-e2.r-12);ctx.lineTo(e2.x-1,e2.y-e2.r-3);ctx.lineTo(e2.x+4,e2.y-e2.r-13);ctx.lineTo(e2.x+9,e2.y-e2.r-2);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#fde68a';ctx.font='900 10px "Baloo 2",system-ui';ctx.textAlign='center';
+        ctx.fillText('SIR PEEL-A-LOT',e2.x,e2.y-e2.r-18);
+        if(e2.tpFast){ctx.fillStyle='#f87171';ctx.fillText('ENRAGED',e2.x,e2.y-e2.r-30);}
+      }
+      ctx.restore();
+    }
+  }catch(_){}
+  _renderHUD();
+};
 })();
 </script>
