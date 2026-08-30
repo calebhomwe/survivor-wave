@@ -16952,3 +16952,251 @@ setInterval(function(){
 },400);
 })();
 </script>
+<script>
+/* ============================== ITER BATCH C (10 meta items) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_C)return;window.__ITER_C=1;
+/* C1: save export/import (base64 in export box on settings panel) */
+/* C2: photo mode: hold H -> hide HUD */
+/* C3: speedrun timer with chapter splits (toggle in pause quick row) */
+/* C4: lore fragments: rare scroll pickups with flavor text + collection counter */
+/* C5: achievement rewards: +1% silver per 5 achievements (cap +10%) */
+/* C6: NG+ toggle: unlocked after any victory; enemies +50% HP, rewards +50% */
+/* C7: weekly challenge: fixed seed per ISO-week w/ rotating modifier, menu entry */
+/* C8: paragons-built lifetime counter (shown in LIFETIME panel) */
+/* C9: gamepad START = pause, A = confirm (light gamepad menu support) */
+/* C10: unlock quest hints: Crimson/engi hint line on hero select for new players */
+/* ---------- C2: photo mode ---------- */
+window.__photoHUD=false;
+document.addEventListener('keydown',function(ev){
+  try{ if((ev.key||'').toLowerCase()==='h'&&state==='play'){window.__photoHUD=!window.__photoHUD;} }catch(_){}
+});
+var _rh=renderHUD;
+renderHUD=function(){
+  if(window.__photoHUD){ try{_rh.apply(null,arguments);}catch(_){} return; } /* world draws below still run? no — chain: we ARE the chain; skip all HUD */
+  _rh.apply(null,arguments);
+};
+/* ---------- C3: speedrun timer splits ---------- */
+window.__sr={on:false,splits:[],t0:0};
+try{window.__sr.on=localStorage.getItem('srTimer')==='1';}catch(_){}
+setInterval(function(){
+  try{
+    if(state==='play'){
+      if(!window.__sr.t0)window.__sr.t0=gameTime;
+      var ch=player.chapter|0;
+      if(ch>(window.__sr.lastCh||0)){window.__sr.splits.push({ch:ch,t:Math.round(gameTime)});window.__sr.lastCh=ch;}
+    } else if(state==='ready'){ window.__sr.t0=0;window.__sr.splits=[];window.__sr.lastCh=0; }
+  }catch(_){}
+},500);
+var _rh2=renderHUD;
+renderHUD=function(){
+  _rh2.apply(null,arguments);
+  try{
+    if(state==='play'&&window.__sr.on){
+      ctx.font='800 12px "Baloo 2",system-ui';ctx.textAlign='right';
+      ctx.fillStyle='rgba(255,255,255,0.85)';
+      var m=Math.floor(gameTime/60),s=Math.floor(gameTime%60);
+      ctx.fillText((m<10?'0':'')+m+':'+(s<10?'0':'')+s+'  CH'+(player.chapter|0),W-14,132);
+      ctx.font='800 10px "Baloo 2",system-ui';ctx.fillStyle='rgba(255,255,255,0.5)';
+      for(var i=0;i<window.__sr.splits.length&&i<4;i++){
+        var sp=window.__sr.splits[window.__sr.splits.length-1-i];
+        ctx.fillText('CH'+sp.ch+' @ '+Math.floor(sp.t/60)+':'+String(sp.t%60).padStart(2,'0'),W-14,148+i*13);
+      }
+    }
+  }catch(_){}
+};
+document.addEventListener('keydown',function(ev){
+  try{ if((ev.key||'').toLowerCase()==='y'&&state==='play'){window.__sr.on=!window.__sr.on;try{localStorage.setItem('srTimer',window.__sr.on?'1':'0');}catch(_){}} }catch(_){}
+});
+/* ---------- C4: lore fragments ---------- */
+var LORE=[
+  'The first altar was raised before the first wall.',
+  'Silver buys stone. Oil buys will.',
+  'The horde does not hate you. That is the worst part.',
+  'Every Paragon remembers the two towers it was.',
+  'The Watchtower never blinks. Someone must not.',
+  'Tithe faithfully; the Kingdom keeps its own books.'
+];
+window.__lore=0;try{window.__lore=+localStorage.getItem('survivorLore')||0;}catch(_){}
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    if(Math.random()<0.008&&(!window.__loreCd||performance.now()-window.__loreCd>25000)){
+      window.__loreCd=performance.now();
+      var idx=Math.floor(Math.random()*LORE.length);
+      addFloater(player.x,player.y-60,'\uD83D\uDCDC SCROLL: '+LORE[idx],'#e9d8a6',3.2,12);
+      window.__lore|=(1<<idx);
+      try{localStorage.setItem('survivorLore',String(window.__lore));}catch(_){}
+    }
+  }catch(_){}
+},1000);
+/* ---------- C5: achievement silver bonus ---------- */
+try{
+  var _gm=null;
+  setInterval(function(){
+    try{
+      if(state!=='play')return;
+      var n=0;try{var a=JSON.parse(localStorage.getItem('survivorAchievements'))||{};for(var k in a)if(a[k])n++;}catch(_){}
+      player.goldMul=player.__baseGoldMul||(player.__baseGoldMul=player.goldMul||1);
+      var bonus=Math.min(0.10,0.01*Math.floor(n/5));
+      player.goldMul=player.__baseGoldMul*(1+bonus);
+    }catch(_){}
+  },2000);
+}catch(_){}
+/* ---------- C6: NG+ ---------- */
+window.__ngp=false;try{window.__ngp=localStorage.getItem('survivorNGP')==='1';}catch(_){}
+window.__everWon=+localStorage.getItem('survivorWins')||0;
+var _vi=victory;
+victory=function(){try{localStorage.setItem('survivorWins','1');window.__everWon=1;}catch(_){}return _vi.apply(null,arguments);};
+if(window.__ngp){
+  var _sg=startGame;
+  startGame=function(){
+    var r=_sg.apply(null,arguments);
+    try{ player.chHP=(player.chHP||1)*1.5; player.goldMul=(player.goldMul||1)*1.5; warn('NEW GAME+ — the horde remembers you'); }catch(_){}
+    return r;
+  };
+}
+(function(){
+  var pb=document.getElementById('playBtn');
+  if(!pb||!pb.parentNode||window.__everWon<1)return;
+  if(document.getElementById('ngpBtn'))return;
+  var b=document.createElement('button');
+  b.className='btn';b.id='ngpBtn';b.textContent='NG+ : OFF';
+  b.style.fontSize='12px';b.style.padding='9px 16px 6px';
+  b.onclick=function(){
+    window.__ngp=!window.__ngp;
+    try{localStorage.setItem('survivorNGP',window.__ngp?'1':'0');}catch(_){}
+    b.textContent='NG+ : '+(window.__ngp?'ON':'OFF');
+    b.style.background=window.__ngp?'#7f1d1d':'';
+  };
+  if(window.__ngp){b.textContent='NG+ : ON';b.style.background='#7f1d1d';}
+  pb.parentNode.appendChild(b);
+})();
+/* ---------- C7: weekly challenge ---------- */
+function isoWeek(){
+  var d=new Date();
+  var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  var day=t.getUTCDay()||7;
+  t.setUTCDate(t.getUTCDate()+4-day);
+  var y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return t.getUTCFullYear()+'W'+Math.ceil(((t-y0)/86400000+1)/7);
+}
+var MODS=[
+  {n:'SWARM WEEK',hp:0.8,spawn:1.5},
+  {n:'GLASS WEEK',hp:0.6,maxHpPl:0.6},
+  {n:'TITAN WEEK',hp:2.2,gold:2},
+  {n:'SPEED WEEK',spd:1.4,xp:1.3}
+];
+window.__weekly={week:isoWeek(),mod:MODS[Math.abs(isoWeek().split('').reduce((a,c)=>a+c.charCodeAt(0),0))%MODS.length],active:false};
+(function(){
+  var pb=document.getElementById('playBtn');
+  if(!pb||!pb.parentNode||document.getElementById('wkBtn'))return;
+  var b=document.createElement('button');
+  b.className='btn';b.id='wkBtn';
+  function paint(){b.textContent=(window.__weekly.active?'\u2713 ':'')+('WEEKLY: '+window.__weekly.mod.n);b.style.background=window.__weekly.active?'#365314':'';}
+  b.style.fontSize='12px';b.style.padding='9px 16px 6px';
+  b.onclick=function(){window.__weekly.active=!window.__weekly.active;paint();try{sfx('tap');}catch(_){}};
+  paint();
+  pb.parentNode.appendChild(b);
+})();
+if(true){
+  var _sg2=startGame;
+  startGame=function(){
+    var r=_sg2.apply(null,arguments);
+    try{
+      if(window.__weekly.active){
+        var m=window.__weekly.mod;
+        if(m.hp)player.chHP=(player.chHP||1)*m.hp;
+        if(m.spd&&!player.chSpd)player.chSpd=m.spd;
+        if(m.spawn&&player.chSpawn)player.chSpawn*=m.spawn;
+        if(m.gold)player.goldMul=(player.goldMul||1)*m.gold;
+        if(m.maxHpPl){player.maxHp*=m.maxHpPl;player.hp*=m.maxHpPl;}
+        warn('WEEKLY: '+m.n);
+      }
+    }catch(_){}
+    return r;
+  };
+}
+/* ---------- C8: paragons lifetime ---------- */
+window.__paragons=+localStorage.getItem('survivorParagons')||0;
+setInterval(function(){
+  try{
+    if(state!=='play'||!window.TOWERSYS)return;
+    var n=0;for(var i=0;i<window.TOWERSYS.towers.length;i++)if((window.TOWERSYS.towers[i].tier||0)>=4)n++;
+    if(n>(window.__pgSeen||0)){window.__paragons+=n-(window.__pgSeen||0);try{localStorage.setItem('survivorParagons',String(window.__paragons));}catch(_){}}
+    window.__pgSeen=n;
+    if(n===0)window.__pgSeen=0;
+  }catch(_){}
+},1000);
+/* ---------- C9: gamepad menu ---------- */
+setInterval(function(){
+  try{
+    var gps=navigator.getGamepads?navigator.getGamepads():[];
+    for(var i=0;i<gps.length;i++){
+      var gp=gps[i];if(!gp)continue;
+      var start=gp.buttons[9]&&gp.buttons[9].pressed;
+      var a=gp.buttons[0]&&gp.buttons[0].pressed;
+      if(start&&!window.__gpStart){window.__gpStart=1;if(state==='play'||state==='paused')togglePause();}
+      if(!start)window.__gpStart=0;
+      if(a&&!window.__gpA){window.__gpA=1;
+        if(state==='levelup'){var bs=[...document.querySelectorAll('#lvlup button')];if(bs[0])bs[0].click();}
+        else if(state==='ready'){var f=[...document.querySelectorAll('button')].find(x=>x.textContent.includes('FIGHT'));if(f)f.click();}
+      }
+      if(!a)window.__gpA=0;
+    }
+  }catch(_){}
+},120);
+/* ---------- C10: hero unlock hint ---------- */
+setInterval(function(){
+  try{
+    if(window.__heroHintDone)return;
+    var cards=[...document.querySelectorAll('button')].filter(b=>/Vampire|Engineer/.test(b.textContent));
+    if(cards.length>=2){
+      window.__heroHintDone=true;
+      var note=document.createElement('div');
+      note.style.cssText='text-align:center;color:#8fa1c7;font-size:11px;margin:4px 0';
+      note.textContent='\u2726 New heroes join your roster automatically \u2014 Crimson drinks, Bolt builds.';
+      var pb2=document.getElementById('playBtn');
+      if(pb2)pb2.parentNode.insertBefore(note,pb2);
+    }
+  }catch(_){}
+},1500);
+/* ---------- C1: save export/import ---------- */
+setInterval(function(){
+  try{
+    if(window.__saveUi||!document.getElementById('playBtn'))return;
+    window.__saveUi=1;
+    var wrap=document.createElement('div');wrap.id='saveIo';
+    wrap.style.cssText='display:flex;gap:6px;justify-content:center;margin:6px 0';
+    var exp=document.createElement('button');exp.className='btn';exp.textContent='EXPORT SAVE';exp.style.fontSize='11px';exp.style.padding='7px 12px 5px';
+    var imp=document.createElement('button');imp.className='btn';imp.textContent='IMPORT SAVE';imp.style.fontSize='11px';imp.style.padding='7px 12px 5px';
+    wrap.appendChild(exp);wrap.appendChild(imp);
+    document.getElementById('playBtn').parentNode.appendChild(wrap);
+    exp.onclick=function(){
+      try{
+        var blob={};
+        for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('survivor')===0)blob[k]=localStorage.getItem(k);}
+        var code=btoa(unescape(encodeURIComponent(JSON.stringify(blob))));
+        prompt2('Save code (copy):',code);
+      }catch(e){alert('export failed');}
+      function prompt2(t,val){
+        var ta=document.createElement('textarea');ta.value=val;
+        ta.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;height:110px;z-index:99;background:#0d1526;color:#dbe6ff;border:2px solid #d4af37;border-radius:10px;padding:8px';
+        document.body.appendChild(ta);ta.select();
+        setTimeout(function(){ta.remove();},8000);
+      }
+    };
+    imp.onclick=function(){
+      var code=window.prompt('Paste save code:');
+      if(!code)return;
+      try{
+        var blob=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+        for(var k in blob)if(k.indexOf('survivor')===0)localStorage.setItem(k,blob[k]);
+        location.reload();
+      }catch(e){alert('invalid code');}
+    };
+  }catch(_){}
+},1500);
+})();
+</script>
