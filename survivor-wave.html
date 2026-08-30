@@ -16658,3 +16658,180 @@ renderHUD=function(){
 };
 })();
 </script>
+<script>
+/* ============================== ITER BATCH A (10 QoL items) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_A)return;window.__ITER_A=1;
+/* A1: altar markers on minimap */
+/* A2: range circle on selected tower */
+/* A3: sell-all button + cap counter in build bar */
+/* A4: boss name on boss health bar */
+/* A5: level-up keyboard 1/2/3 pick */
+/* A6: elite spawn warning banner */
+/* A7: FPS counter (settings.fps, toggle in pause quick options) */
+/* A8: low-HP vignette pulse (lowFx-safe) */
+/* A9: chest light beam */
+/* A10: oil earned on death screen */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if(state==='play'||state==='pause'){
+      /* A8: low-HP vignette */
+      var hpr=player.hp/player.maxHp;
+      if(hpr<0.3&&!settings.lowFx){
+        var a=(0.3-hpr)/0.3*(0.22+0.1*Math.sin(performance.now()/180));
+        var gr=ctx.createRadialGradient(W/2,H/2,H*0.34,W/2,H/2,H*0.72);
+        gr.addColorStop(0,'rgba(200,20,20,0)');gr.addColorStop(1,'rgba(200,20,20,'+a.toFixed(3)+')');
+        ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+      }
+      /* A7: FPS counter */
+      if(settings.fps){
+        if(!window.__fpsT){window.__fpsT=performance.now();window.__fpsN=0;window.__fpsV=0;}
+        window.__fpsN++;
+        var now=performance.now();
+        if(now-window.__fpsT>=500){window.__fpsV=Math.round(window.__fpsN*1000/(now-window.__fpsT));window.__fpsT=now;window.__fpsN=0;}
+        ctx.font='800 11px "Baloo 2",system-ui';ctx.textAlign='right';
+        ctx.fillStyle=window.__fpsV>=50?'#a3e635':'#f87171';
+        ctx.fillText(window.__fpsV+' FPS',W-12,H-12);
+      }
+      /* A2: range circle on selected tower */
+      try{
+        if(typeof sellAsk!=='undefined'&&sellAsk&&window.TOWERSYS){
+          var D2=window.TOWERSYS.defs[sellAsk.ty];
+          ctx.save();ctx.translate(-cam.x,-cam.y);
+          ctx.strokeStyle='rgba(255,210,63,0.5)';ctx.setLineDash([6,6]);ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(sellAsk.x,sellAsk.y,D2.range*(1+((sellAsk.tier||1)>=4?0.2:0)),0,Math.PI*2);ctx.stroke();
+          ctx.setLineDash([]);ctx.restore();
+        }
+      }catch(_){}
+    }
+  }catch(_){}
+};
+/* A5: keyboard 1/2/3 on level-up */
+document.addEventListener('keydown',function(ev){
+  try{
+    if(state!=='levelup')return;
+    var k=ev.key;
+    if(k>='1'&&k<='3'){
+      var btns=[...document.querySelectorAll('#lvlup button')];
+      if(btns[+k-1]){btns[+k-1].click();ev.preventDefault();}
+    }
+  }catch(_){}
+},{capture:true});
+/* A6: elite warning banner + A9 chest beam + A1 minimap altar markers via poll */
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    /* A6 */
+    for(var i=0;i<enemies.length;i++){
+      var e=enemies[i];
+      if(e&&e.isElite&&e.hp>0&&!e._warned&&e.spawnT<=0){
+        e._warned=1;
+        warn('\u{1F451} ELITE INCOMING!');
+        break;
+      }
+    }
+    /* A9: chest beam */
+    for(var p=0;p<pickups.length;p++){
+      var pk=pickups[p];
+      if(pk.kind==='chest'&&!settings.lowFx){
+        pk._beam=(pk._beam||0);
+      }
+    }
+  }catch(_){}
+},700);
+var _rh2=renderHUD;
+renderHUD=function(){
+  _rh2.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    ctx.save();ctx.translate(-cam.x,-cam.y);
+    /* A9 chest beams */
+    for(var p=0;p<pickups.length;p++){
+      var pk=pickups[p];
+      if(pk.kind==='chest'&&!settings.lowFx){
+        var t=performance.now()/300;
+        ctx.fillStyle='rgba(255,210,63,'+(0.10+0.05*Math.sin(t)).toFixed(3)+')';
+        ctx.beginPath();
+        ctx.moveTo(pk.x-14,pk.y);ctx.lineTo(pk.x-26,pk.y-190);ctx.lineTo(pk.x+26,pk.y-190);ctx.lineTo(pk.x+14,pk.y);
+        ctx.closePath();ctx.fill();
+      }
+    }
+    ctx.restore();
+    /* A1: altar markers on minimap */
+    try{
+      if(typeof mmX!=='undefined'&&typeof window.KSC_ALTARS!=='undefined'){
+        for(var a2=0;a2<window.KSC_ALTARS.length;a2++){
+          var al=window.KSC_ALTARS[a2];
+          var mx2=mmX+(al.x/WORLD.w)*mmW,my2=mmY+(al.y/WORLD.h)*mmH;
+          ctx.fillStyle=al.on?'#ffd23f':'rgba(143,161,199,0.85)';
+          ctx.beginPath();ctx.arc(mx2,my2,2.4,0,Math.PI*2);ctx.fill();
+        }
+      }
+    }catch(_){}
+  }catch(_){}
+};
+/* A3: sell-all + cap counter (patch build bar hint + add button) */
+setInterval(function(){
+  try{
+    if(window.TOWERSYS&&!document.getElementById('iterSellAll')){
+      var bb=[...document.querySelectorAll('button')].find(b=>b.textContent.indexOf('BUILD [T]')>=0);
+      if(bb){
+        var sa=document.createElement('button');
+        sa.id='iterSellAll';sa.textContent='SELL ALL';
+        sa.style.cssText='position:fixed;right:16px;bottom:58px;z-index:60;cursor:pointer;background:linear-gradient(180deg,#3b1520,#1a0a10);color:#fca5a5;border:2px solid #f87171;border-radius:12px;font-family:inherit;font-size:11px;font-weight:bold;padding:7px 12px;display:none';
+        sa.onclick=function(ev){
+          ev.stopPropagation();
+          if(!window.__sellArm){window.__sellArm=1;sa.textContent='SURE?';setTimeout(function(){window.__sellArm=0;sa.textContent='SELL ALL';},2000);return;}
+          window.__sellArm=0;sa.textContent='SELL ALL';
+          window.TOWERSYS.sellAll();
+        };
+        document.body.appendChild(sa);
+        setInterval(function(){
+          try{
+            var inRun=(state==='play'||state==='pause')&&window.TOWERSYS.towers.length>0;
+            sa.style.display=inRun?'block':'none';
+            if(window.TOWERSYS.towers.length===0)window.__sellArm=0;
+            if(bb)bb.textContent='BUILD [T] ('+window.TOWERSYS.towers.length+'/15)';
+          }catch(_){}
+        },600);
+      }
+    }
+    /* expose altars for minimap markers */
+    if(!window.KSC_ALTARS){
+      try{window.KSC_ALTARS=(typeof ALTARS!=='undefined')?ALTARS:[];}catch(_){window.KSC_ALTARS=[];}
+    }
+  }catch(_){}
+},1200);
+/* A4: boss name on health bar + A10 oil on death screen */
+var _rh3=renderHUD;
+renderHUD=function(){
+  _rh3.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    var boss=null;
+    for(var i=0;i<enemies.length;i++){if(enemies[i]&&enemies[i].isBoss&&enemies[i].hp>0){boss=enemies[i];break;}}
+    if(boss){
+      var bn=boss.bossName||(boss.type==='boss'?'THE WARDEN':'BOSS');
+      ctx.font='900 13px "Baloo 2",system-ui';ctx.textAlign='center';
+      ctx.fillStyle='#fecaca';
+      ctx.fillText(bn,W/2,96);
+    }
+  }catch(_){}
+};
+var _go2=gameOver;
+gameOver=function(){
+  try{
+    var r=_go2.apply(null,arguments);
+    var el=document.getElementById('winGold')||document.querySelector('.shopBox h2');
+    var p2=[...document.querySelectorAll('div,span,p')].find(d=>d.textContent&&d.textContent.indexOf('Gold earned')>=0);
+    if(p2&&!p2._oil){p2._oil=1;p2.innerHTML+=' \u00b7 \uD83D\uDD37 '+Math.round(window.oil||0)+' oil held';}
+    return r;
+  }catch(_){return _go2.apply(null,arguments);}
+};
+/* settings.fps default + pause quick toggle hookup */
+try{if(typeof settings.fps==='undefined')settings.fps=false;}catch(_){}
+})();
+</script>
