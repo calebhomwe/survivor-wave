@@ -17437,3 +17437,205 @@ setInterval(function(){
 },1500);
 })();
 </script>
+<script>
+/* ============================== ITER BATCH E (final 10) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_E)return;window.__ITER_E=1;
+/* E1: LORD GLAZE (donut king) @6:30: heals 2%/s; Watchtower pulses melt glaze (disable regen 4s) */
+/* E2: FIZZBEELZEBUB (soda golem) @8:00: shield absorbs first 80 hits, fizz knockback every 5s */
+/* E3: GRAINLORD CRISP (cereal champion) @9:00: milk beam heals nearby enemies; fire damage = x1.5 & strips heal */
+/* E4: ARMORED PEKKA variant: chapter 4+, takes 30% less damage from towers */
+/* E5: GOBLIN DRILL: burrows (untargetable, 50% speed) 3s every 8s */
+/* E6: boss defeat chest tiers: funny bosses drop a big chest pickup */
+/* E7: IRONMAN mode: no revive button (nightmare-only toggle persisted) */
+/* E8:Difficulty naming: NIGHTMARE badge adds skulls by difficulty in leaderboard rows (exists) -> do: victory screen shows difficulty + NG+/weekly tags */
+/* E9: tower damage type tags shown in run stats panel bottom (Tower summary line) */
+/* E10: in-run banner for PARAGON/GLORY merges via killEnemy-style floater (exists) -> do: minimap tower dots */
+var bosses={};
+var fired={};
+function mkBase(mult,name){
+  var e=makeEnemy('tank');
+  e.kscBoss2=name;
+  e.hp*=mult;e.maxHp*=mult;e.speed=36;e.r=30;e.xp=50;e.dmg*=1.3;
+  e.x=player.x+(Math.random()<0.5?-1:1)*700;e.y=player.y+(Math.random()-0.5)*500;
+  enemies.push(e);
+  try{warn(name.toUpperCase()+' APPROACHES!');sfx('elitesting');}catch(_){}
+  return e;
+}
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    /* spawns */
+    if(gameTime>=390&&!fired.glaze){fired.glaze=1;var g=mkBase(3.5,'Lord Glaze');g.glzHeal=1;}
+    if(gameTime>=480&&!fired.fizz){fired.fizz=1;var f=mkBase(3.8,'Fizzbeelzebub');f.fizzHits=80;f.fizzPulse=5;}
+    if(gameTime>=540&&!fired.grain){fired.grain=1;var c=mkBase(4,'Grainlord Crisp');c.milkT=0;}
+    for(var i=enemies.length-1;i>=0;i--){
+      var e=enemies[i];
+      if(!e||e.hp<=0)continue;
+      /* E1 glaze */
+      if(e.kscBoss2==='Lord Glaze'){
+        if(!e.glazeMelt||e.glazeMelt<=0){
+          e.glazeMelt=0;
+          e.hp=Math.min(e.maxHp,e.hp+e.maxHp*0.02*0.25);
+        }else e.glazeMelt-=0.25;
+      }
+      /* E2 fizz */
+      if(e.kscBoss2==='Fizzbeelzebub'){
+        e.fizzPulse-=0.25;
+        if(e.fizzPulse<=0){e.fizzPulse=5;
+          var dx=e.x-player.x,dy=e.y-player.y,d=Math.hypot(dx,dy)||1;
+          if(d<140){player.x+=dx/d*60;player.y+=dy/d*60;addFloater(player.x,player.y-30,'FIZZ!','#fde047',1,13);}
+          if(!settings.lowFx)spawnParticles(e.x,e.y,'#fde047',12,0.9);}
+      }
+      /* E3 grain */
+      if(e.kscBoss2==='Grainlord Crisp'){
+        e.milkT-=0.25;
+        if(e.milkT<=0){e.milkT=3;
+          var healed=0;
+          for(var k=0;k<enemies.length;k++){
+            var o=enemies[k];
+            if(o===e||o.hp<=0)continue;
+            var dx2=o.x-e.x,dy2=o.y-e.y;
+            if(dx2*dx2+dy2*dy2<260*260&&o.maxHp&&o.hp<o.maxHp){o.hp=Math.min(o.maxHp,o.hp+o.maxHp*0.05);healed++;}
+          }
+          if(healed&&!settings.lowFx)spawnParticles(e.x,e.y,'#bfdbfe',8,0.8);
+        }
+      }
+      /* E5 goblin drill */
+      if(e.kscType==='drill'){
+        e.drillT=(e.drillT===undefined)?6:e.drillT-0.25;
+        if(e.drillT<=0){e.drillT=8;e.drillOn=3;
+          if(!settings.lowFx)spawnParticles(e.x,e.y,'#a16207',10,0.8);}
+        if(e.drillOn>0){e.drillOn-=0.25;e.untargetable=true;e.speedK=0.5;}
+        else{e.untargetable=false;e.speedK=1;}
+      }
+    }
+  }catch(_){}
+},250);
+/* watchtowers melt glaze: piggyback the watch fire in TOWERSYS? simplest: poll towers of type watch, if glaze within range set melt */
+setInterval(function(){
+  try{
+    if(state!=='play'||!window.TOWERSYS)return;
+    var ts=window.TOWERSYS.towers;
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];
+      if(t.ty!=='watch')continue;
+      var D=window.TOWERSYS.defs.watch;
+      var R=D.range*((t.tier||1)>=4?1.2:1);
+      for(var k=0;k<enemies.length;k++){
+        var e=enemies[k];
+        if(e.kscBoss2==='Lord Glaze'&&e.hp>0){
+          var dx=e.x-t.x,dy=e.y-t.y;
+          if(dx*dx+dy*dy<R*R){e.glazeMelt=4;}
+        }
+      }
+    }
+  }catch(_){}
+},400);
+/* fire & fizz-shield via dealDamage wrap */
+if(!window.__iterEHook){
+  window.__iterEHook=1;
+  var _dd=dealDamage;
+  dealDamage=function(e,dmg,x,y,tag){
+    try{
+      if(e&&e.hp>0){
+        if(e.kscBoss2==='Lord Glaze'&&e.glazeMelt>0)dmg*=1.25;
+        if(e.kscBoss2==='Grainlord Crisp'&&typeof tag==='string'&&(tag.indexOf('Molotov')>=0||tag.indexOf('Burn')>=0||tag.indexOf('Bomb')>=0))dmg*=1.5;
+        if(e.fizzHits>0){
+          if(tag&&(''+tag).indexOf('Tower:')===0){}
+          e.fizzHits--;
+          if(e.fizzHits>=0){addFloater(e.x,e.y-e.r-6,'SHIELD '+e.fizzHits,'#fde047',0.5,10);return _dd(e,0,x,y,tag);}
+        }
+        if(e.kscType==='pekka'&&typeof tag==='string'&&tag.indexOf('Tower:')===0&&e.pekkaArm)dmg*=0.7;
+      }
+    }catch(_){}
+    return _dd(e,dmg,x,y,tag);
+  };
+}
+/* armored pekka + drill spawns (chapter 4+) */
+var _me=makeEnemy;
+makeEnemy=function(type){
+  var e=_me.apply(null,arguments);
+  try{
+    if(e&&!e.kscBoss2&&!e.kscType&&(type==='tank'||type==='grunt'||type==='fast')&&(chapterSel||player.chapter||1)>=4&&Math.random()<0.05){
+      if(Math.random()<0.5){e.kscType='pekka';e.pekkaArm=1;e.hp*=0.9;e.maxHp*=0.9;e.speed*=0.6;e.r*=1.1;}
+      else{e.kscType='drill';e.hp*=0.8;e.maxHp*=0.8;e.speed*=0.8;}
+    }
+  }catch(_){}
+  return e;
+};
+/* E6: funny boss drop = big loot + E8 victory tags + E9 handled in stats panel? keep loot */
+if(window.__iterEHook){ /* loot via killEnemy wrap */
+  var _ke=killEnemy;
+  killEnemy=function(){
+    try{
+      var e=arguments[0];
+      if(e&&e.kscBoss2&&e.hp<=0&&!e.kscLooted){
+        e.kscLooted=true;
+        gold+=150;window.gainOil(20);
+        addFloater(e.x,e.y-44,'ROYAL TUMFY! +150 +20 OIL','#ffd23f',1.6,15);
+        if(!settings.lowFx)spawnParticles(e.x,e.y,'#ffd23f',24,1.4);
+      }
+    }catch(_){}
+    return _ke.apply(null,arguments);
+  };
+}
+/* E7: IRONMAN toggle next to difficulty (nightmare gate) */
+setInterval(function(){
+  try{
+    if(window.__ironBtn||!document.getElementById('playBtn'))return;
+    window.__ironBtn=1;
+    try{window.__iron=localStorage.getItem('survivorIron')==='1';}catch(_){}
+    var b=document.createElement('button');
+    b.className='btn';b.id='ironBtn';b.style.fontSize='11px';b.style.padding='7px 12px 5px';
+    function paint(){b.textContent='IRONMAN: '+(window.__iron?'ON':'OFF');b.style.background=window.__iron?'#450a0a':'';}
+    b.onclick=function(){
+      if(!window.__ngp&&curDiffNightmare()){window.__iron=!window.__iron;try{localStorage.setItem('survivorIron',window.__iron?'1':'0');}catch(_){}}
+      else{b.textContent='NEEDS NIGHTMARE';setTimeout(paint,1200);return;}
+      paint();
+    };
+    function curDiffNightmare(){try{return localStorage.getItem('survivorDiff')==='nightmare';}catch(_){return false;}}
+    paint();
+    document.getElementById('playBtn').parentNode.appendChild(b);
+    var _sg=startGame;
+    startGame=function(){
+      var r=_sg.apply(null,arguments);
+      try{
+        if(window.__iron){
+          window.__ironRun=true;
+          warn('\u2620 IRONMAN \u2014 no revive');
+        } else window.__ironRun=false;
+      }catch(_){}
+      return r;
+    };
+  }catch(_){}
+},1500);
+/* hide REVIVE in ironman runs */
+setInterval(function(){
+  try{
+    if(state!=='over')return;
+    if(window.__ironRun){
+      var rv=[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('REVIVE')>=0);
+      if(rv)rv.style.display='none';
+    }
+  }catch(_){}
+},400);
+/* E10: minimap tower dots */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if((state==='play'||state==='pause')&&window.TOWERSYS&&typeof mmX!=='undefined'){
+      var ts=window.TOWERSYS.towers;
+      for(var i=0;i<ts.length;i++){
+        var t=ts[i];
+        var mx=mmX+(t.x/WORLD.w)*mmW,my=mmY+(t.y/WORLD.h)*mmH;
+        ctx.fillStyle=(t.tier||1)>=4?'#ffd23f':'#93c5fd';
+        ctx.fillRect(mx-1.5,my-1.5,3,3);
+      }
+    }
+  }catch(_){}
+};
+})();
+</script>
