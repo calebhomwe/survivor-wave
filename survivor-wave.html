@@ -2632,6 +2632,14 @@ function startGame(){
 
   perilRun=perilOn&&!dailyActive;
 
+  /*KSC-DIFF: kingdom difficulty select (casual/normal/nightmare)*/
+  if(!dailyActive&&typeof KSC_DIFF!=='undefined'&&KSC_DIFF){
+    if(KSC_DIFF.hp)player.chHP*=KSC_DIFF.hp;
+    if(KSC_DIFF.spd&&!player.chSpd)player.chSpd=KSC_DIFF.spd;
+    if(KSC_DIFF.spawn&&player.chSpawn)player.chSpawn*=KSC_DIFF.spawn;
+    if(KSC_DIFF.gold)player.goldMul*=KSC_DIFF.gold;
+  }
+
   if(perilRun){player.chHP*=1.3;player.goldMul*=1.5;}
 
   dusk=false;storm=false;endless=false;
@@ -4816,7 +4824,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         missionsProg('gold',cvs);
 
-        if(Math.floor(gold/250)>Math.floor(gBefore2/250))addFloater(player.x,player.y-44,gold+' GOLD BANKED','#ffd23f',1.2,16);
+        if(Math.floor(gold/250)>Math.floor(gBefore2/250))addFloater(player.x,player.y-44,gold+' SILVER BANKED','#ffd23f',1.2,16);
 
         addFloater(player.x,player.y-26,'+'+cvs+' GOLD','#ffd23f',0.8,14);
 
@@ -15589,9 +15597,9 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
 const TAG='Tower:';
 const MAXT=15, MIN_GAP=70, SELL_BACK=0.6, T2_RATE=1.6, T3_SIZE=0.12, BURN_DUR=2;
 const TD={
-  gatling:{name:'GATLING',cost:50, range:175, rate:0.22, dmg:6, up2:60, up3:100, up3txt:'twin-shot spread', col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
-  tesla:{name:'TESLA',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:145, up3:240, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
-  mortar:{name:'MORTAR',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:240, up3:400, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'}
+  gatling:{name:'SLING THROWER',cost:50, range:175, rate:0.22, dmg:6, up2:60, up3:100, up3txt:'twin-shot spread', col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
+  tesla:{name:'PROPHET HERALD',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:145, up3:240, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
+  mortar:{name:'BOMBARDIER',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:240, up3:400, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'}
 };
 let towers=[], tproj=[], tbolt=[], tsplash=[], tburn=[], ghost=null, barOpen=false, sellAsk=null, mx=0, my=0, placedCount=0;
 
@@ -15963,5 +15971,132 @@ window.TOWERSYS={
   addTower(ty,x,y){if(!TD[ty])return false;if(!validSpot(ty,x,y))return false;gold-=TD[ty].cost;towers.push({ty,x,y,ang:0,cd:0.3,target:null,tier:1,invested:TD[ty].cost});return true;},
   sellAll(){while(towers.length){sellAsk=towers[0];doSell();}sellAsk=null;}
 };
+})();
+</script>
+<script>
+/* =====================================================================
+   KSC-PHASE1: Kingdom Survivor Clash slice (web build)
+   1) Difficulty select (CASUAL/NORMAL/NIGHTMARE) — segmented control near
+      FIGHT, persisted, multipliers via the KSC-DIFF hook in startRun +
+      gainXP wrap here. Normal = today's behavior exactly.
+   2) Local top-10 leaderboard (survivorBoard), recorded at run end.
+   ===================================================================== */
+(function(){
+'use strict';
+if(document.getElementById('kscDiff'))return;
+var DIFFS={
+  casual :{hp:0.75,spd:0.95,spawn:0.90,xp:1.15,gold:0.90,label:'CASUAL'},
+  normal :{label:'NORMAL'},
+  nightmare:{hp:1.35,spd:1.15,spawn:1.25,xp:1.40,gold:1.40,label:'NIGHTMARE'}
+};
+var cur='normal';
+try{var v=localStorage.getItem('survivorDiff');if(v&&DIFFS[v])cur=v;}catch(_){}
+
+function apply(){
+  var d=DIFFS[cur];
+  window.KSC_DIFF=(cur==='normal')?null:{hp:d.hp,spd:d.spd,spawn:d.spawn,gold:d.gold,xp:d.xp};
+}
+apply();
+
+/* --- segmented control before the FIGHT button --- */
+var pb=document.getElementById('playBtn');
+if(pb&&pb.parentNode){
+  var wrap=document.createElement('div');wrap.id='kscDiff';
+  wrap.style.cssText='display:flex;gap:6px;justify-content:center;margin:8px 0 2px';
+  var order=['casual','normal','nightmare'];
+  var btns={};
+  order.forEach(function(k){
+    var b=document.createElement('button');
+    b.textContent=DIFFS[k].label;
+    b.style.cssText='font-size:11px;font-weight:800;letter-spacing:1px;padding:7px 14px 5px;border-radius:14px;border:2px solid #2c3d63;background:rgba(15,25,48,.72);color:#8fa1c7;cursor:pointer';
+    b.onclick=function(){cur=k;try{localStorage.setItem('survivorDiff',k);}catch(_){ }apply();paint();try{sfx('tap');}catch(_){}};
+    btns[k]=b;wrap.appendChild(b);
+  });
+  function paint(){
+    order.forEach(function(k){
+      var on=k===cur;
+      btns[k].style.borderColor=on?'#d4af37':'#2c3d63';
+      btns[k].style.color=on?'#ffe9a3':'#8fa1c7';
+      btns[k].style.background=on?'rgba(212,175,55,.16)':'rgba(15,25,48,.72)';
+    });
+  }
+  paint();
+  pb.parentNode.insertBefore(wrap,pb);
+}
+
+/* --- XP multiplier --- */
+var _gx=gainXP;
+gainXP=function(amt){var d=window.KSC_DIFF;return _gx(d&&d.xp?amt*d.xp:amt);};
+
+/* --- in-run badge (drawn under the wave timer) --- */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if((state==='play'||state==='pause')&&cur!=='normal'){
+      ctx.font='800 11px "Baloo 2",system-ui,sans-serif';
+      ctx.textAlign='center';
+      ctx.fillStyle=cur==='nightmare'?'#f87171':'#ffe9a3';
+      ctx.fillText(DIFFS[cur].label+(cur==='nightmare'?' \u2620':''),W/2,72);
+    }
+  }catch(_){}
+};
+
+/* --- leaderboard: record + panel --- */
+function boardGet(){try{return JSON.parse(localStorage.getItem('survivorBoard'))||[];}catch(_){return[];}}
+function kscRecordRun(rec){
+  try{
+    var b=boardGet();
+    rec.d=Date.now();
+    b.push(rec);
+    b.sort(function(a,c){return c.score-a.score;});
+    b=b.slice(0,10);
+    localStorage.setItem('survivorBoard',JSON.stringify(b));
+  }catch(_){}
+}
+function fmtT(s){s=Math.max(0,Math.round(s));var m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0');}
+function fmtD(t){var d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate();}
+function score(){
+  try{return Math.round((player.kills||0)*10+(gameTime||0)*5+(player.level||1)*50+((state==='win')?2000:0));}catch(_){return 0;}
+}
+function heroName(){try{return (typeof HEROES!=='undefined'&&HEROES[selectedHero]||{}).name||'?';}catch(_){return '?';}}
+var _go=gameOver;
+gameOver=function(){try{if(!dailyActive)kscRecordRun({score:score(),k:player.kills|0,t:Math.round(gameTime||0),ch:player.chapter|0,h:heroName(),diff:DIFFS[cur].label});}catch(_){}return _go.apply(null,arguments);};
+var _vi=victory;
+victory=function(){try{if(!dailyActive)kscRecordRun({score:score(),k:player.kills|0,t:Math.round(gameTime||0),ch:player.chapter|0,h:heroName(),diff:DIFFS[cur].label,win:1});}catch(_){}return _vi.apply(null,arguments);};
+
+/* --- panel + button (LIFETIME pattern) --- */
+function buildPanel(){
+  var ov=document.createElement('div');ov.className='shopOv hidden';ov.id='kscBoardOv';
+  ov.innerHTML='<div class="shopBox"><h2>HALL OF VALOR</h2><div id="kscBd" style="min-width:340px"></div>'
+    +'<button class="btn" id="kscBdBack" style="font-size:16px;padding:12px 38px 9px">BACK</button></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.add('hidden');});
+  var bk=document.getElementById('kscBdBack');
+  if(bk)bk.addEventListener('click',function(){ov.classList.add('hidden');try{sfx('tap');}catch(_){}});
+}
+function renderBoard(){
+  var b=boardGet();var el=document.getElementById('kscBd');if(!el)return;
+  if(!b.length){el.innerHTML='<div style="color:#8fa1c7;padding:14px 0 18px;font-weight:700">No runs yet — go make history.</div>';return;}
+  var rows='';
+  b.forEach(function(r,i){
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    rows+='<div style="display:flex;gap:10px;align-items:center;padding:7px 10px;margin:4px 0;background:rgba(15,25,48,.72);border:1px solid '+(i===0?'#d4af37':'#2c3d63')+';border-radius:10px;font-size:12px;color:#cfe0ff">'
+      +'<span style="width:26px;font-weight:900;color:#ffe9a3">'+medal+'</span>'
+      +'<span style="flex:1;font-weight:800;color:#ffe9a3">'+r.score.toLocaleString()+'</span>'
+      +'<span>'+r.h+'</span><span style="color:#8fa1c7">CH'+r.ch+'</span>'
+      +'<span style="color:#8fa1c7">'+fmtT(r.t)+'</span>'
+      +(r.diff&&r.diff!=='NORMAL'?'<span style="color:'+(r.diff==='NIGHTMARE'?'#f87171':'#fbbf24')+';font-size:10px">'+r.diff+'</span>':'')
+      +'<span style="color:#5d6f92;font-size:10px">'+fmtD(r.d)+'</span></div>';
+  });
+  el.innerHTML=rows;
+}
+if(pb&&pb.parentNode){
+  var b2=document.createElement('button');
+  b2.className='btn green';b2.id='kscBoardBtn';b2.textContent='RANKINGS';
+  b2.style.fontSize='12px';b2.style.padding='9px 16px 6px';
+  b2.addEventListener('click',function(){if(!document.getElementById('kscBoardOv'))buildPanel();renderBoard();document.getElementById('kscBoardOv').classList.remove('hidden');try{sfx('tap');}catch(_){}});
+  pb.parentNode.appendChild(b2);
+}
 })();
 </script>
