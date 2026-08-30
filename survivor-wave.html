@@ -16871,7 +16871,7 @@ renderHUD=function(){
       var t=performance.now()/1000;
       ctx.fillStyle='rgba(255,255,255,0.18)';
       for(var i=0;i<14;i++){
-        var mx=cam.x+((i*713+t*40)%W), my=cam.y+((i*331+Math.sin(t+i)*30+t*13)%H);
+        var mx=((i*713+t*40)%W), my=((i*331+Math.sin(t+i)*30+t*13)%H);/*ctx already world-translated*/
         ctx.fillRect(mx,my,2,2);
       }
     }

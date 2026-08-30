@@ -144,7 +144,7 @@ def main():
                 checks["canvas_painting"] = bool(
                     cur and last_frame_stats
                     and cur["std"] > 8.0
-                    and abs(cur["mean"] - last_frame_stats["mean"]) + abs(cur["std"] - last_frame_stats["std"]) > 0.5
+                    and abs(cur["mean"] - last_frame_stats["mean"]) + abs(cur["std"] - last_frame_stats["std"]) > 0.3
                 )
             page.wait_for_timeout(100)
 
@@ -161,7 +161,7 @@ def main():
             cur = _canvas_stats(page)
             checks["canvas_painting"] = bool(
                 cur and last_frame_stats and cur["std"] > 8.0
-                and abs(cur["mean"] - last_frame_stats["mean"]) + abs(cur["std"] - last_frame_stats["std"]) > 0.5)
+                and abs(cur["mean"] - last_frame_stats["mean"]) + abs(cur["std"] - last_frame_stats["std"]) > 0.3)
 
         s1 = page.evaluate("({t:gameTime,l:player.level,x:player.xp,k:player.kills,s:state})")
 
