@@ -2277,6 +2277,48 @@ const WEAPONS={
 
     cd:l=>2.2-l*0.2},
 
+  frostnova:{name:'Frost Nova',icon:'',iconK:'frost',color:'#93c5fd',passive:'cube',/*B009*/
+
+    evoName:'Absolute Zero',evoIcon:'❄️',
+
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Energy Cube':(l===1?'Icy pulse damages and chills every enemy around you':l===2?'+damage & bigger radius':l===3?'+longer chill':l===4?'+damage, faster pulse':'+EVO at Lv.5 + Energy Cube'),
+
+    fire(w,st){
+
+      const R=(w.evo?190:125)*(w.lvl>=2?1.12:1)*st.area;
+
+      let hit=false;
+
+      eachNearPad(player.x,player.y,R,e=>{/*B068*/
+
+        if(e.hp<=0)return;
+
+        if(dist2(e.x,e.y,player.x,player.y)<(R+e.r)*(R+e.r)){
+
+          dealDamage(e,st.dmg*(w.evo?1.2:1),player.x,player.y,rsWpn(w));/*B041*/
+
+          e.frostT=w.evo?2.2:(w.lvl>=3?2.0:1.4);/*B009 chill: reuse frost slow status*/
+
+          if(w.evo&&e.type!=='boss'&&e.type!=='elite')e.stun=Math.max(e.stun||0,0.8);/*B009 Absolute Zero: freeze full stop*/
+
+          hit=true;
+
+        }
+
+      });
+
+      if(!hit)return false;
+
+      NOVAS.push({x:player.x,y:player.y,r:R,life:0.45,max:0.45,ev:!!w.evo});/*B009 expanding ring*/
+
+      if(w.evo)NOVAS.push({x:player.x,y:player.y,r:R*0.75,life:2.4,max:2.4,field:true,tick:0,dmg:st.dmg*0.16});/*B009 lingering chill field*/
+
+      spawnParticles(player.x,player.y,'#93c5fd',w.evo?22:12,1.1,{sprite:'puff',size:26});
+
+      sfx('whoosh');return true;},
+
+    cd:l=>3.6-l*0.3},
+
 };
 
 
@@ -2312,6 +2354,7 @@ function weaponStats(w){
     if(w.id==='orbit')base.dmg=12+(w.lvl-1)*5;/*B006*/
     if(w.id==='chainlt')base.dmg=13+(w.lvl-1)*5.5;/*B007*/
     if(w.id==='boomer')base.dmg=15+(w.lvl-1)*6;/*B008*/
+    if(w.id==='frostnova')base.dmg=14+(w.lvl-1)*6;/*B009*/
 
   base.dmg*=1+0.10*(player.passives.bullet||0);/*WPN-PATCH*/
 
@@ -2346,6 +2389,8 @@ function weaponCd(w){
 }
 
 let CHAINS=[];/*B007 chain lightning arc segments*/
+
+let NOVAS=[];/*B009 frost nova expanding rings + chill fields*/
 
 
 
@@ -2541,6 +2586,7 @@ function startGame(){
 
   enemies=[];projectiles=[];eprojs=[];gems=[];pickups=[];zones=[];particles=[];floaters=[];bolts=[];decals=[];corpses=[];
   CHAINS.length=0;/*B007*/
+  NOVAS.length=0;/*B009*/
 
   gameTime=0;spawnT=0;difficulty=1;pendingLevelUps=0;rerollsLeft=1+(metaLv.reroll||0);usedRevive=false;levelSlow=0;
 
@@ -4831,6 +4877,36 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
   for(const c of CHAINS)c.life-=dt;/*B007*/
 
   sweep(CHAINS,c=>c.life>0);
+
+  for(const n of NOVAS){/*B009 frost nova: ring decay + lingering chill field ticks*/
+
+    if(n.field){
+
+      n.tick-=dt;
+
+      if(n.tick<=0){
+
+        n.tick=0.5;
+
+        eachNearPad(n.x,n.y,n.r,e=>{/*B068*/
+
+          if(e.hp<=0)return;
+
+          if(dist2(e.x,e.y,n.x,n.y)<(n.r+e.r)*(n.r+e.r)){dealDamage(e,n.dmg,undefined,undefined,'Frost Nova');e.frostT=Math.max(e.frostT||0,0.7);}
+
+        });
+
+        if(Math.random()<0.7)spawnParticles(n.x+(Math.random()-0.5)*n.r*1.4,n.y+(Math.random()-0.5)*n.r*1.4,'#bfdbfe',1,0.5,{sprite:'puff',size:14});
+
+      }
+
+    }
+
+    n.life-=dt;
+
+  }
+
+  sweep(NOVAS,n=>n.life>0);
 
   /*B019 volatile elite death-bombs: 0.4s telegraph then explode*/
 
@@ -7464,6 +7540,26 @@ function paintIcon(key,g,Sz){
 
     g.beginPath();g.arc(0,2*u,9.5*u,-1.5,1.5);g.stroke();
 
+  }else if(key==='frost'){/*B009*/
+
+    g.strokeStyle='#93c5fd';g.lineWidth=2.2*u;
+
+    for(let i=0;i<6;i++){
+
+      const a=i*Math.PI/3,cx2=Math.cos(a),sx2=Math.sin(a);
+
+      g.beginPath();g.moveTo(0,0);g.lineTo(cx2*13*u,sx2*13*u);
+
+      g.moveTo(cx2*8*u,sx2*8*u);g.lineTo(cx2*8*u-sx2*3.6*u,sx2*8*u+cx2*3.6*u);
+
+      g.moveTo(cx2*8*u,sx2*8*u);g.lineTo(cx2*8*u+sx2*3.6*u,sx2*8*u-cx2*3.6*u);
+
+      g.stroke();
+
+    }
+
+    g.fillStyle='#e0f2fe';g.beginPath();g.arc(0,0,3.4*u,0,Math.PI*2);g.fill();g.stroke();
+
   }
 
   g.restore();
@@ -7494,7 +7590,7 @@ function iconCV(key,Sz){
 
 function iconImg(key,cls){return SKILL_URL[key]?('<img class="'+(cls||'')+'" src="'+SKILL_URL[key]+'" alt="">'):'';}
 
-['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain','boomer'].forEach(k=>iconCV(k,72));/*WPN-PATCH B008*/
+['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain','boomer','frost'].forEach(k=>iconCV(k,72));/*WPN-PATCH B008 B009*/
 
 const [COIN_CV,coinG]=iconCanvas(36);
 
@@ -11539,6 +11635,50 @@ function render(){
       ctx.stroke();
 
     }
+
+  }
+
+  /*B009 frost nova: expanding pulse ring + lingering chill field*/
+
+  for(const n of NOVAS){
+
+    const a=Math.max(0,n.life/n.max);
+
+    if(n.field){
+
+      ctx.fillStyle='rgba(147,197,253,'+(0.05+0.05*a).toFixed(3)+')';
+
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();
+
+      ctx.strokeStyle='rgba(191,219,254,'+(0.28+0.18*Math.sin(gameTime*6)).toFixed(3)+')';
+
+      ctx.lineWidth=1.6;
+
+      ctx.setLineDash([7,9]);
+
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r*(0.93+0.05*Math.sin(gameTime*2.6)),0,Math.PI*2);ctx.stroke();
+
+      ctx.setLineDash([]);
+
+      continue;
+
+    }
+
+    const t=1-a,rr=n.r*Math.min(1,0.12+t*1.05);
+
+    ctx.strokeStyle='rgba(147,197,253,'+(a*0.85).toFixed(3)+')';
+
+    ctx.lineWidth=1.5+4.5*a;
+
+    ctx.beginPath();ctx.arc(n.x,n.y,rr,0,Math.PI*2);ctx.stroke();
+
+    ctx.strokeStyle='rgba(240,249,255,'+(a*0.75).toFixed(3)+')';
+
+    ctx.lineWidth=1.4;
+
+    ctx.beginPath();ctx.arc(n.x,n.y,rr*0.82,0,Math.PI*2);ctx.stroke();
+
+    if(n.ev&&a>0.15){ctx.strokeStyle='rgba(191,219,254,'+(a*0.5).toFixed(3)+')';ctx.lineWidth=1;ctx.beginPath();ctx.arc(n.x,n.y,rr*0.55,0,Math.PI*2);ctx.stroke();}
 
   }
 
