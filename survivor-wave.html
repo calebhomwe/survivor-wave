@@ -15611,7 +15611,7 @@ function towerAt(wx,wy){for(let i=towers.length-1;i>=0;i--){const t=towers[i];co
 function validSpot(type,wx,wy){
   if(wx<40||wy<40||wx>WORLD.w-40||wy>WORLD.h-40)return false;
   for(const t of towers){const dx=wx-t.x,dy=wy-t.y;if(dx*dx+dy*dy<MIN_GAP*MIN_GAP)return false;}
-  if(nearAnyRoad(wx,wy,24))return false;
+  /*KSC-FIX: roads no longer block placement — enemies path straight at the hero (no road pathing), so the old rule made most of the map unbuildable and towers seemed broken*/
   if(gold<TD[type].cost)return false;
   if(towers.length>=MAXT)return false;
   return true;
@@ -16341,7 +16341,6 @@ renderHUD=function(){
       ctx.fillText('\uD83D\uDD37 OIL '+Math.floor(window.oil||0)+'/'+window.OIL_CAP,x+w+8,y+h-1);
     }
   }catch(_){}
-  _renderHUD();
 };
 })();
 </script>
@@ -16553,6 +16552,7 @@ renderHUD=function(){
       ctx.restore();
     }
   }catch(_){}
+  _renderHUD();/*CHAINFIX: rfind edit amputated this call-through — the clash wrapper silently swallowed altars, tower drawing and the whole native HUD*/
 };  /*KSC: oil bar drawn after native HUD*/
 })();
 </script>

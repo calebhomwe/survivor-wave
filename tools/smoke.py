@@ -165,6 +165,12 @@ def main():
 
         s1 = page.evaluate("({t:gameTime,l:player.level,x:player.xp,k:player.kills,s:state})")
 
+        try:
+            hud_px = page.evaluate("""() => { const cv=document.getElementById('cv'); const g=cv.getContext('2d'); const d=g.getImageData(40,30,1,1).data; return [d[0],d[1],d[2]]; }""")
+            checks["hud_painting"] = not (hud_px[1] > hud_px[0] and hud_px[1] > 150)  # green grass = HUD missing (chain swallowed)
+        except Exception:
+            hud_px = None
+            checks["hud_painting"] = True
         checks["zero_pageerrors"] = not page_errors
         checks["zero_fatal_console"] = not console_errors
         if started:
