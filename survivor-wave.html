@@ -4393,7 +4393,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         p.life=0;
 
-        zones.push({kind:'burn',x:p.tx,y:p.ty,r:p.zr,dur:p.zd,tick:0,dmg:p.zdmg});
+        zones.push({kind:'burn',x:p.tx,y:p.ty,r:p.zr,dur:p.zd,tick:0,dmg:p.zdmg,tag:(p.wtag||'Molotov')});/*GAUNTLET-FIX: burn pools attribute to Molotov, not generic Zone*/
 
         spawnParticles(p.tx,p.ty,'#fb923c',12,1.1,{sprite:'ember',size:16});
 
@@ -4475,7 +4475,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
           if(e.hp<=0)return;
 
-          if(dist2(e.x,e.y,z.x,z.y)<150*150)dealDamage(e,z.dmg,z.x,z.y,'Zone');/*B041*/
+          if(dist2(e.x,e.y,z.x,z.y)<150*150)dealDamage(e,z.dmg,z.x,z.y,z.tag||'Zone');/*B041*/
 
         });
 
@@ -4559,7 +4559,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         if(e.hp<=0)return;
 
-        if(dist2(e.x,e.y,z.x,z.y)<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*0.5,z.x,z.y,'Zone');/*B041*/
+        if(dist2(e.x,e.y,z.x,z.y)<(z.r+e.r)*(z.r+e.r))dealDamage(e,z.dmg*0.5,z.x,z.y,z.tag||'Zone');/*B041*/
 
       });
 
@@ -10961,7 +10961,19 @@ function render(){
 
   for(const p of projectiles){
 
-    if(p.kind==='blade'){
+    if(p.kind==='pellet'){/*GAUNTLET-FIX pellet draw (was stranded in update)*/
+
+      ctx.fillStyle='#fdba74';
+
+      ctx.beginPath();ctx.arc(p.x,p.y,3.6,0,Math.PI*2);ctx.fill();
+
+      ctx.strokeStyle='rgba(251,146,60,0.55)';
+
+      ctx.lineWidth=1.4;
+
+      ctx.beginPath();ctx.moveTo(p.x-p.vx*0.018,p.y-p.vy*0.018);ctx.lineTo(p.x,p.y);ctx.stroke();
+
+    }else if(p.kind==='blade'){
 
       ctx.save();
 
@@ -16232,12 +16244,13 @@ function seedAltars(){
     var y=Math.max(140,Math.min(R2-140,by+Math.sin(a)*d));
     ALTARS.push({x:x,y:y,on:false,pulse:Math.random()*6});
   }
+  window.KSC_ALTARS=ALTARS;/*GAUNTLET-FIX: expose seeded altars (minimap markers + tests read this; the old typeof-based poll never saw the closure array)*/
 }
+
 var _sg=startGame;
 startGame=function(){
   _sg.apply(null,arguments);
-  window.oil=30;
-  try{seedAltars();}catch(_){}
+  window.oil=30;  try{seedAltars();}catch(_){}
 };
 function nearAltar(x,y,r){
   for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];
@@ -17888,7 +17901,7 @@ if(window.__ITER_G)return;window.__ITER_G=1;
 setInterval(function(){
   try{
     if(state!=='win'||window.__kgBtn)return;
-    var host=[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('TRY AGAIN')>=0);
+    var host=document.getElementById('winAgainBtn')||[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('Run It Back')>=0);/*GAUNTLET-FIX: win screen's button is Run It Back, not TRY AGAIN*/
     if(!host)return;
     window.__kgBtn=1;
     var b=document.createElement('button');
@@ -18042,5 +18055,21 @@ togglePause=function(){
   }catch(_){}
   return r;
 };
+})();
+</script>
+<script>
+/*GAUNTLET-FIX: playBtn/winAgainBtn captured the ORIGINAL startGame at load; every wrapper block
+   reassigns the global binding, so button clicks bypassed the whole chain (altars/oil-reset/NG+/
+   weekly/gauntlet-banner never ran via FIGHT). Rebind every known entry to the live chain.*/
+(function(){
+  function rebind(){
+    var fn=window.startGame;
+    ['playBtn','winAgainBtn'].forEach(function(id){
+      var b=document.getElementById(id);
+      if(b)b.onclick=fn;
+    });
+  }
+  rebind();
+  setTimeout(rebind,800);
 })();
 </script>
