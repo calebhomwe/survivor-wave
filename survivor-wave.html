@@ -17639,3 +17639,233 @@ renderHUD=function(){
 };
 })();
 </script>
+<script>
+/* ============================== ITER BATCH F (10 items) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_F)return;window.__ITER_F=1;
+/* F1: BARON BURRITO @3:30 — salsa pools burn the hero, nacho chip escorts */
+/* F2: COUNT PATTY @7:00 — 3 lettuce HP layers, pickle bombs with telegraphs */
+/* F3: Spud roll telegraph arrow during windup */
+/* F4: victory fireworks */
+/* F5: enemy cap 280 (farthest offscreen despawn) */
+/* F6: NEW FOE intro cards (once per type per run) */
+/* F7: hotkey chips on build cards + wire 7/8/9/0/C */
+/* F8: build card tooltips */
+/* F9: auto low-FX if FPS < 38 for 6s */
+/* F10: boss gauntlet banner + version footer + changelog file */
+var pools=[],bombs=[],seen={};
+function spawnNamed(mult,name,extra){
+  var e=makeEnemy('tank');
+  e.kscBoss2=name;
+  e.hp*=mult;e.maxHp*=mult;e.speed=34;e.r=30;e.xp=55;e.dmg*=1.3;
+  if(extra)Object.assign(e,extra);
+  e.x=player.x+(Math.random()<0.5?-1:1)*700;e.y=player.y+(Math.random()-0.5)*500;
+  enemies.push(e);
+  try{warn(name.toUpperCase()+' ROLLS IN!');sfx('elitesting');}catch(_){}
+  return e;
+}
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    if(gameTime>=210&&!window.__f_bur){window.__f_bur=1;spawnNamed(3.2,'Baron Burrito',{burSalsa:4,burChips:8});}
+    if(gameTime>=420&&!window.__f_patty){window.__f_patty=1;spawnNamed(4.2,'Count Patty',{patLayers:3,patNext:0.66,pklT:6});}
+    for(var i=enemies.length-1;i>=0;i--){
+      var e=enemies[i];
+      if(!e||e.hp<=0)continue;
+      /* F1 burrito */
+      if(e.kscBoss2==='Baron Burrito'){
+        e.burSalsa-=0.25;
+        if(e.burSalsa<=0){e.burSalsa=4;pools.push({x:e.x,y:e.y,life:5});}
+        e.burChips-=0.25;
+        if(e.burChips<=0){e.burChips=8;
+          for(var c2=0;c2<2;c2++){var m=makeEnemy('fast');
+            m.kscType='chip';m.hp*=0.6;m.maxHp*=0.6;m.color='#fbbf24';m.x=e.x+(Math.random()-0.5)*60;m.y=e.y+(Math.random()-0.5)*60;
+            enemies.push(m);}}
+      }
+      /* F2 patty */
+      if(e.kscBoss2==='Count Patty'){
+        if(e.patLayers>0&&e.hp<=e.maxHp*e.patNext){
+          e.patLayers--;e.patNext-=0.33;
+          addFloater(e.x,e.y-50,'LAYER DOWN!','#86efac',1.3,15);
+          if(!settings.lowFx)spawnParticles(e.x,e.y,'#86efac',16,1.1);
+          e.stun=Math.max(e.stun||0,1);
+        }
+        e.pklT-=0.25;
+        if(e.pklT<=0){e.pklT=6;bombs.push({x:player.x,y:player.y,t:1.2});}
+      }
+    }
+    /* pools tick */
+    for(var p=pools.length-1;p>=0;p--){var pd=pools[p];pd.life-=0.25;
+      if(pd.life<=0){pools.splice(p,1);continue;}
+      var dx=player.x-pd.x,dy=player.y-pd.y;
+      if(dx*dx+dy*dy<40*40&&player.invT<=0){player.hp-=4*0.25*3;}}
+    /* bombs tick */
+    for(var b2=bombs.length-1;b2>=0;b2--){var bm=bombs[b2];bm.t-=0.25;
+      if(bm.t<=0){bombs.splice(b2,1);
+        if(!settings.lowFx)spawnParticles(bm.x,bm.y,'#84cc16',14,1);
+        try{sfx('boom');}catch(_){}
+        var dx2=player.x-bm.x,dy2=player.y-bm.y;
+        if(dx2*dx2+dy2*dy2<90*90&&player.invT<=0){player.hp-=12;addFloater(player.x,player.y-30,'PICKLED!','#84cc16',1,13);}}
+    }
+    /* F5 enemy cap */
+    if(enemies.length>280){
+      var removed=0;
+      for(var k=enemies.length-1;k>=0&&removed<20;k--){
+        var e5=enemies[k];
+        if(e5&&!e5.isBoss&&!e5.isElite&&!e5.kscBoss2&&e5.hp>0){
+          var far=(e5.x-player.x)*(e5.x-player.x)+(e5.y-player.y)*(e5.y-player.y);
+          if(far>900*900){enemies.splice(k,1);removed++;}
+        }
+      }
+    }
+  }catch(_){}
+},250);
+/* loot for the two new bosses */
+var _keF=killEnemy;
+killEnemy=function(){
+  try{
+    var e=arguments[0];
+    if(e&&e.kscBoss2&&e.hp<=0&&!e.kscLooted&&(e.kscBoss2==='Baron Burrito'||e.kscBoss2==='Count Patty')){
+      e.kscLooted=true;
+      gold+=150;window.gainOil(20);
+      addFloater(e.x,e.y-44,'ROYAL TUMFY! +150 +20 OIL','#ffd23f',1.6,15);
+      if(!settings.lowFx)spawnParticles(e.x,e.y,'#ffd23f',24,1.4);
+    }
+  }catch(_){}
+  return _keF.apply(null,arguments);
+};
+/* F3 + F1/F2 visuals */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    ctx.save();ctx.translate(-cam.x,-cam.y);
+    for(var p=0;p<pools.length;p++){var pd=pools[p];
+      ctx.globalAlpha=Math.min(0.4,pd.life*0.1);
+      ctx.fillStyle='#65a30d';
+      ctx.beginPath();ctx.ellipse(pd.x,pd.y,34,20,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#dc2626';
+      ctx.beginPath();ctx.arc(pd.x,pd.y,8,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+    for(var b3=0;b3<bombs.length;b3++){var bm=bombs[b3];
+      var f2=1-bm.t/1.2;
+      ctx.strokeStyle='rgba(132,204,22,'+(0.4+0.4*Math.sin(performance.now()/80)).toFixed(2)+')';
+      ctx.lineWidth=3;ctx.beginPath();ctx.arc(bm.x,bm.y,90,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#4d7c0f';ctx.beginPath();ctx.arc(bm.x,bm.y,10*f2+4,0,Math.PI*2);ctx.fill();}
+    for(var i2=0;i2<enemies.length;i2++){
+      var e2=enemies[i2];if(!e2||e2.hp<=0)continue;
+      /* F3 spud telegraph */
+      if(e2.kscType==='spud'&&e2.spudSt==='windup'){
+        ctx.strokeStyle='rgba(248,113,113,0.6)';ctx.lineWidth=3;ctx.setLineDash([10,8]);
+        ctx.beginPath();ctx.moveTo(e2.x,e2.y);
+        ctx.lineTo(e2.x+Math.cos(e2.spudDir)*420,e2.y+Math.sin(e2.spudDir)*420);
+        ctx.stroke();ctx.setLineDash([]);
+      }
+      /* burrito body */
+      if(e2.kscBoss2==='Baron Burrito'){
+        ctx.fillStyle='#d97706';ctx.beginPath();ctx.ellipse(e2.x,e2.y,e2.r+6,e2.r-2,0.4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.ellipse(e2.x,e2.y-4,e2.r+2,e2.r-8,0.4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#dc2626';for(var s3=0;s3<4;s3++){ctx.beginPath();ctx.arc(e2.x-20+s3*13,e2.y-6+(s3%2)*8,3,0,Math.PI*2);ctx.fill();}
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(e2.x+e2.r*0.4,e2.y-e2.r*0.5,4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#1f2937';ctx.beginPath();ctx.arc(e2.x+e2.r*0.4,e2.y-e2.r*0.5,2,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#fde68a';ctx.font='900 10px "Baloo 2",system-ui';ctx.textAlign='center';
+        ctx.fillText('BARON BURRITO',e2.x,e2.y-e2.r-18);
+      }
+      /* patty body + layers */
+      if(e2.kscBoss2==='Count Patty'){
+        var L=e2.patLayers||0;
+        ctx.fillStyle='#b45309';ctx.beginPath();ctx.ellipse(e2.x,e2.y+8,e2.r+8,e2.r*0.5,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#16a34a';for(var l2=0;l2<L;l2++){ctx.beginPath();ctx.ellipse(e2.x,e2.y-l2*10,e2.r+4,e2.r*0.4,0,0,Math.PI*2);ctx.fill();}
+        ctx.fillStyle='#dc2626';ctx.beginPath();ctx.ellipse(e2.x,e2.y-6,e2.r,e2.r*0.45,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#fef08a';ctx.font='900 10px "Baloo 2",system-ui';ctx.textAlign='center';
+        ctx.fillText('COUNT PATTY ('+L+' layers)',e2.x,e2.y-e2.r-16);
+      }
+      /* F6 intro cards */
+      if(e2.kscType&&!seen[e2.kscType]&&e2.spawnT<=0){
+        seen[e2.kscType]=1;
+        var names={swarmer:'BARBARIAN SWARMER',pekka:'P.E.K.K.A KNIGHT',serpent:'ELECTRO SERPENT',charger:'RAM BEETLE',chip:'NACHO CHIP',drill:'GOBLIN DRILL'};
+        if(names[e2.kscType]){try{warn('\u2694 NEW FOE: '+names[e2.kscType]);}catch(_){}}
+      }
+    }
+    ctx.restore();
+  }catch(_){}
+};
+/* F4 victory fireworks */
+setInterval(function(){
+  try{
+    if(state==='win'&&!settings.lowFx){
+      for(var i=0;i<3;i++){
+        spawnParticles(Math.random()*W,cam.y+Math.random()*H*0.5,
+          ['#ffd23f','#f87171','#a3e635','#93c5fd'][Math.floor(Math.random()*4)],10,1.2);
+      }
+    }
+  }catch(_){}
+},600);
+/* F7+F8: hotkeys 7/8/9/0/C + tooltips + chips */
+var HK={'7':'pitch','8':'spike','9':'crier','0':'apoth','c':'craft'};
+document.addEventListener('keydown',function(ev){
+  try{
+    if(state!=='play')return;
+    var k=(ev.key||'').toLowerCase();
+    if(window.TOWERSYS&&window.TOWERSYS.barOpen&&HK[k]){
+      window.TOWERSYS.startPlace(HK[k]);ev.stopImmediatePropagation();ev.preventDefault();
+    }
+  }catch(_){}
+},{capture:true});
+setInterval(function(){
+  try{
+    if(window.__fCardsDone)return;
+    var cards=[...document.querySelectorAll('div')].filter(d=>d.style.width==='108px'&&d.onclick&&d.textContent.indexOf('g')>=0);
+    var dCards=[...document.querySelectorAll('div')].filter(d=>d.style.width==='96px'&&d.onclick);
+    if(cards.length>=6&&dCards.length>=5){
+      window.__fCardsDone=1;
+      var nums=['1','2','3','4','5','6'];
+      cards.forEach(function(c2,i2){
+        var chip=document.createElement('div');
+        chip.textContent=nums[i2]||'';
+        chip.style.cssText='position:absolute;top:2px;left:6px;font-size:10px;font-weight:900;color:#fbbf24';
+        c2.style.position='relative';c2.appendChild(chip);
+        c2.title=(c2.textContent||'').split('g')[0]+'- upgrades cost OIL. Two T3 merge to PARAGON, two T4 to GLORY.';
+      });
+      var nums2=['7','8','9','0','C'];
+      dCards.forEach(function(c3,i3){
+        var chip=document.createElement('div');
+        chip.textContent=nums2[i3]||'';
+        chip.style.cssText='position:absolute;top:2px;left:6px;font-size:10px;font-weight:900;color:#fbbf24';
+        c3.style.position='relative';c3.appendChild(chip);
+        c3.title=(c3.textContent||'')+' - upgrades cost OIL.';
+      });
+    }
+  }catch(_){}
+},2000);
+/* F9: auto low-FX guard */
+setInterval(function(){
+  try{
+    if(state!=='play'||window.__autoFx)return;
+    if(typeof window.__fpsV==='number'&&window.__fpsV>0&&window.__fpsV<38){
+      window.__lowFps=(window.__lowFps||0)+2;
+      if(window.__lowFps>=6){window.__autoFx=1;settings.lowFx=true;
+        try{warn('LOW FX enabled for performance');}catch(_){}}
+    }else window.__lowFps=0;
+  }catch(_){}
+},2000);
+/* F10: gauntlet banner + version footer */
+var _sgF=startGame;
+startGame=function(){
+  var r=_sgF.apply(null,arguments);
+  try{setTimeout(function(){try{warn('BOSS GAUNTLET: Spud 2:30 \u00b7 Burrito 3:30 \u00b7 Peel 5:00 \u00b7 Glaze 6:30 \u00b7 Patty 7:00 \u00b7 Fizz 8:00 \u00b7 Crisp 9:00');}catch(_){}},2500);}catch(_){}
+  return r;
+};
+setInterval(function(){
+  try{
+    if(window.__verFoot||state!=='ready')return;
+    var f=document.createElement('div');
+    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.1 \u00b7 70 iterations \u00b7 web build';
+    f.style.cssText='position:fixed;bottom:6px;left:10px;font-size:10px;color:rgba(143,161,199,0.6);z-index:5;pointer-events:none';
+    document.body.appendChild(f);window.__verFoot=1;
+  }catch(_){}
+},1500);
+})();
+</script>
