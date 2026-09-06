@@ -1,0 +1,96 @@
+== g1 ...
+== g1 PASS
+== g2 ...
+== g2 PASS
+== g3 ...
+== g3 PASS
+== g4 ...
+== g4 FAIL
+== g5 ...
+== g5 FAIL
+== g6 ...
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 57349)
+Traceback (most recent call last):
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 675, in do_GET
+    self.copyfile(f, self.wfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 875, in copyfile
+    shutil.copyfileobj(source, outputfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\shutil.py", line 198, in copyfileobj
+    fdst_write(buf)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+----------------------------------------
+== g6 FAIL
+== g7 ...
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 60796)
+Traceback (most recent call last):
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 675, in do_GET
+    self.copyfile(f, self.wfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 875, in copyfile
+    shutil.copyfileobj(source, outputfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\shutil.py", line 198, in copyfileobj
+    fdst_write(buf)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+----------------------------------------
+== g7 FAIL
+== g8 ...
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 64924)
+Traceback (most recent call last):
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 675, in do_GET
+    self.copyfile(f, self.wfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\http\server.py", line 875, in copyfile
+    shutil.copyfileobj(source, outputfile)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\shutil.py", line 198, in copyfileobj
+    fdst_write(buf)
+  File "C:\Users\caleb\AppData\Local\Programs\Python\Python310\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+----------------------------------------
+== g8 FAIL
+== g9 ...
+== g9 FAIL
+
+PROOF.md written (94 checks, 8 failed)
+EXIT=1
