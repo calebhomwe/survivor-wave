@@ -17869,3 +17869,178 @@ setInterval(function(){
 },1500);
 })();
 </script>
+<script>
+/* ============================== ITER BATCH G (final 10) ============================== */
+(function(){
+'use strict';
+if(window.__ITER_G)return;window.__ITER_G=1;
+/* G1: KEEP GOING endless button on victory */
+/* G2: dual boss mini-bars */
+/* G3: oil rush event every ~2min */
+/* G4: show all tower ranges while build bar open */
+/* G5: merge screen flash (settings.flash aware) */
+/* G6: towers-built + paragons on end screen */
+/* G7: altar E-hint pulse when standing near an inactive altar */
+/* G8: M hotkey mute toggle */
+/* G9: 3-2-1 countdown after unpause */
+/* G10: housekeeping done outside (README/CHANGELOG/registration) */
+/* G1 */
+setInterval(function(){
+  try{
+    if(state!=='win'||window.__kgBtn)return;
+    var host=[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('TRY AGAIN')>=0);
+    if(!host)return;
+    window.__kgBtn=1;
+    var b=document.createElement('button');
+    b.className='btn';b.textContent='KEEP GOING \u221E';
+    b.style.cssText='display:block;margin:10px auto 0;background:#365314;color:#d9f99d;font-size:16px;padding:12px 38px 9px;border-radius:14px;font-family:inherit;font-weight:bold;cursor:pointer';
+    b.onclick=function(){
+      try{
+        b.remove();
+        runGoal+=600;/*10 more minutes*/
+        endless=true;
+        if(typeof nextBoss!=='undefined'){nextBoss=gameTime+120;}
+        state='play';
+        warn('\u221E ENDLESS \u2014 the horde remembers');
+      }catch(_){}
+    };
+    host.parentNode.appendChild(b);
+    setTimeout(function(){window.__kgBtn=0;},500);
+  }catch(_){}
+},700);
+/* G2 dual boss mini-bars + G7 altar pulse (world overlay) */
+var _rh=renderHUD;
+renderHUD=function(){
+  _rh.apply(null,arguments);
+  try{
+    if(state!=='play'&&state!=='pause')return;
+    /* G2: extra bosses under the primary bar */
+    var bosses=[];
+    for(var i=0;i<enemies.length;i++){
+      var e=enemies[i];
+      if(e&&e.hp>0&&(e.isBoss||e.kscBoss2||e.isSpud||e.isPeel))bosses.push(e);
+    }
+    if(bosses.length>1){
+      for(var b2=1;b2<Math.min(bosses.length,4);b2++){
+        var bo=bosses[b2];
+        var w=260,y=118+(b2-1)*14;
+        ctx.fillStyle='rgba(8,12,26,0.72)';ctx.fillRect(W/2-w/2,y,w,9);
+        ctx.fillStyle='#ef4444';
+        ctx.fillRect(W/2-w/2+1,y+1,(w-2)*Math.max(0,bo.hp/bo.maxHp),7);
+        ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=1;ctx.strokeRect(W/2-w/2,y,w,9);
+        ctx.font='800 9px "Baloo 2",system-ui';ctx.textAlign='center';ctx.fillStyle='#fecaca';
+        ctx.fillText(bo.kscBoss2||'BOSS',W/2,y+7.5);
+      }
+    }
+    /* G4: all ranges while placing */
+    try{
+      if(window.TOWERSYS&&window.TOWERSYS.ghost){
+        ctx.save();ctx.translate(-cam.x,-cam.y);
+        var ts=window.TOWERSYS.towers;
+        for(var i3=0;i3<ts.length;i3++){
+          var t=ts[i3];
+          var D=window.TOWERSYS.defs[t.ty];
+          ctx.strokeStyle='rgba(147,197,253,0.22)';ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.arc(t.x,t.y,D.range*((t.tier||1)>=4?1.2:1),0,Math.PI*2);ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }catch(_){}
+    /* G7: altar E pulse */
+    try{
+      if(typeof ALTARS!=='undefined'){
+        for(var a3=0;a3<ALTARS.length;a3++){
+          var al=ALTARS[a3];
+          if(al.on)continue;
+          var dx=al.x-player.x,dy=al.y-player.y;
+          if(dx*dx+dy*dy<130*130&&!settings.lowFx){
+            var pp=1+Math.sin(performance.now()/200)*0.25;
+            ctx.save();ctx.translate(-cam.x,-cam.y);
+            ctx.font='900 13px "Baloo 2",system-ui';ctx.textAlign='center';
+            ctx.fillStyle='#ffd23f';
+            ctx.fillText('E',al.x,al.y-56*pp);
+            ctx.restore();
+          }
+        }
+      }
+    }catch(_){}
+  }catch(_){}
+};
+/* G3: oil rush */
+window.__nextOilRush=120;
+setInterval(function(){
+  try{
+    if(state!=='play')return;
+    window.__nextOilRush-=1;
+    if(window.__nextOilRush<=0){
+      window.__nextOilRush=110+Math.floor(Math.random()*30);
+      window.gainOil(25);
+      addFloater(player.x,player.y-46,'\uD83D\uDD37 OIL RUSH +25','#fbbf24',1.4,14);
+      if(!settings.lowFx)spawnParticles(player.x,player.y,'#fbbf24',12,1);
+      try{sfx('rare');}catch(_){}
+    }
+  }catch(_){}
+},1000);
+/* G5: merge flash — watch TOWERSYS.towers tier transitions */
+var __prevT5=0,__prevT4=0;
+setInterval(function(){
+  try{
+    if(state!=='play'||!window.TOWERSYS)return;
+    var t4=0,t5=0,ts=window.TOWERSYS.towers;
+    for(var i=0;i<ts.length;i++){var ti=ts[i].tier||0;if(ti===4)t4++;if(ti===5)t5++;}
+    if((t4>__prevT4||t5>__prevT5)&&settings.flash){
+      ctx.fillStyle='rgba(255,210,63,0.28)';ctx.fillRect(0,0,W,H);
+    }
+    __prevT4=t4;__prevT5=t5;
+  }catch(_){}
+},300);
+/* G6: towers-built on end screen */
+setInterval(function(){
+  try{
+    if(state!=='over'&&state!=='win')return;
+    if(window.__tbDone)return;
+    var p2=[...document.querySelectorAll('div,span,p')].find(d=>d.textContent&&d.textContent.indexOf('Gold earned')>=0);
+    if(p2&&!p2._tb){
+      p2._tb=1;
+      var par=0;try{for(var i=0;i<window.TOWERSYS.towers.length;i++)if((window.TOWERSYS.towers[i].tier||0)>=4)par++;}catch(_){}
+      p2.innerHTML+=' \u00b7 \uD83C\uDFF0 '+window.TOWERSYS.placed+' towers'+(par?' \u00b7 \u2B50 '+par+' paragons':'');
+    }
+  }catch(_){}
+},500);
+setInterval(function(){try{if(state==='ready')window.__tbDone=0;}catch(_){}},1200);
+/* G8: M mute */
+document.addEventListener('keydown',function(ev){
+  try{
+    if((ev.key||'').toLowerCase()==='m'&&!document.getElementById('lvlup')){
+      var mb=document.getElementById('muteBtn');
+      if(mb)mb.click();
+    }
+  }catch(_){}
+},{capture:true});
+/* G9: unpause countdown */
+var _tp=togglePause;
+togglePause=function(){
+  var was=state;
+  var r=_tp.apply(null,arguments);
+  try{
+    if(was==='paused'&&state==='play'){
+      var cd=3;
+      var f=function(){
+        if(state!=='play')return;
+        if(cd>0){
+          ctx.save();
+          ctx.font='900 90px "Luckiest Guy",cursive';ctx.textAlign='center';
+          ctx.fillStyle='rgba(255,210,63,0.85)';
+          ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=6;
+          ctx.strokeText(cd,W/2,H/2);ctx.fillText(cd,W/2,H/2);
+          ctx.restore();
+          cd--;setTimeout(f,450);
+        }
+      };
+      f();
+    }
+  }catch(_){}
+  return r;
+};
+})();
+</script>
