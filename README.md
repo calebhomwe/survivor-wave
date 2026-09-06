@@ -18,3 +18,12 @@ WASD/arrows/drag — move · SPACE — dash · R — ultimate · T/G/F — turre
 
 ## Credits
 Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · SFX + music: ElevenLabs · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
+
+## Kingdom Survivor Clash (v1.1)
+
+Survivor.io-style horde survival × BTD tower defense. **11 tower lines** with oil upgrades and
+PARAGON/GLORY merges, **7-boss gauntlet** every run, altar/covenant placement, Silver + Anointing
+Oil economy, clash enemies (P.E.K.K.A, Electro Serpent, Goblin Drill...), difficulty modes
+(Casual → Nightmare + IRONMAN), NG+, weekly challenges, endless mode, local leaderboards.
+
+**Controls:** WASD move · SPACE dash · T build · E consecrate altar · P pause · H photo · M mute · Y timer
