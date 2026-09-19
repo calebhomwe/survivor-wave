@@ -130,15 +130,15 @@ canvas{display:block;position:absolute;inset:0}
 
 .hidden{display:none!important}
 
-.lvlup{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(6,8,18,.85);backdrop-filter:blur(9px);z-index:12;padding:16px}
+.lvlup{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle at 50% 34%,rgba(18,45,86,.72),rgba(3,7,17,.94) 68%);backdrop-filter:blur(12px) saturate(.85);z-index:12;padding:16px}
 
-.lvlup h2{font-family:'Luckiest Guy',cursive;font-size:clamp(30px,8vw,48px);font-weight:400;letter-spacing:2px;color:#ffd23f;-webkit-text-stroke:2px #4a2d02;text-shadow:0 4px 0 #7c4a03,0 0 34px rgba(255,210,63,.55)}
+.lvlup h2{font-family:'Luckiest Guy',cursive;font-size:clamp(36px,9vw,58px);line-height:.9;font-weight:400;letter-spacing:2px;color:#ffd95a;-webkit-text-stroke:2px #4a2d02;text-shadow:0 4px 0 #7c4a03,0 0 34px rgba(255,210,63,.55);margin:0}
 
-.lvlup .hint{color:#8fa2c0;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.22em}
+.lvlup .hint{color:#d2e3ff;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.24em;text-shadow:0 2px 8px #020617}
 
-.lclist{display:flex;flex-direction:column;gap:10px;width:min(440px,94vw)}
+.lclist{display:flex;flex-direction:column;gap:12px;width:min(620px,96vw)}
 
-.lc{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:16px;background:linear-gradient(168deg,#2b3a63,#141d36);border:2.5px solid #3d5387;box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer;text-align:left;color:#eef2f7;font-family:inherit;transition:transform .1s ease,border-color .1s ease,box-shadow .1s ease}
+.lc{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:stretch;gap:16px;min-height:126px;padding:10px 18px 10px 10px;border-radius:20px;background:linear-gradient(145deg,#17386d 0%,#0b1833 60%,#071126 100%);background:linear-gradient(145deg,color-mix(in srgb,var(--lc-accent,#54b7ff) 22%,#102a58) 0%,#0b1833 60%,#071126 100%);border:3px solid #4676ba;border-color:color-mix(in srgb,var(--lc-accent,#54b7ff) 66%,#526b98);box-shadow:0 6px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.2),0 0 24px rgba(28,92,183,.18);box-shadow:0 6px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.2),0 0 24px color-mix(in srgb,var(--lc-accent,#54b7ff) 22%,transparent);cursor:pointer;text-align:left;color:#eef2f7;font-family:inherit;transition:transform .1s ease,border-color .1s ease,box-shadow .1s ease;overflow:hidden}
 
 .lc:hover{border-color:#7da2ff;box-shadow:0 4px 0 rgba(0,0,0,.45),0 0 24px rgba(96,165,250,.4);transform:translateY(-2px)}
 
@@ -150,21 +150,21 @@ canvas{display:block;position:absolute;inset:0}
 
 .lc.green{background:linear-gradient(168deg,#1c4a2e,#0c2317);border-color:#3ea86a}
 
-.lc-i{font-size:30px;line-height:1;flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 25%,#46609c,#1c2748);border:2px solid rgba(255,255,255,.22);border-radius:13px}
+.lc-i{font-size:58px;line-height:1;width:112px;height:100%;min-height:102px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 48% 45%,#157ad4 0,#123d7a 42%,#07162e 76%);background:radial-gradient(circle at 48% 45%,color-mix(in srgb,var(--lc-accent,#54b7ff) 75%,#0d3d7a) 0,#123d7a 42%,#07162e 76%);border:3px solid #d8b75b;border-radius:50%;box-shadow:inset 0 0 0 5px rgba(2,12,32,.45),0 0 22px rgba(37,139,255,.45);box-shadow:inset 0 0 0 5px rgba(2,12,32,.45),0 0 22px color-mix(in srgb,var(--lc-accent,#54b7ff) 55%,transparent);align-self:center}
 
 .lc.gold .lc-i{background:radial-gradient(circle at 30% 25%,#a97e14,#5a3f05)}
 
 .lc.green .lc-i{background:radial-gradient(circle at 30% 25%,#2c7a4b,#123320)}
 
-.lc-n{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16.5px;letter-spacing:.2px}
+.lc-body{min-width:0;display:flex;flex-direction:column;justify-content:center;padding:5px 0}.lc-top{display:flex;align-items:center;gap:8px;min-width:0}.lc-kind{font-size:10px;line-height:1;font-weight:900;letter-spacing:.18em;color:#78b7ff;text-transform:uppercase;margin-bottom:5px}.lc-n{display:flex;align-items:center;gap:8px;min-width:0;font-family:'Luckiest Guy',cursive;font-weight:400;font-size:clamp(22px,4vw,29px);line-height:1;color:#fff4cb;letter-spacing:.5px;text-shadow:0 2px 0 #071126}
 
-.lc-lv{font-size:11px;font-weight:800;color:#9db8ff;background:rgba(59,130,246,.3);border:1px solid rgba(147,197,253,.35);padding:2px 8px;border-radius:7px;letter-spacing:.5px}
+.lc-lv{margin-left:auto;flex:none;font-family:'Baloo 2',sans-serif;font-size:11px;font-weight:900;color:#d8eaff;background:linear-gradient(180deg,#286fc7,#12376c);border:2px solid #72b6ff;padding:4px 9px 2px;border-radius:8px;letter-spacing:.6px;box-shadow:inset 0 1px rgba(255,255,255,.28)}
 
 .lc.gold .lc-lv{color:#ffe9a3;background:rgba(250,204,21,.25);border-color:rgba(253,230,138,.4)}
 
-.lc-d{display:block;font-size:13px;color:#a8b6ce;margin-top:2px;font-weight:600}
+.lc-d{display:block;font-size:14px;line-height:1.22;color:#d4deef;margin-top:7px;font-weight:700;white-space:normal}.lc-progress{display:flex;align-items:center;gap:5px;margin-top:7px}.lc-pip{width:10px;height:10px;border-radius:50%;border:2px solid #54749e;background:#071329;box-shadow:inset 0 1px 2px #000}.lc-pip.on{background:#54c4ff;border-color:#b7ecff;box-shadow:0 0 8px #2ca7ff}.lc.gold .lc-pip.on{background:#ffd23f;border-color:#fff0a6;box-shadow:0 0 8px #ffd23f}.lc.green .lc-pip.on{background:#72ef98;border-color:#c6ffd7;box-shadow:0 0 8px #39df73}
 
-.reroll{margin-top:2px;border:2px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#e5e9f5;font-weight:800;font-size:13.5px;padding:9px 20px;border-radius:999px;cursor:pointer;font-family:inherit}
+.reroll{margin-top:4px;min-height:46px;border:2px solid #d8b75b;background:linear-gradient(180deg,#153f82,#0a2350);color:#fff4cb;font-weight:900;font-size:15px;padding:10px 24px 8px;border-radius:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #050b18,inset 0 1px rgba(255,255,255,.18)}
 
 .reroll:disabled{opacity:.35;cursor:default}
 
@@ -210,7 +210,7 @@ canvas{display:block;position:absolute;inset:0}
 
 @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
 
-.lc-i img{width:76%;height:76%;image-rendering:auto;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.lc-i img{width:96%;height:96%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 5px 4px rgba(0,0,0,.65)) saturate(1.18) contrast(1.04)}
 
 .coin{display:inline-block;width:.82em;height:.82em;border-radius:50%;vertical-align:-6%;background:radial-gradient(circle at 34% 30%,#ffe98a,#b45309 78%);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.4)}
 
@@ -248,15 +248,16 @@ canvas{display:block;position:absolute;inset:0}
 
 /* chapters */
 
-.chapBox{width:min(560px,92vw)}
+.chapBox{width:min(720px,94vw)}
 
-.chapHint{font-size:12px;color:#a8b6ce;font-weight:600;margin-top:-6px}
+.chapHint{font-size:13px;color:#c8d4e8;font-weight:700;margin-top:-6px}
 
-.chapGrid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:16px 0}
+.chapGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:12px;margin:16px 0}
 
-.chapCard{width:128px;padding:12px 8px 9px;border-radius:14px;background:linear-gradient(168deg,#2b3a63,#141d36);border:2.5px solid #3d5387;cursor:pointer;text-align:center;color:#eef2f7;font-family:inherit;transition:transform .1s ease,border-color .1s ease,box-shadow .1s ease}
+.chapCard{position:relative;isolation:isolate;min-width:0;min-height:116px;padding:12px 9px 10px;border-radius:16px;background:linear-gradient(160deg,var(--cc1,#2b3a63),var(--cc2,#10172e));border:2.5px solid var(--ccb,#49618e);cursor:pointer;text-align:left;color:#eef2f7;font-family:inherit;transition:transform .1s ease,border-color .1s ease,box-shadow .1s ease;overflow:hidden;box-shadow:0 5px 0 rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.14)}
+.chapCard::before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 85% 15%,var(--ccg,rgba(85,145,255,.28)),transparent 45%),linear-gradient(120deg,transparent 40%,rgba(255,255,255,.06));pointer-events:none}.chapCard::after{content:'';position:absolute;right:-14px;bottom:-20px;width:76px;height:76px;border:10px solid rgba(255,255,255,.07);transform:rotate(28deg);border-radius:18px;pointer-events:none}
 
-.chapCard:hover{border-color:#7da2ff}
+.chapCard:hover{border-color:#9fc2ff;transform:translateY(-2px)}
 
 .chapCard.sel{border-color:#ffd23f;background:linear-gradient(168deg,#7a5a10,#3a2906);box-shadow:0 0 20px rgba(255,210,63,.45);transform:translateY(-3px)}
 
@@ -264,11 +265,12 @@ canvas{display:block;position:absolute;inset:0}
 
 .chapCard.locked:hover{border-color:#2a3654}
 
-.chapCard .ccNum{font-family:'Luckiest Guy',cursive;font-size:24px;color:#ffd23f;line-height:1.15}
+.chapCard .ccTop{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}.chapCard .ccNum{font-family:'Luckiest Guy',cursive;font-size:29px;color:#ffd23f;line-height:1}
+.chapCard .ccBiome{font-size:11px;line-height:1.05;min-height:24px;color:#edf5ff;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-top:7px;text-shadow:0 2px 3px #000}
 
 .chapCard.locked .ccNum{color:#93a0b8}
 
-.chapCard .ccPips span{color:#3d4a68;font-size:16px;margin:0 3px}
+.chapCard .ccPips span{color:#3d4a68;font-size:17px;margin-left:3px}
 
 .chapCard .ccPips span.on{color:#ffd23f;text-shadow:0 0 8px rgba(255,210,63,.65)}
 
@@ -459,6 +461,21 @@ background-repeat:no-repeat}
 #kscTowerInspect button{min-height:44px;font-size:12px}
 body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,#kscCancelBuild,#iterSellAll,.dashBtn,.ultBtn){display:none!important}
 @media(pointer:coarse),(max-width:600px){
+  .lvlup{justify-content:flex-start;gap:8px;padding-top:max(20px,var(--safe-t));padding-bottom:max(14px,var(--safe-b))}
+  .lvlup h2{font-size:clamp(34px,11vw,48px);margin-top:2px}
+  .lvlup .hint{font-size:11px;letter-spacing:.2em}
+  .lclist{width:100%;max-width:520px;gap:9px}
+  .lc{grid-template-columns:88px minmax(0,1fr);gap:12px;min-height:104px;padding:8px 12px 8px 8px;border-width:2.5px;border-radius:17px}
+  .lc-i{width:88px;min-height:84px;font-size:48px;border-width:2px}
+  .lc-n{font-size:clamp(19px,5.5vw,25px)}
+  .lc-lv{font-size:10px;padding:3px 7px 1px}
+  .lc-kind{font-size:9px;margin-bottom:3px}
+  .lc-d{font-size:12.5px;margin-top:4px;line-height:1.15}
+  .lc-progress{margin-top:5px}.lc-pip{width:8px;height:8px;border-width:1.5px}
+  .reroll{margin-top:1px;min-height:44px;padding:9px 22px 7px;font-size:14px}
+  .chapBox{width:100%;max-width:640px}
+  .chapGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .chapCard{min-height:108px}
   #kscBuildBtn,#iterSellAll{right:auto!important;left:calc(16px + var(--safe-l))!important}
   #start .heroRow{width:100%;max-width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:4px 2px 12px;touch-action:pan-x pan-y;scroll-snap-type:x proximity}
   #start .hcard{flex:0 0 114px;scroll-snap-align:start}
@@ -474,7 +491,7 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
   #kkList .shopRow>div:nth-child(2){min-width:150px}
   .buyBtn{min-height:44px}
 }
-@media(max-height:600px){.ov,.lvlup,.chestOv,.pause{justify-content:flex-start}.pause .pbox{margin:auto}#start .castRow{display:none}}
+@media(max-height:700px){.lvlup{gap:5px}.lvlup h2{font-size:32px}.lvlup .hint{font-size:10px}.lclist{gap:6px}.lc{grid-template-columns:72px minmax(0,1fr);min-height:82px;padding:6px 10px 6px 6px}.lc-i{width:72px;min-height:68px}.lc-kind{display:none}.lc-n{font-size:19px}.lc-d{font-size:11.5px}.lc-progress{margin-top:3px}.reroll{min-height:40px;padding:7px 18px 5px}.ov,.chestOv,.pause{justify-content:flex-start}.pause .pbox{margin:auto}#start .castRow{display:none}}
 </style>
 
 </head>
@@ -593,9 +610,9 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
 
 <div class="lvlup hidden" id="lvlup">
 
-  <h2 id="lvlTitle">LEVEL 2</h2>
+  <h2 id="lvlTitle">LEVEL UP</h2>
 
-  <div class="hint">Choose an upgrade</div>
+  <div class="hint" id="lvlHint">Choose your blessing</div>
 
   <div class="lclist" id="lvlChoices"></div>
 
@@ -2731,7 +2748,7 @@ function startGame(){
 
   if(themeFor().group==='volcano')ensureLavaPools();/*B024 needs ROADS built first*/
 
-  warn({sand:'DESERT MESA',snow:'FROSTPINE TUNDRA',scorch:'EMBER WASTES',volcano:'CINDER WASTES — MIND THE LAVA'}[themeFor().group]||themeFor().name||'WILD STREETS'); /*BFX-PATCH*/
+  warn({sand:'DESERT MESA',snow:'FROSTPINE TUNDRA',scorch:'EMBER WASTES',volcano:'CINDER WASTES — MIND THE LAVA',moon:'MOONLIT KEEP',mire:'WITCHWOOD MIRE',crystal:'CRYSTAL CITADEL',sunspire:'SUNSPIRE GARDENS'}[themeFor().group]||themeFor().name||'WILD STREETS'); /*BFX-PATCH*/
 
   const st0=sioc.stars[chapterSel]||{clr:0};
 
@@ -5579,7 +5596,9 @@ function showLevelUp(){
 
   state='levelup';
 
-  document.getElementById('lvlTitle').textContent='LEVEL '+player.level;
+  document.getElementById('lvlTitle').textContent='LEVEL UP';
+
+  const levelHint=document.getElementById('lvlHint');if(levelHint)levelHint.textContent='LEVEL '+player.level+' · CHOOSE YOUR BLESSING';
 
   document.getElementById('rerollBtn').disabled=rerollsLeft<=0;
 
@@ -5607,7 +5626,7 @@ function renderChoices(){
 
     btn.className='lc'+(c.t==='evo'?' gold':c.t==='heal'?' green':'');
 
-    let icon,name,lvTxt,desc;
+    let icon,name,lvTxt,desc,kind='SUPPLY',pipLevel=1,accent='#54b7ff';
 
     let iconK=null;
 
@@ -5618,12 +5637,13 @@ function renderChoices(){
       const w=ownedWeapon(c.id);
 
       iconK=c.t==='evo'?def.iconK:def.iconK;
+      kind=c.t==='evo'?'EVOLUTION':'WEAPON';accent=def.color||'#54b7ff';
 
       if(c.t==='evo'){
 
         icon='';name=def.evoName;
 
-        lvTxt='EVO';desc='EVOLVED '+def.name+' — massively upgraded!';
+        lvTxt='EVO';pipLevel=5;desc='EVOLVED '+def.name+' — massively upgraded!';
 
       }else{
 
@@ -5632,6 +5652,7 @@ function renderChoices(){
         const nl=w?w.lvl+1:1;
 
         lvTxt=w?('Lv.'+w.lvl+' → Lv.'+nl):'NEW!';
+        pipLevel=nl;
 
         desc=def.lvlDesc(nl);
 
@@ -5644,22 +5665,27 @@ function renderChoices(){
       const lv=passiveLv(c.id);
 
       iconK=def.iconK;
+      kind='PASSIVE';accent=def.color||'#78b7ff';
 
       icon='';name=def.name;
 
       lvTxt=lv>0?('Lv.'+lv+' → Lv.'+(lv+1)):'NEW!';
+      pipLevel=lv+1;
 
       desc=def.desc;
 
     }else{
 
-      icon='🍗';name='Roast Chicken';lvTxt='+50 HP';
+      icon='🍗';name='Roast Chicken';lvTxt='+50 HP';kind='RECOVERY';accent='#72ef98';pipLevel=1;
 
       desc='Restore 50 HP and +10 max HP';
 
     }
 
-    btn.innerHTML=`<span class="lc-i">${iconK?iconImg(iconK):icon}</span><span><span class="lc-n">${name}${lvTxt?`<span class="lc-lv">${lvTxt}</span>`:''}</span><span class="lc-d">${desc}</span></span>`;
+    btn.style.setProperty('--lc-accent',accent);
+    const pips=Array.from({length:5},(_,i)=>`<i class="lc-pip${i<pipLevel?' on':''}"></i>`).join('');
+    btn.innerHTML=`<span class="lc-i">${iconK?iconImg(iconK):icon}</span><span class="lc-body"><span class="lc-kind">${kind}</span><span class="lc-top"><span class="lc-n">${name}</span>${lvTxt?`<span class="lc-lv">${lvTxt}</span>`:''}</span><span class="lc-progress" aria-hidden="true">${pips}</span><span class="lc-d">${desc}</span></span>`;
+    btn.setAttribute('aria-label',name+', '+lvTxt+'. '+desc);
 
     btn.onclick=()=>{applyChoice(c);};
 
@@ -7674,7 +7700,7 @@ function iconCV(key,Sz){
 
     SKILL_CV[kk]=c;
 
-    if(Sz===72&&!SKILL_URL[key])SKILL_URL[key]=c.toDataURL();
+    if(Sz===144&&!SKILL_URL[key])SKILL_URL[key]=c.toDataURL();
 
   }
 
@@ -7684,7 +7710,7 @@ function iconCV(key,Sz){
 
 function iconImg(key,cls){return SKILL_URL[key]?('<img class="'+(cls||'')+'" src="'+SKILL_URL[key]+'" alt="">'):'';}
 
-['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain','boomer','frost'].forEach(k=>iconCV(k,72));/*WPN-PATCH B008 B009*/
+['kunai','blade','bolt','orb','molotov','brick','drone','scroll','shield','battery','cube','shoe','fuel','belt','magnet','shotgun','bat','void','bullet','bracer','rpg','katana','orbit','chain','boomer','frost'].forEach(k=>iconCV(k,144));/*REFINE-PASS: 2x UI source keeps upgrade art crisp on Retina displays*/
 
 const [COIN_CV,coinG]=iconCanvas(36);
 
@@ -9437,6 +9463,27 @@ const THEMES=[
   pad:'#4a3b3d',padTop:'#57454a',dayTint:'rgba(255,110,45,0.09)',nightTint:'rgba(26,8,10,0.55)',
   tree:'deadtree',bush:'charbush',tuft:'embervent',flower:'embervent',ambient:'ember',treePal:'dead'},
 
+ /*REFINE-PASS: four late-game destinations with distinct palettes, routes and silhouettes*/
+ {id:'moonkeep',border:'rgba(114,150,255,.82)',group:'moon',kingdom:true,name:'MOONLIT KEEP',g:['#24365b','#2e4670','#344f78','#1d2c4b'],patch:'rgba(155,190,255,.15)',
+  road:'#68779c',roadWear:'#4d5c80',dash:'#c9d8ff',walk:'#8d9cbd',walkEdge:'rgba(215,230,255,.3)',
+  pad:'#8796b8',padTop:'#aab8d5',dayTint:'rgba(126,164,255,.09)',nightTint:'rgba(7,12,38,.65)',
+  tree:'pine',bush:'snowbush',tuft:'snowtuft',flower:'icecrystal',ambient:'snow',treePal:'snow'},
+
+ {id:'mire',border:'rgba(93,188,133,.78)',group:'mire',name:'WITCHWOOD MIRE',g:['#223f35','#294b3b','#315743','#1b342c'],patch:'rgba(70,25,88,.2)',
+  road:'#51495f',roadWear:'#3d374b',dash:'#9be3bd',walk:'#667a6e',walkEdge:'rgba(145,240,190,.22)',
+  pad:'#526b61',padTop:'#668178',dayTint:'rgba(104,210,154,.06)',nightTint:'rgba(12,20,27,.62)',
+  tree:'tree',bush:'bush',tuft:'tuft',flower:'flower',ambient:'pollen',treePal:null},
+
+ {id:'crystal',border:'rgba(129,109,255,.82)',group:'crystal',name:'CRYSTAL CITADEL',g:['#302e57','#3a3768','#454178','#28264b'],patch:'rgba(74,219,255,.15)',
+  road:'#555078',roadWear:'#413d61',dash:'#88e9ff',walk:'#77749c',walkEdge:'rgba(165,240,255,.3)',
+  pad:'#69658f',padTop:'#8580ad',dayTint:'rgba(116,218,255,.09)',nightTint:'rgba(15,10,46,.64)',
+  tree:'pine',bush:'snowbush',tuft:'snowtuft',flower:'icecrystal',ambient:'snow',treePal:'snow'},
+
+ {id:'sunspire',border:'rgba(255,187,72,.82)',group:'sunspire',kingdom:true,name:'SUNSPIRE GARDENS',g:['#63894a','#779e54','#89ad5f','#557b40'],patch:'rgba(250,185,84,.2)',
+  road:'#d2b36f',roadWear:'#b49358',dash:'#fff0ad',walk:'#ead79e',walkEdge:'rgba(255,250,205,.36)',
+  pad:'#e0cc8e',padTop:'#f0dda1',dayTint:'rgba(255,200,82,.12)',nightTint:'rgba(28,20,45,.5)',
+  tree:'tree',bush:'bush',tuft:'tuft',flower:'flower',ambient:'pollen',treePal:null},
+
 ];
 
 let cinderRoll=false;/*B024: endless can re-theme into Cinder Wastes*/
@@ -9445,9 +9492,9 @@ function themeFor(){
 
   const ch=(typeof chapterSel!=='undefined'&&chapterSel)||player.chapter||1;
 
-  /*B024: Cinder Wastes — endless roll or chapter 13+ (post-ch4 unlock slot)*/
+  /* Cinder begins the late-game route; chapters 14-17 each receive their own destination. */
   if(cinderRoll)return THEMES[4];
-  if(ch>=13)return THEMES[4];
+  if(ch>=13)return THEMES[Math.min(THEMES.length-1,ch-9)];
   return THEMES[Math.min(3,Math.floor((ch-1)/3))];
 
 }
@@ -10428,7 +10475,50 @@ function getChunk(cx,cy){
 
     }
 
-    if(TH.kingdom){/*KSC-MEADOW open meadow: olives, bushes, wildflowers, marble pillars, banners, shrines, low stone walls*/
+    if(TH.group==='moon'){/*REFINE-PASS: ruined royal terraces under cold moonlight*/
+
+      if(r<0.16)drawPine(g,px2,py2,0.8+r,true);
+      else if(r<0.3)drawPillar(g,px2,py2,0.85+r*0.4);
+      else if(r<0.42)drawRuin(g,px2,py2,0.75+r*0.5);
+      else if(r<0.54)drawIceCrystal(g,px2,py2,0.9+r*0.5);
+      else if(r<0.67)drawSnowBush(g,px2,py2,0.8+r*0.5);
+      else if(r<0.79)drawRock(g,px2,py2,0.7+r);
+      else if(r<0.89)drawBanner(g,px2,py2,1);
+      else if(r<0.97)drawStoneWall(g,px2-20,py2,36+r*42,hash2(bx+i*3,by-i)<0.5);
+
+    }else if(TH.group==='mire'){/*crooked woodland, ruins and luminous clearings*/
+
+      if(r<0.2)drawDeadTree(g,px2,py2,0.8+r*0.45);
+      else if(r<0.38)drawBush(g,px2,py2,0.9+r*0.55);
+      else if(r<0.5)drawFlowers(g,px2,py2);
+      else if(r<0.62)drawRock(g,px2,py2,0.7+r);
+      else if(r<0.73)drawGrassTuft(g,px2,py2);
+      else if(r<0.84)drawRuin(g,px2,py2,0.7+r*0.5);
+      else if(r<0.92)drawSkullPile(g,px2,py2,0.7+r*0.45);
+      else if(r<0.98)drawShrine(g,px2,py2);
+
+    }else if(TH.group==='crystal'){/*dense crystal fields break up the citadel's purple stone*/
+
+      if(r<0.27)drawIceCrystal(g,px2,py2,1+r*0.7);
+      else if(r<0.43)drawPine(g,px2,py2,0.75+r,true);
+      else if(r<0.56)drawSnowBush(g,px2,py2,0.9+r*0.5);
+      else if(r<0.68)drawPillar(g,px2,py2,0.8+r*0.35);
+      else if(r<0.79)drawRock(g,px2,py2,0.7+r);
+      else if(r<0.89)drawRuin(g,px2,py2,0.7+r*0.5);
+      else if(r<0.97)drawFrozenPool(g,px2,py2,0.85+r*0.45);
+
+    }else if(TH.group==='sunspire'){/*lush high garden with more ceremonial landmarks*/
+
+      if(r<0.18)drawOlive(g,px2,py2,0.9+r);
+      else if(r<0.34)drawFlowers(g,px2,py2);
+      else if(r<0.47)drawBush(g,px2,py2,0.9+r*0.5);
+      else if(r<0.59)drawPillar(g,px2,py2,0.9+r*0.35);
+      else if(r<0.69)drawBanner(g,px2,py2,1);
+      else if(r<0.79)drawShrine(g,px2,py2);
+      else if(r<0.88)drawGrassTuft(g,px2,py2);
+      else if(r<0.97)drawStoneWall(g,px2-20,py2,38+r*44,hash2(bx+i*3,by-i)<0.5);
+
+    }else if(TH.kingdom){/*KSC-MEADOW open meadow: olives, bushes, wildflowers, marble pillars, banners, shrines, low stone walls*/
 
       if(r<0.14)drawOlive(g,px2,py2,0.85+r);
 
@@ -14354,6 +14444,15 @@ document.getElementById('shopBtn').onclick=()=>{renderShop();showEl('shopOv');};
 
 /* chapters */
 
+const CHAPTER_META=[
+  null,
+  ['PROMISED MEADOW','#376c45','#172f2b','#71d49a'],['MARBLE CROSSING','#4b7747','#1d352d','#9fe66f'],['KING\'S APPROACH','#557d3b','#233822','#ffd56a'],
+  ['DESERT MESA','#9b6335','#3b291e','#ffc46b'],['SUNKEN BAZAAR','#95602f','#34251b','#f8b951'],['DUNE FORTRESS','#84502c','#2e2019','#ff9c43'],
+  ['FROSTPINE','#496680','#1b293d','#bfe9ff'],['GLACIER ROAD','#526f93','#1c2c48','#8ed9ff'],['WINTER CROWN','#405d88','#17243f','#d4f3ff'],
+  ['EMBER WASTES','#713b31','#27191d','#ff8b51'],['ASHEN RING','#63302e','#21151a','#ff7045'],['BLACKENED GATE','#522628','#1c1218','#ff5f4b'],
+  ['CINDER WASTES','#7c2d1d','#211316','#ff7a32'],['MOONLIT KEEP','#344e8a','#121b3a','#87b5ff'],['WITCHWOOD MIRE','#2f664b','#132d27','#70e1a3'],['CRYSTAL CITADEL','#4e438c','#1e193e','#8eeaff'],['SUNSPIRE GARDENS','#7d7832','#2f321c','#ffd55f']
+];
+
 function renderChapters(){
 
   const bx3=document.querySelector('#chaptersOv .chapBox');
@@ -14382,7 +14481,7 @@ function renderChapters(){
 
   grid.innerHTML='';
 
-  for(let n=1;n<=13;n++){
+  for(let n=1;n<=17;n++){
 
     const unlocked=n<=(sioc.stage||1)||(n===13&&(sioc.stage||1)>=5);/*B024: cinder chapter, post-ch4 clear*/
 
@@ -14392,15 +14491,16 @@ function renderChapters(){
 
     card.className='chapCard'+(unlocked?'':' locked')+(n===chapterSel?' sel':'');
 
+    const cm=CHAPTER_META[n]||['UNKNOWN REALM','#2b3a63','#141d36','#7da2ff'];
+    card.style.setProperty('--cc1',cm[1]);card.style.setProperty('--cc2',cm[2]);card.style.setProperty('--ccb',cm[3]);card.style.setProperty('--ccg',cm[3]+'55');
+
     const pClr=cst.clr?'<span class="on">\u2605</span>':'<span>\u2605</span>';
 
     const pSlay=cst.slay?'<span class="on">\u2605</span>':'<span>\u2605</span>';
 
-    card.innerHTML='<div class="ccNum">'+(unlocked?n:'\uD83D\uDD12')+'</div>'
+    card.innerHTML='<div class="ccTop"><div class="ccNum">'+(unlocked?n:'\uD83D\uDD12')+'</div><div class="ccPips">'+pClr+pSlay+'</div></div>'
 
-      +(n===13&&unlocked?'<div class="ccFc" style="color:#ff9a3a">CINDER WASTES</div>':'')
-
-      +'<div class="ccPips">'+pClr+pSlay+'</div>'
+      +'<div class="ccBiome">'+(unlocked?cm[0]:'UNKNOWN REALM')+'</div>'
 
       +(unlocked?(cst.clr?'':'<div class="ccFc">FIRST CLEAR +'+(80+40*n)+'G</div>'):'<div class="ccLk">LOCKED</div>');
 

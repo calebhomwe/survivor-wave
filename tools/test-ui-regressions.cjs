@@ -136,4 +136,11 @@ test('responsive and state visibility guards are present (not a layout test)', (
   for (const marker of ['viewport-fit=cover', 'safe-area-inset-bottom', '100dvh', '#kscTowerInspect', 'data-gameplay="true"']) assert(html.includes(marker));
   assert(html.includes("if(state==='play'&&hitStopT>0)"));
 });
+test('refined upgrade UI keeps large Retina art and explicit progress', () => {
+  for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'lc-progress', 'CHOOSE YOUR BLESSING']) assert(html.includes(marker));
+  assert(!html.includes('grid-template-columns:48px'));
+});
+test('expanded campaign exposes four named late-game destinations', () => {
+  for (const marker of ['n<=17', 'MOONLIT KEEP', 'WITCHWOOD MIRE', 'CRYSTAL CITADEL', 'SUNSPIRE GARDENS', "if(ch>=13)return THEMES[Math.min(THEMES.length-1,ch-9)]"]) assert(html.includes(marker));
+});
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
