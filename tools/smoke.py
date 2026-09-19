@@ -43,7 +43,7 @@ FATAL_CONSOLE_PATTERNS = ("uncaught", "syntaxerror", "referenceerror", "typeerro
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--secs", type=int, default=25, help="gameplay seconds")
-    ap.add_argument("--url", type=Path, default=None, help="file:// or http:// URL of the page")
+    ap.add_argument("--url", default=None, help="file:// or http:// URL of the page")
     args = ap.parse_args()
 
     srv, port = _serve_root()
@@ -58,11 +58,7 @@ def main():
         page = browser.new_page(viewport={"width": 1280, "height": 720})
         page.on("pageerror", lambda e: page_errors.append(str(e)))
         page.on("console", lambda m: _on_console(m, console_errors, warnings))
-        # BASELINE BUG WORKAROUND (do not fix in game code during smoke runs):
-        # survivor-wave.html line ~7752 reads undeclared identifier `chunkPlaceholder`
-        # when chunkBudget<=0; the ReferenceError kills the rAF loop on frame 1.
-        # Pre-declaring it as a global before page scripts run keeps the loop alive.
-        page.add_init_script("window.chunkPlaceholder=null")
+        # Exercise the shipped page without injected workarounds.
         page.goto(url, wait_until="load", timeout=30000)
         page.wait_for_timeout(2500)  # fonts/music/asset init
 

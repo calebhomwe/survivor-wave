@@ -1,5 +1,13 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## Post-v1.2 — 2026-09-19 (post-merge interaction fixes)
+- Tower inspection/build UI closes when a level-up, pause, chest or end screen opens; controls cannot upgrade or sell behind those overlays.
+- Settings pauses combat; held movement resets on suspension; paused hit-stop no longer advances the run clock.
+- Touch tower placement/inspection and explicit cancellation; scrollable mobile menu, build bar and inspector; safe-area spacing for DOM controls and larger inspector buttons.
+- End-screen details update an isolated text span, preserving Retry handlers; victory preserves towers for endless mode. M mute restored.
+- Reduced meadow small-prop density; added a stable contrasting player ring.
+- Documented Playwright/browser setup, removed a stale smoke workaround and added dependency-free source regression tests. Not physical-iPhone or offline-PWA certification.
+
 ## v1.2 — 2026-09-18 (visual polish + BTD upgrade paths + Clash kingdom)
 - MAP 1 "Promised Land Meadow": kingdom re-theme of the first map — continuous-noise painterly ground (no tile grid), shade + sun dapple, grass/clover, flower meadows, seamless winding footpaths, flagstone roads with marble curbs and gold seams, marble plazas with fountains and pillars, banners, lanterns, market stalls, hay, carts, wells, shrines, low stone walls, olive trees.
 - BTD upgrade paths: every tower line has 3 paths × 2 tiers (two paths per tower, third locks). Effective stats derive from base × paths × PARAGON/GLORY × Kingdom research (`TOWERSYS.eff`). New behaviours: pierce, crit, twin shells, concussion, deep freeze, no-falloff chains, long arcs, tithe oil/harvest, tar pools, caltrops, crier heraldry (sell value / mending), apothecary tonics, craftsman reinforcement.

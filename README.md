@@ -2,7 +2,11 @@
 
 A polished single-file HTML5 horde-survival roguelite — **Survivor.io-style, but chill**: you defend a city park from invading wildlife, not zombies.
 
-Play: open `survivor-wave.html` in any browser. No build, no dependencies, works offline.
+Play locally: keep `survivor-wave.html` beside its `assets/` folder, run
+`python -m http.server 8000`, then open `http://localhost:8000/survivor-wave.html`.
+No build step or runtime package dependencies. The complete downloaded folder can
+run on a local server without internet. This GitHub build is **not yet an installable
+offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
 
 ## Features
 - **10 weapons** × 5 levels each, with **10 EVO evolutions** (pair a maxed weapon with its passive to unlock gold EVO cards)
@@ -40,3 +44,32 @@ Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom met
 
 **Controls:** WASD move · SPACE dash · T build (1-0 / C pick) · click a tower to inspect (1/2/3 buy a path tier) ·
 E consecrate altar · Z / X / V consumables · Q mortar · R ult · P pause · H photo · M mute · Y timer
+
+**Touch:** drag empty ground to move; tap BUILD, select a tower, then tap ground to
+place. Tap an existing tower to inspect/upgrade/sell. CANCEL PLACEMENT exits build
+mode. Dash and ULT stay on the right; build/sell controls stay on the left. Menus
+scroll; swipe the hero cards horizontally. Settings pauses a live run; close it
+and press Resume to continue.
+
+## Test setup
+
+The Python browser harness needs separate developer dependencies; they are not
+needed by players. Use a virtual environment:
+
+```sh
+python -m venv .venv
+# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r tools/requirements-test.txt
+python -m playwright install chromium
+node tools/test-ui-regressions.cjs
+python tools/smoke.py
+python tools/gauntlet.py --only g1,g2,g5,g6,g8
+```
+
+Linux CI may need `python -m playwright install --with-deps chromium`. Browser
+installation needs internet; download it before working offline. A missing browser
+or blocked download is a setup failure, not a passing test. The gauntlet writes
+`tools/PROOF.md` and `tools/proof/`; review generated changes before committing.
+The Node suite tests actual source functions with a fake DOM, not browser layout.
+Physical iPhone Safari, safe-area behavior and offline reload still need device QA.

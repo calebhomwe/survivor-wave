@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2341582e'/%3E%3Ctext x='8' y='12' font-size='10' text-anchor='middle'%3E%E2%9A%94%3C/text%3E%3C/svg%3E">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <title>Kingdom Survivor Clash</title>
 
@@ -21,7 +21,8 @@
 
 html,body{height:100%;overflow:hidden}
 
-body{background:#0c1020;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2',system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;color:#eef2f7}
+body{background:#0c1020;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;color:#eef2f7}
+#cv{touch-action:none}
 
 canvas{display:block;position:absolute;inset:0}
 
@@ -438,6 +439,42 @@ background-repeat:no-repeat}
 #start #playBtn{order:-2}
 #start #kscKingdomBtn{order:-1}
 .hcard .hn{-webkit-text-stroke:0;text-shadow:0 2px 0 #4a2d02}
+/* Post-merge mobile/overlay guardrails. Keep full-screen choices above gameplay UI. */
+:root{--safe-t:env(safe-area-inset-top,0px);--safe-r:env(safe-area-inset-right,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px)}
+.ov,.lvlup,.chestOv,.pause,.shopOv{touch-action:pan-y;overscroll-behavior:contain;padding:max(16px,var(--safe-t)) max(16px,var(--safe-r)) max(16px,var(--safe-b)) max(16px,var(--safe-l))}
+.ov,.lvlup,.chestOv,.pause{overflow-y:auto}
+.ov>*,.lvlup>*,.chestOv>*,.pause>*{flex-shrink:0}
+.shopBox,.echoBox{max-height:calc(100dvh - var(--safe-t) - var(--safe-b) - 32px);touch-action:pan-y;overscroll-behavior:contain}
+#start{padding:max(54px,var(--safe-t)) max(16px,var(--safe-r)) max(26px,var(--safe-b)) max(16px,var(--safe-l))}
+.back{top:calc(10px + var(--safe-t));left:calc(12px + var(--safe-l))}
+.mute{top:calc(8px + var(--safe-t));right:calc(12px + var(--safe-r));min-width:44px;min-height:44px}
+#setBtn{right:calc(62px + var(--safe-r))!important}
+.dashBtn{right:calc(20px + var(--safe-r));bottom:calc(24px + var(--safe-b))}
+.ultBtn{right:calc(26px + var(--safe-r));bottom:calc(106px + var(--safe-b))}
+#kscBuildBtn{right:calc(16px + var(--safe-r))!important;bottom:calc(16px + var(--safe-b))!important;min-height:44px}
+#iterSellAll{right:calc(16px + var(--safe-r))!important;bottom:calc(64px + var(--safe-b))!important;min-height:44px}
+#kscCancelBuild{position:fixed;left:calc(16px + var(--safe-l));bottom:calc(64px + var(--safe-b));z-index:60;min-height:44px;padding:10px 14px;border:2px solid #d4af37;border-radius:12px;background:#1b2140;color:#ffe9a3;font:800 13px 'Baloo 2',sans-serif;cursor:pointer}
+#kscBuildBar{width:calc(100vw - var(--safe-l) - var(--safe-r) - 24px);max-height:calc(100dvh - var(--safe-t) - var(--safe-b) - 140px);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;bottom:calc(114px + var(--safe-b))!important}
+#kscTowerInspect{max-width:calc(100vw - var(--safe-l) - var(--safe-r) - 16px);max-height:calc(100dvh - var(--safe-t) - var(--safe-b) - 16px);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+#kscTowerInspect button{min-height:44px;font-size:12px}
+body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,#kscCancelBuild,#iterSellAll,.dashBtn,.ultBtn){display:none!important}
+@media(pointer:coarse),(max-width:600px){
+  #kscBuildBtn,#iterSellAll{right:auto!important;left:calc(16px + var(--safe-l))!important}
+  #start .heroRow{width:100%;max-width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:4px 2px 12px;touch-action:pan-x pan-y;scroll-snap-type:x proximity}
+  #start .hcard{flex:0 0 114px;scroll-snap-align:start}
+  #start .keys{display:none}
+  #start .castRow img.hero{height:66px}
+  #start .castRow img{height:38px}
+  #start .sub{font-size:13px}
+  #start h1{font-size:32px;letter-spacing:1px}
+  #kscTowerInspect{left:max(8px,var(--safe-l))!important;right:max(8px,var(--safe-r));top:auto!important;bottom:calc(8px + var(--safe-b));width:auto!important}
+  #kscTowerInspect button div{font-size:12px!important;line-height:1.25!important}
+  #kkTop{flex-wrap:wrap;gap:8px!important}
+  #kkList .shopRow{flex-wrap:wrap;gap:8px}
+  #kkList .shopRow>div:nth-child(2){min-width:150px}
+  .buyBtn{min-height:44px}
+}
+@media(max-height:600px){.ov,.lvlup,.chestOv,.pause{justify-content:flex-start}.pause .pbox{margin:auto}#start .castRow{display:none}}
 </style>
 
 </head>
@@ -2457,9 +2494,9 @@ window.addEventListener('keydown',e=>{
 
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
-window.addEventListener('blur',()=>{if(state==='play')togglePause();});
+window.addEventListener('blur',()=>{resetGameInput();if(state==='play')togglePause();});
 
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')togglePause();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){resetGameInput();if(state==='play')togglePause();}});
 
 function tStart(e){
 
@@ -2717,7 +2754,25 @@ function startGame(){
 
 function hideEl(id){document.getElementById(id).classList.add('hidden');}
 
-function showEl(id){document.getElementById(id).classList.remove('hidden');}
+function resetGameInput(){
+  for(const k in keys)delete keys[k];
+  joy.active=false;joy.id=null;mouseDown=false;
+}
+
+function syncPlayUI(){
+  const active=state==='play';
+  if(document.body.dataset.gameplay!==String(active))document.body.dataset.gameplay=String(active);
+  if(!active&&window.TOWERSYS)window.TOWERSYS.closeUI();
+}
+
+function showEl(id){
+  if(['start','over','win','lvlup','pause','chestOv','settingsOv'].includes(id)){
+    resetGameInput();
+    if(window.TOWERSYS)window.TOWERSYS.closeUI();
+    document.body.dataset.gameplay='false';
+  }
+  document.getElementById(id).classList.remove('hidden');
+}
 
 
 
@@ -3024,6 +3079,8 @@ function finalScore(){
 function fmtTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
 
 function togglePause(){
+
+  if(!document.getElementById('settingsOv').classList.contains('hidden'))return;
 
   if(state==='paused'&&typeof echoOv!=='undefined'&&document.getElementById('echoOv')&&!document.getElementById('echoOv').classList.contains('hidden'))return;
 
@@ -10307,7 +10364,7 @@ function getChunk(cx,cy){
 
   }
 
-  const NP=TH.kingdom?22:14;/*KSC-MEADOW: denser dressing on map 1*/
+  const NP=TH.kingdom?16:14;/*keep kingdom landmarks, reduce small-prop clutter by 27%*/
 
   for(let i=0;i<NP;i++){
 
@@ -12505,6 +12562,10 @@ function drawPlayer(){
   const bob=player.moving?Math.sin(player.animT*1.4)*2:Math.sin(performance.now()/400)*1;
 
   drawShadow(px,py+13,player.moving?16:15,0.36);
+  /* Constant identification ring, independent of optional effects and hero colour. */
+  ctx.save();ctx.beginPath();ctx.ellipse(px,py+12,21,10,0,0,Math.PI*2);
+  ctx.strokeStyle='rgba(12,20,32,.9)';ctx.lineWidth=5;ctx.stroke();
+  ctx.strokeStyle='#a5f3fc';ctx.lineWidth=2;ctx.stroke();ctx.restore();
 
   if(player.ultActive>0){
 
@@ -14149,9 +14210,10 @@ function loop(now){
 
   /*B030*/if(hitStopCd>0)hitStopCd-=dt;
 
-  /*B030*/let b30dt=dt; if(hitStopT>0){hitStopT-=dt;b30dt=0;gameTime+=dt;} /*40ms hit-stop: freeze sim, keep clock*/
+  /*B030*/let b30dt=dt; if(state==='play'&&hitStopT>0){hitStopT-=dt;b30dt=0;gameTime+=dt;} /*keep clock only during live combat*/
 
   update(b30dt);
+  syncPlayUI();
 
   saveAcc=(saveAcc||0)+dt;if(saveAcc>5){saveAcc=0;try{saveMeta();}catch(_){}}
   render();
@@ -14172,7 +14234,7 @@ document.getElementById('winAgainBtn').onclick=startGame;
 
 document.getElementById('endlessBtn').onclick=()=>{endless=true;hideEl('win');state='play';sfx('tick');/*B024: endless can roll into Cinder Wastes*/cinderRoll=Math.random()<0.5;if(cinderRoll){ensureLavaPools();warn('CINDER WASTES RISE!');}};
 
-document.getElementById('pause').addEventListener('click',togglePause);
+document.getElementById('pause').addEventListener('click',e=>{if(e.target===e.currentTarget)togglePause();});
 
 document.getElementById('pResume').onclick=e=>{e.stopPropagation();togglePause();};
 
@@ -14184,7 +14246,7 @@ document.getElementById('pQuit').onclick=e=>{e.stopPropagation();hideEl('pause')
 
 document.getElementById('setBack').onclick=()=>{hideEl('settingsOv');sfx('tick');};
 
-document.getElementById('setBtn').onclick=()=>{renderSettings();showEl('settingsOv');};
+document.getElementById('setBtn').onclick=()=>{if(state==='play')togglePause();renderSettings();showEl('settingsOv');};
 
 function applyLowFx(){lowFxNow=!!settings.lowFx;bloomCv=null;resize();}
 
@@ -16405,13 +16467,15 @@ function mkEl(tag,css,parent){const e=document.createElement(tag);Object.assign(
 const bar=mkEl('div',{position:'fixed',left:'50%',bottom:'86px',transform:'translateX(-50%)',display:'none',gap:'8px',zIndex:'60',
   background:'linear-gradient(180deg,#1b2140,#0e1326)',border:'2px solid #d4af37',borderRadius:'14px',padding:'10px 12px',
   boxShadow:'0 6px 24px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.08)',flexWrap:'wrap',maxWidth:'640px',justifyContent:'center'});
+bar.id='kscBuildBar';bar.setAttribute('aria-label','Choose a tower');
 const hint=mkEl('div',{fontSize:'11px',color:'#c9b98a',width:'100%',textAlign:'center',marginBottom:'4px',fontWeight:'700'},bar);
 hint.textContent='[T] build · 1-0 / C pick · click place · Esc cancel · click a tower to inspect: 3 upgrade paths (oil), targeting, sell';
 const cards={};
 function drawIcon(key,cv2){cv2.width=48;cv2.height=48;Object.assign(cv2.style,{position:'relative',inset:'auto',width:'48px',height:'48px',flex:'none'});/*global canvas{position:absolute;inset:0} rule would pull it out of flow*/const ig=cv2.getContext('2d');ig.translate(24,27);ig.scale(0.92,0.92);drawTower(ig,{ty:key,x:0,y:0,ang:-0.5,cd:0},false);}
 function makeCard(key,hot){
   const D=TD[key];
-  const c=mkEl('div',{width:'104px',cursor:'pointer',textAlign:'center',background:'linear-gradient(180deg,#151d38,#0b1020)',border:'2px solid #2a3f6b',borderRadius:'10px',padding:'6px 4px 7px',color:'#dbe6ff',userSelect:'none',position:'relative'},bar);
+  const c=mkEl('button',{width:'104px',cursor:'pointer',textAlign:'center',fontFamily:'inherit',background:'linear-gradient(180deg,#151d38,#0b1020)',border:'2px solid #2a3f6b',borderRadius:'10px',padding:'6px 4px 7px',color:'#dbe6ff',userSelect:'none',position:'relative'},bar);
+  c.type='button';
   const cv2=mkEl('canvas',{display:'block',margin:'0 auto 2px'},c);drawIcon(key,cv2);
   mkEl('div',{fontWeight:'900',fontSize:'11px',color:'#ffe9a3',letterSpacing:'0.3px'},c).textContent=D.name;
   mkEl('div',{fontSize:'9.5px',color:'#93a3c9',margin:'2px 0',lineHeight:'1.15'},c).textContent=D.desc;
@@ -16440,10 +16504,13 @@ const buildBtn=mkEl('button',{position:'fixed',right:'16px',bottom:'16px',zIndex
   fontFamily:'inherit',fontSize:'13px',fontWeight:'bold',padding:'10px 14px',boxShadow:'0 4px 14px rgba(0,0,0,0.5)'});
 buildBtn.textContent='BUILD [T]';buildBtn.id='kscBuildBtn';
 buildBtn.onclick=ev=>{ev.stopPropagation();toggleBar();};
-setInterval(()=>{try{buildBtn.style.display=(state==='play'||state==='paused'||state==='levelup'||state==='chest')?'':'none';}catch(_){}},300);/*not on menus / end screens*/
+const cancelBtn=mkEl('button',{display:'none'});
+cancelBtn.id='kscCancelBuild';cancelBtn.textContent='CANCEL PLACEMENT';
+cancelBtn.onclick=ev=>{ev.stopPropagation();cancelPlace();};
 const sellPop=mkEl('div',{position:'fixed',display:'none',zIndex:'61',background:'linear-gradient(180deg,#1b2140,#0e1326)',
   border:'2px solid #d4af37',borderRadius:'12px',padding:'10px 12px',color:'#dbe6ff',fontSize:'12px',textAlign:'left',
   boxShadow:'0 8px 24px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08)',width:'344px',fontFamily:'inherit'});
+sellPop.id='kscTowerInspect';sellPop.setAttribute('role','region');sellPop.setAttribute('aria-label','Tower inspection');
 /* ---------- upgrade paths ---------- */
 function pathCost(t,i){const D=TD[t.ty],lv=pathLv(t,i);const m=(window.KSC_META&&window.KSC_META.oilCost)||1;return lv>=2?0:Math.round((lv===0?D.up2:D.up3)*m);}
 function pathLock(t,i){/*BTD crosspath rule: only two of the three paths may be walked*/
@@ -16497,6 +16564,8 @@ function doMerge(t,p){
 }
 function fmtK(n){n=Math.round(n||0);return n>=10000?(n/1000).toFixed(1)+'k':String(n);}
 function openSell(t){
+  if(state!=='play'||!towers.includes(t))return;
+  cancelPlace();barOpen=false;bar.style.display='none';resetGameInput();
   sellAsk=t;
   sellPop.innerHTML='';
   const D=TD[t.ty],E=effOf(t),val=Math.round((t.invested||D.cost)*SELL_BACK*(t.__sell80?1.25:1)),tier=tierOf(t);
@@ -16511,7 +16580,7 @@ function openSell(t){
     const tg=mkEl('button',{cursor:'pointer',flex:'none',background:'#0b1020',color:'#bfdbfe',border:'1px solid #2a3f6b',borderRadius:'8px',padding:'4px 8px',fontFamily:'inherit',fontSize:'10px',fontWeight:'900'},head);
     const paintT=()=>{tg.textContent='◎ '+TGT_LABEL[t.tgt||'close'];};paintT();
     tg.title='Targeting priority: CLOSE = nearest to tower, HERO = nearest to you, STRONG = most HP, WEAK = least HP';
-    tg.onclick=ev=>{ev.stopPropagation();t.tgt=TGT_MODES[(TGT_MODES.indexOf(t.tgt||'close')+1)%TGT_MODES.length];t.target=null;paintT();try{sfx('tick');}catch(_){}};
+    tg.onclick=ev=>{ev.stopPropagation();if(state!=='play')return;t.tgt=TGT_MODES[(TGT_MODES.indexOf(t.tgt||'close')+1)%TGT_MODES.length];t.target=null;paintT();try{sfx('tick');}catch(_){}};
   }
   /* stats */
   const st=mkEl('div',{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'4px',marginBottom:'7px'},sellPop);
@@ -16536,7 +16605,7 @@ function openSell(t){
           color:bought?'#ffe9a3':next?(can?'#d9f99d':'#9ca3af'):'#4b5563',
           border:'1px solid '+(bought?'#d4af37':next?(can?'#a3e635':'#374151'):'#1f2937'),opacity:lock&&!bought?'0.45':'1'},col);
         b.innerHTML='<div style="font-size:10px;font-weight:900">'+(bought?'✓ ':'')+u.n+'</div><div style="font-size:8.5px;opacity:.85;line-height:1.15">'+u.d+'</div>'+(next?'<div style="font-size:9.5px;font-weight:900;color:'+(can?'#fde68a':'#f87171')+'">🔷 '+cost+' OIL</div>':'');
-        if(next)b.onclick=ev=>{ev.stopPropagation();if(upgradePath(t,i))openSell(t);};
+        if(next)b.onclick=ev=>{ev.stopPropagation();if(state==='play'&&upgradePath(t,i))openSell(t);};
         if(lock&&!bought)b.title=lock;
       });
     });
@@ -16545,11 +16614,11 @@ function openSell(t){
   if(tier>=3){const mp=mergePartner(t);
     if(mp){const bm=mkEl('button',{cursor:'pointer',flex:'1',background:'#3b2f14',color:'#ffe9a3',border:'1px solid #d4af37',borderRadius:'6px',padding:'6px 8px',fontFamily:'inherit',fontWeight:'900',fontSize:'11px'},foot);
       bm.textContent=tier>=4?'MERGE → GLORY T5':'MERGE → PARAGON T4';
-      bm.onclick=ev=>{ev.stopPropagation();window.TOWERSYS.mergeTowers(t,mp);};}
+      bm.onclick=ev=>{ev.stopPropagation();if(state==='play')window.TOWERSYS.mergeTowers(t,mp);};}
     else{mkEl('div',{flex:'1',fontSize:'9.5px',color:'#8fa1c7',fontWeight:'700'},foot).textContent=tier>=5?'Apex form.':'Place another '+D.name+' at T'+(tier>=4?'4':'3')+' within 140px to merge.';}
   }else mkEl('div',{flex:'1',fontSize:'9.5px',color:'#8fa1c7',fontWeight:'700'},foot).textContent='Walk any path to its end for T3 → merge into PARAGON.';
   const by=mkEl('button',{cursor:'pointer',background:'#7f1d1d',color:'#fecaca',border:'1px solid #f87171',borderRadius:'6px',padding:'6px 10px',fontFamily:'inherit',fontWeight:'900',fontSize:'11px'},foot);
-  by.textContent='SELL +'+val+'g';by.onclick=ev=>{ev.stopPropagation();doSell();};
+  by.textContent='SELL +'+val+'g';by.onclick=ev=>{ev.stopPropagation();if(state==='play')doSell();};
   const bn=mkEl('button',{cursor:'pointer',background:'#1e3a5f',color:'#bfdbfe',border:'1px solid #2a3f6b',borderRadius:'6px',padding:'6px 10px',fontFamily:'inherit',fontWeight:'900',fontSize:'11px'},foot);
   bn.textContent='✕';bn.onclick=ev=>{ev.stopPropagation();closeSell();};
   sellPop.style.display='block';
@@ -16576,6 +16645,7 @@ function doSell(){
 /* ---------- mode control ---------- */
 function toggleBar(){
   if(state!=='play')return;
+  cancelPlace();closeSell();resetGameInput();
   barOpen=!barOpen;
   bar.style.display=barOpen?'flex':'none';
   if(!barOpen){ghost=null;closeSell();}
@@ -16583,10 +16653,14 @@ function toggleBar(){
   try{sfx('tap');}catch(_){}
 }
 function startPlace(key){
-  if(!TD[key])return;
+  if(state!=='play'||!TD[key])return;
+  resetGameInput();cancelBtn.style.display='block';
   ghost=key;barOpen=false;bar.style.display='none';closeSell();
 }
-function cancelPlace(){ghost=null;}
+function cancelPlace(){ghost=null;cancelBtn.style.display='none';}
+function closeTowerUI(){
+  cancelPlace();closeSell();barOpen=false;bar.style.display='none';
+}
 function newTower(ty,x,y){
   const KM=window.KSC_META||{};
   return {ty,x,y,ang:0,cd:0.4,target:null,tier:1,invested:costOf(ty),pl:[0,0,0],tgt:'close',pops:0,dmgDone:0,hp:100+(KM.towerHp|0),maxHp:100+(KM.towerHp|0)};
@@ -16605,11 +16679,12 @@ function tryPlace(){
   addFloater(wx,wy-34,D.name+' BUILT','#93c5fd',1.1,14);
   spawnParticles(wx,wy,D.col,10,1);
   try{sfx('pop');}catch(_){}
-  if(gold<costOf(ghost))ghost=null;
+  if(gold<costOf(ghost))cancelPlace();
 }
 
 /* ---------- input (capture-phase; only consumes keys/clicks our UI owns) ---------- */
 window.addEventListener('keydown',ev=>{
+  if(state!=='play')return;
   const k=ev.key.toLowerCase();
   if(k==='t'&&state==='play'){toggleBar();ev.stopImmediatePropagation();ev.preventDefault();return;}
   if(!barOpen&&!ghost&&!sellAsk)return;
@@ -16621,6 +16696,7 @@ window.addEventListener('mousemove',ev=>{mx=ev.clientX+cam.x;my=ev.clientY+cam.y
 window.addEventListener('mousedown',ev=>{
   if(ev.target!==cv)return;
   if(state!=='play')return;
+  mx=ev.clientX+cam.x;my=ev.clientY+cam.y;
   if(ghost){
     if(ev.button===0)tryPlace();
     else if(ev.button===2)cancelPlace();
@@ -16633,14 +16709,24 @@ window.addEventListener('mousedown',ev=>{
     if(barOpen)toggleBar();
   }
 },{capture:true});
+/* Touch events must be consumed before the movement joystick prevents mouse events. */
+window.addEventListener('touchstart',ev=>{
+  if(ev.target!==cv||state!=='play'||!ev.changedTouches.length)return;
+  const touch=ev.changedTouches[0];
+  mx=touch.clientX+cam.x;my=touch.clientY+cam.y;
+  if(ghost){tryPlace();resetGameInput();ev.stopImmediatePropagation();ev.preventDefault();return;}
+  if(joy.active)return;
+  const t=towerAt(mx,my);
+  if(t){openSell(t);ev.stopImmediatePropagation();ev.preventDefault();return;}
+  closeSell();if(barOpen)toggleBar();
+},{capture:true,passive:false});
 window.addEventListener('contextmenu',ev=>{if(ghost){ev.preventDefault();}},{capture:true});
 
 /* ---------- lifecycle hooks (wrap, never replace, existing behavior) ---------- */
 const _update=update;
 update=function(dt){
   _update(dt);
-  if(state==='over'||state==='win'){towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;tburn.length=0;ghost=null;closeSell();if(barOpen){barOpen=false;bar.style.display='none';}return;}
-  if(state!=='play')return;
+  if(state!=='play'){closeTowerUI();return;}/*preserve towers for victory -> endless and end-screen stats*/
   for(const t of towers)fireTower(t,dt);
   tickProjectiles(dt);
   tickBurn(dt);
@@ -16654,6 +16740,9 @@ renderHUD=function(){
 const _startGame=startGame;
 startGame=function(){
   _startGame();
+  resetGameInput();closeTowerUI();
+  for(const id of ['finRunDetails','winRunDetails']){const e=document.getElementById(id);if(e)e.textContent='';}
+  window.__tbDone=0;
   towers.length=0;tproj.length=0;tbolt.length=0;tsplash.length=0;tburn.length=0;ghost=null;placedCount=0;closeSell();
   if(barOpen){barOpen=false;bar.style.display='none';}
 };
@@ -16661,7 +16750,7 @@ startGame=function(){
 /* ---------- public API ---------- */
 window.__nativeTowerDraw=1;/*batch-D overlay checks this and skips its own tower sprites*/
 window.TOWERSYS={
-  defs:TD,paths:PATHS,towers:towers,place:tryPlace,startPlace:startPlace,cancel:cancelPlace,toggleBar:toggleBar,
+  defs:TD,paths:PATHS,towers:towers,place:tryPlace,startPlace:startPlace,cancel:cancelPlace,toggleBar:toggleBar,closeUI:closeTowerUI,
   get ghost(){return ghost;},get barOpen(){return barOpen;},get placed(){return placedCount;},get selected(){return sellAsk;},
   tierOf:tierOf,upCost:upCost,upgradeTower:doUpgradeTower,upgradePath:upgradePath,pathLv:pathLv,pathCost:pathCost,pathLock:pathLock,
   eff:effOf,drawIcon:drawIcon,maxTowers:maxTowers,costOf:costOf,refreshBar:refreshBar,mergePartner:mergePartner,mergeTowers:doMerge,
@@ -17438,13 +17527,11 @@ renderHUD=function(){
 };
 var _go2=gameOver;
 gameOver=function(){
+  var r=_go2.apply(null,arguments);
   try{
-    var r=_go2.apply(null,arguments);
-    var el=document.getElementById('winGold')||document.querySelector('.shopBox h2');
-    var p2=[...document.querySelectorAll('div,span,p')].find(d=>d.textContent&&d.textContent.indexOf('Gold earned')>=0);
-    if(p2&&!p2._oil){p2._oil=1;p2.innerHTML+=' \u00b7 \uD83D\uDD37 '+Math.round(window.oil||0)+' oil held';}
-    return r;
-  }catch(_){return _go2.apply(null,arguments);}
+    updateRunDetails();
+  }catch(_){}/*presentation failure must never record a run twice*/
+  return r;
 };
 /* settings.fps default + pause quick toggle hookup */
 try{if(typeof settings.fps==='undefined')settings.fps=false;}catch(_){}
@@ -18636,23 +18723,29 @@ setInterval(function(){
   }catch(_){}
 },300);
 /* G6: towers-built on end screen */
+function updateRunDetails(){
+  const won=state==='win',anchor=document.getElementById(won?'winGold':'finGold');
+  if(!anchor)return;
+  const id=won?'winRunDetails':'finRunDetails';
+  let note=document.getElementById(id);
+  if(!note){note=document.createElement('span');note.id=id;anchor.parentElement.appendChild(note);}
+  const ts=window.TOWERSYS;
+  const paragons=ts?ts.towers.filter(t=>(t.tier||1)>=4).length:0;
+  note.textContent=' · 🔷 '+Math.round(window.oil||0)+' oil held · 🏰 '+(ts?ts.placed:0)+' towers'+(paragons?' · ⭐ '+paragons+' paragons':'');
+}
+window.updateRunDetails=updateRunDetails;
 setInterval(function(){
   try{
     if(state!=='over'&&state!=='win')return;
     if(window.__tbDone)return;
-    var p2=[...document.querySelectorAll('div,span,p')].find(d=>d.textContent&&d.textContent.indexOf('Gold earned')>=0);
-    if(p2&&!p2._tb){
-      p2._tb=1;
-      var par=0;try{for(var i=0;i<window.TOWERSYS.towers.length;i++)if((window.TOWERSYS.towers[i].tier||0)>=4)par++;}catch(_){}
-      p2.innerHTML+=' \u00b7 \uD83C\uDFF0 '+window.TOWERSYS.placed+' towers'+(par?' \u00b7 \u2B50 '+par+' paragons':'');
-    }
+    updateRunDetails();window.__tbDone=1;
   }catch(_){}
 },500);
 setInterval(function(){try{if(state==='ready')window.__tbDone=0;}catch(_){}},1200);
 /* G8: M mute */
 document.addEventListener('keydown',function(ev){
   try{
-    if((ev.key||'').toLowerCase()==='m'&&!document.getElementById('lvlup')){
+    if((ev.key||'').toLowerCase()==='m'&&!ev.repeat&&!/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)){
       var mb=document.getElementById('muteBtn');
       if(mb)mb.click();
     }
