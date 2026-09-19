@@ -415,7 +415,17 @@ background-repeat:no-repeat}
 
 <body>
 
-<a class="back" href="../index.html">← Hub</a>
+<a class="back" id="hubLink" href="../index.html" hidden>← Hub</a>
+<script>
+/* This page ships two ways: standalone in its own repo, and as a cabinet inside
+   calebhomwe/arcade. "../index.html" is the arcade shelf when embedded there, but
+   resolves to somebody else's page (or a 404) when this repo is deployed on its own,
+   so only show the link once we know the target is really there. */
+(function(){var a=document.getElementById("hubLink");if(!a)return;
+  try{fetch(a.getAttribute("href"),{method:"HEAD"}).then(function(r){if(r.ok)a.hidden=false;})
+     .catch(function(){});}catch(e){}
+})();
+</script>
 
 <button class="mute" id="muteBtn">🔊</button>
 
