@@ -7358,6 +7358,10 @@ function paintIcon(key,g,Sz){
 
   const u=Sz/48;g.save();g.clearRect(0,0,Sz,Sz);
 
+  /* Icons are authored around (0,0); center that coordinate inside the bitmap.
+     Without this, nearly the entire weapon is clipped beyond the top-left edge. */
+  g.translate(Sz/2,Sz/2);
+
   icoStroke(g,u*48);
 
   const F=(col)=>{g.fillStyle=col;g.fill();g.stroke();};

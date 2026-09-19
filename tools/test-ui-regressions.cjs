@@ -137,7 +137,7 @@ test('responsive and state visibility guards are present (not a layout test)', (
   assert(html.includes("if(state==='play'&&hitStopT>0)"));
 });
 test('refined upgrade UI keeps large Retina art and explicit progress', () => {
-  for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'lc-progress', 'CHOOSE YOUR BLESSING']) assert(html.includes(marker));
+  for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'g.translate(Sz/2,Sz/2)', 'lc-progress', 'CHOOSE YOUR BLESSING']) assert(html.includes(marker));
   assert(!html.includes('grid-template-columns:48px'));
 });
 test('expanded campaign exposes four named late-game destinations', () => {
