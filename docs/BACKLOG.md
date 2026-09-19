@@ -20,7 +20,7 @@ Areas: BAL balance · WEAP weapon · HERO hero · ENMY enemy · BIOM biome · JU
 
 ## Wave 2
 - **B002 [BAL] XP curve + choice weighting** — smooth per-chapter XP curve; level-up choices weight toward player's existing build synergies. Done: level pace feels even across chapters 1–4.
-- **B006 [WEAP] New weapon: Orbit Blades** — rotating shield blades scaling with level; evolution = "Guillotine Halo" (bigger, launches on dash). Append to weapons table.
+- **B006 [WEAP] New weapon: Orbit Blades** — rotating shield blades scaling with level; evolution = "Rotary Cutter" (bigger, launches on dash). Append to weapons table.
 - **B014 [HERO] New hero: Engineer "Bolt"** — starts with turret, turret damage +X% per level passive. Append to HEROES.
 - **B019 [ENMY] Elite affix system** — rare elites with 1 affix (Shielded / Swift / Volatile) + visual outline + better drops. Done: ~5% spawn rate, telegraphed.
 - **B030 [JUIC] Screen shake + hit-stop** — shake on explosions/boss hits, 40ms hit-stop on elite kills. Respect a `reducedMotion` setting (default on = effects on).
@@ -32,7 +32,7 @@ Areas: BAL balance · WEAP weapon · HERO hero · ENMY enemy · BIOM biome · JU
 
 ## Wave 3
 - **B003 [BAL] Gold economy** — drop rates, magnet pickup value curve, pity timer for rare drops. Done: mid-run shop (if enabled) affordable by chapter 3.
-- **B007 [WEAP] New weapon: Chain Lightning** — arcs to N nearby enemies; evolution "Tempest Coil" (chains + stun). Append to weapons table.
+- **B007 [WEAP] New weapon: Arc Discharger** — arcs to N nearby enemies; evolution "Tesla Coil" (chains + stun). Append to weapons table.
 - **B015 [HERO] Hero perk system** — each hero gets 3-tier meta perks bought with a persistent currency. Done: UI + persistence + real effects.
 - **B024 [BIOM] Fifth biome: Cinder Wastes** — volcano palette, burning-ground hazards, 3 new critter skins via the procedural bestiary. Done: reachable via chapter select/progression.
 - **B031 [JUIC] Kill streak combo** — combo counter with decay, small score multiplier at thresholds, on-screen flair. 
@@ -56,7 +56,7 @@ Areas: BAL balance · WEAP weapon · HERO hero · ENMY enemy · BIOM biome · JU
 
 ## Wave 5
 - **B005 [BAL] Boss phases + enrage** — bosses get 3 HP phases with pattern shifts and an enrage timer. Done: visible phase transitions.
-- **B009 [WEAP] New weapon: Frost Nova** — periodic AoE slow; evolution "Absolute Zero" (freeze). Append.
+- **B009 [WEAP] New weapon: Cryo Emitter** — periodic AoE slow; evolution "Absolute Zero" (freeze). Append.
 - **B025 [BIOM] Hazard per existing biome** — one new environmental hazard each for the 4 existing biomes. Done: hazards telegraphed, fair.
 - **B048 [META? BAL] Difficulty select** — Casual / Normal / Nightmare multipliers; Nightmare gates an achievement. Stored per-run, not global.
 - **B044 [UI] Minimap + offscreen arrows** — corner minimap (toggle) or offscreen elite/boss arrows; pick and implement cleanly.

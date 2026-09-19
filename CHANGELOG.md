@@ -1,5 +1,11 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.3.2 — Strict content sweep
+- Replaced ritual-style tower paths, field activation, consumables and boss/pickup names with engineering, medical and military equivalents. The canonical names and future rules are in `docs/CONTENT_GUIDE.md`; older entries below are historical, not instructions to restore old content.
+- Redrew field stations as medical cabinets with radio masts, Arc Coils as copper hardware, cryo towers with nozzles, orbiting satellites with housings/panels, and skull props as rubble. Updated level-up copy to CHOOSE YOUR UPGRADE.
+- Preserved prices, damage, healing, cooldowns and existing save identifiers. Retired lifetime-stat labels display as Legacy equipment without deleting totals. Added runtime-content, station, consumable and legacy-save regression tests; all 22 groups pass locally.
+- Updated the master design and Claude handover so legacy theme instructions cannot silently reintroduce removed content. Physical iPhone/offline testing still outstanding.
+
 ## v1.3.1 — Content direction correction
 - Renamed the marsh to Ironwood Marsh; removed vampire, demonic, blood-charm and spirit-weapon presentation in favor of combat recovery, Royal Blade, Field Medkit and Precision Shuriken.
 - Reframed the gravity weapon as technology; replaced decorative shrines with carved route markers and removed skull piles from the marsh prop mix.

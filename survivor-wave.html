@@ -516,7 +516,7 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
 
   <h1>KINGDOM SURVIVOR <span>CLASH</span></h1>
 
-  <div class="sub">The horde marches on the Promised Land. Ten minutes, an auto-firing arsenal and one job: <b style="color:#a3e635">survive</b>. Raise towers, anoint them down <b style="color:#ffd23f">upgrade paths</b>, merge PARAGONS, consecrate altars. Seven bosses are coming.</div>
+  <div class="sub">The horde marches on the Promised Land. Ten minutes, an auto-firing arsenal and one job: <b style="color:#a3e635">survive</b>. Raise towers, engineer them along <b style="color:#ffd23f">upgrade paths</b>, merge PARAGONS, activate field stations. Seven bosses are coming.</div>
 
   <div class="castRow" id="castRow"></div>
 
@@ -574,7 +574,7 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
 
   <div class="nb hidden" id="newBest">★ NEW BEST ★</div>
   <div class="stat funBounty" id="bountyLine"></div>
-  <button class="btn green hidden" id="reviveBtn" style="font-size:17px;padding:13px 36px 10px">REVIVE — 150 <i class="coin"></i></button>
+  <button class="btn green hidden" id="reviveBtn" style="font-size:17px;padding:13px 36px 10px">RECOVER — 150 <i class="coin"></i></button>
 
   <button class="btn" id="againBtn">Try Again</button>
 
@@ -612,7 +612,7 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
 
   <h2 id="lvlTitle">LEVEL UP</h2>
 
-  <div class="hint" id="lvlHint">Choose your blessing</div>
+  <div class="hint" id="lvlHint">Choose your upgrade</div>
 
   <div class="lclist" id="lvlChoices"></div>
 
@@ -1097,9 +1097,9 @@ function glow(x,y,r,color,a){
 
 const HEROES={
 
-  survivor:{name:'Survivor',img:'hero',weapon:'kunai',desc:'Balanced gunslinger.<br>Starts: Kunai',ult:{name:'BARRAGE',icon:'💫'}},
+  survivor:{name:'Survivor',img:'hero',weapon:'kunai',desc:'Balanced gunslinger.<br>Starts: Kunai',ult:{name:'BARRAGE',icon:'🎯'}},
 
-  soldier:{name:'Soldier',img:'hero_soldier',weapon:'lightning',desc:'+40 max HP.<br>Starts: Lightning',hp:40,ult:{name:'ORBITAL STRIKE',icon:'🛰️'}},
+  soldier:{name:'Soldier',img:'hero_soldier',weapon:'lightning',desc:'+40 max HP.<br>Starts: Orbital Discharger',hp:40,ult:{name:'ORBITAL STRIKE',icon:'🛰️'}},
 
   scout:{name:'Scout',img:'hero_scout',weapon:'forcefield',desc:'Auto-attack drone companion.<br>+12% speed, +40 pickup.<br>Starts: ForceField',spd:1.12,pick:40,drone:1/*B016*/,ult:{name:'BLADE CYCLONE',icon:'🌪️'}},
 
@@ -1133,7 +1133,7 @@ const META={
 
   reroll:{name:'Tactics Manual',icon:'📖',desc:'+1 level-up reroll per level',max:3,cost:l=>Math.floor(150*Math.pow(1.5,l))},
 
-  revive:{name:'Guardian Angel',icon:'😇',desc:'Start each run with a free revive',max:1,cost:l=>1200},
+  revive:{name:'Emergency Kit',icon:'✚',desc:'Start each run with one emergency recovery',max:1,cost:l=>1200},
 
   choice:{name:'Tactical Mind',icon:'🧠',desc:'+1 upgrade choice on level-up',max:1,cost:l=>1800},
 
@@ -1644,7 +1644,7 @@ function renderShop(){
 
   relRow.style.cssText='justify-content:center;padding:4px 12px;color:#f0abfc;border-radius:0;border-bottom:1px solid rgba(240,171,252,.25);';
 
-  relRow.textContent='\uD83C\uDFFA RELICS CLAIMED: '+(relicEver|0)+' \u2014 bosses drop them; each stacks a nova pulse';
+  relRow.textContent='⚙ PULSE MODULES: '+(relicEver|0)+' \u2014 bosses drop them; each adds an automatic shockwave';
 
   list.appendChild(relRow);
 
@@ -1832,9 +1832,9 @@ const TURRETS={
 
   bomb:{name:'BOMB',cost:70,range:310,rate:2.3,kind:'shell'},
 
-  frost:{name:'FROST',cost:60,range:160,rate:2.6,kind:'aura'},
+  frost:{name:'FROST',cost:60,range:160,rate:2.6,kind:'support zone'},
 
-  medic:{name:'MEDIC',cost:65,range:180,rate:2.2,kind:'aura'},
+  medic:{name:'MEDIC',cost:65,range:180,rate:2.2,kind:'support zone'},
 
 };
 
@@ -1906,7 +1906,7 @@ const PASSIVES={
 
   cube:{name:'Energy Cube',icon:'',iconK:'cube',desc:'+12% skill area per level',color:'#a5f3fc',apply:l=>{}},
 
-  shoes:{name:'Lightning Shoes',icon:'',iconK:'shoe',desc:'+9% move speed per level',color:'#c4b5fd',apply:l=>{}},
+  shoes:{name:'Sprint Shoes',icon:'',iconK:'shoe',desc:'+9% move speed per level',color:'#c4b5fd',apply:l=>{}},
 
   tank:{name:'Fuel Tank',icon:'',iconK:'fuel',desc:'+25% burn duration & +10% damage',color:'#fdba74',apply:l=>{}},
 
@@ -1956,11 +1956,11 @@ const WEAPONS={
 
     cd:l=>l>=4?0.55:0.7},
 
-  lightchaser:{name:'Lightchaser',icon:'',iconK:'blade',color:'#7dd3fc',passive:'oyoroi',
+  lightchaser:{name:'Laser Cutter',icon:'',iconK:'blade',color:'#7dd3fc',passive:'oyoroi',
 
-    evoName:'Eternal Light',evoIcon:'🌟',
+    evoName:'Laser Array',evoIcon:'🌟',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Ronin Oyoroi':(l===1?'Piercing light blades forward':l===2?'+1 blade':l===3?'+damage':l===4?'+1 blade, wider':'+EVO at Lv.5 + Oyoroi'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Ronin Oyoroi':(l===1?'Emitter fires piercing laser blades':l===2?'+1 blade':l===3?'+damage':l===4?'+1 blade, wider':'+EVO at Lv.5 + Oyoroi'),
 
     fire(w,st){
 
@@ -1984,11 +1984,11 @@ const WEAPONS={
 
     cd:l=>1.5-l*0.14},
 
-  lightning:{name:'Lightning',icon:'',iconK:'bolt',color:'#facc15',passive:'battery',
+  lightning:{name:'Orbital Discharger',icon:'',iconK:'bolt',color:'#facc15',passive:'battery',
 
-    evoName:'Thunderbolt',evoIcon:'🌩️',
+    evoName:'Satellite Array',evoIcon:'🛰️',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Hi-Power Battery':(l===1?'Strikes random enemies from the sky':l===2?'+1 strike':l===3?'+damage & radius':l===4?'+1 strike':'+EVO at Lv.5 + Battery'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Hi-Power Battery':(l===1?'Satellite targets enemies with electric strikes':l===2?'+1 strike':l===3?'+damage & radius':l===4?'+1 strike':'+EVO at Lv.5 + Battery'),
 
     fire(w,st){
 
@@ -2016,7 +2016,7 @@ const WEAPONS={
 
     evoName:'Death Ray',evoIcon:'☢️',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Energy Cube':(l===1?'Orbs orbit and shred on contact':l===2?'+1 orb':l===3?'+damage, faster spin':l===4?'+1 orb, bigger':'+EVO at Lv.5 + Cube'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Energy Cube':(l===1?'Powered satellites orbit and hit on contact':l===2?'+1 orb':l===3?'+damage, faster spin':l===4?'+1 orb, bigger':'+EVO at Lv.5 + Cube'),
 
     fire(w,st){return true;},
 
@@ -2266,19 +2266,19 @@ const WEAPONS={
 
   orbit:{name:'Orbit Blades',icon:'',iconK:'orbit',color:'#f59e0b',passive:'shoes',/*B006*/
 
-    evoName:'Guillotine Halo',evoIcon:'🌀',
+    evoName:'Rotary Cutter',evoIcon:'🌀',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Lightning Shoes':(l===1?'Blades circle you, shredding on contact':l===2?'+1 blade':l===3?'+damage, wider orbit':l===4?'+1 blade, faster spin':'+EVO at Lv.5 + Shoes'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Sprint Shoes':(l===1?'Rotor-mounted blades circle you, hitting on contact':l===2?'+1 blade':l===3?'+damage, wider orbit':l===4?'+1 blade, faster spin':'+EVO at Lv.5 + Shoes'),
 
     fire(w,st){return true;},
 
     cd:l=>1},
 
-  chainlt:{name:'Chain Lightning',icon:'',iconK:'chain',color:'#38bdf8',passive:'weight',/*B007*/
+  chainlt:{name:'Arc Discharger',icon:'',iconK:'chain',color:'#38bdf8',passive:'weight',/*B007*/
 
-    evoName:'Tempest Coil',evoIcon:'⚡🌀',
+    evoName:'Tesla Coil',evoIcon:'⚡🌀',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Weight Belt':(l===1?'Bolt arcs between nearby enemies':l===2?'+1 chain':l===3?'+damage & longer arcs':l===4?'+1 chain':'+EVO at Lv.5 + Weight Belt'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Weight Belt':(l===1?'Electric coil discharges between nearby enemies':l===2?'+1 chain':l===3?'+damage & longer arcs':l===4?'+1 chain':'+EVO at Lv.5 + Weight Belt'),
 
     fire(w,st){
 
@@ -2302,7 +2302,7 @@ const WEAPONS={
 
         dealDamage(cur,dmg,undefined,undefined,rsWpn(w));/*B041*/
 
-        if(w.evo&&Math.random()<0.15)cur.stun=Math.max(cur.stun||0,0.4);/*B007 Tempest Coil stun*/
+        if(w.evo&&Math.random()<0.15)cur.stun=Math.max(cur.stun||0,0.4);/*B007 Tesla Coil stun*/
 
         dmg*=0.75;/*falloff per jump*/
 
@@ -2358,11 +2358,11 @@ const WEAPONS={
 
     cd:l=>2.2-l*0.2},
 
-  frostnova:{name:'Frost Nova',icon:'',iconK:'frost',color:'#93c5fd',passive:'cube',/*B009*/
+  frostnova:{name:'Cryo Emitter',icon:'',iconK:'frost',color:'#93c5fd',passive:'cube',/*B009*/
 
     evoName:'Absolute Zero',evoIcon:'❄️',
 
-    lvlDesc:l=>l>=5?'MAX — EVO ready with Energy Cube':(l===1?'Icy pulse damages and chills every enemy around you':l===2?'+damage & bigger radius':l===3?'+longer chill':l===4?'+damage, faster pulse':'+EVO at Lv.5 + Energy Cube'),
+    lvlDesc:l=>l>=5?'MAX — EVO ready with Energy Cube':(l===1?'Coolant device damages and chills nearby enemies':l===2?'+damage & bigger radius':l===3?'+longer chill':l===4?'+damage, faster pulse':'+EVO at Lv.5 + Energy Cube'),
 
     fire(w,st){
 
@@ -2943,7 +2943,7 @@ function tryRevive(){
 
   spawnParticles(player.x,player.y,'#fde68a',34,2);
 
-  addFloater(player.x,player.y-40,'REVIVED!','#facc15',1.5,24);
+  addFloater(player.x,player.y-40,'RECOVERED!','#facc15',1.5,24);
 
   sfx('win');
 
@@ -3617,7 +3617,13 @@ function onScreen(e,pad){
 const runStats={dmg:{},taken:0,gold:0};
 window.__runStats=runStats;
 function rsWpn(w){try{return (w&&w.id&&WEAPONS[w.id]&&WEAPONS[w.id].name)||'Other';}catch(_){return 'Other';}}
-function rsKind(k){return ({dart:'Kunai',shuriken:'Kunai',blade:'Lightchaser',laser:'Guardian',brick:'Brick',pellet:'Shotgun',swing:'Baseball Bat',rocket:'RPG',wave:'Katana',tdart:'Turret',shell:'Turret',boomer:'Boomerang'})[k]||'Other';}
+function displayWeaponLabel(label){
+  // Old saves may contain retired display text; keep damage totals, never render unknown lore or markup.
+  if(Object.values(WEAPONS).some(w=>w.name===label||w.evoName===label))return label;
+  const safe=['Pulse Module','Turret','Other','Tower:Gatling','Tower:Tesla','Tower:Mortar','Tower:Tack','Tower:Watch','Tower:Pitch','Tower:Spike'];
+  return safe.includes(label)?label:'Legacy equipment';
+}
+function rsKind(k){return ({dart:'Kunai',shuriken:'Kunai',blade:'Laser Cutter',laser:'Guardian',brick:'Brick',pellet:'Shotgun',swing:'Baseball Bat',rocket:'RPG',wave:'Katana',tdart:'Turret',shell:'Turret',boomer:'Boomerang'})[k]||'Other';}
 function rsAdd(t,d){runStats.dmg[t]=(runStats.dmg[t]||0)+d;}
 
 function dealDamage(e,dmg,srcX,srcY,wtag){
@@ -3668,7 +3674,7 @@ function strikeLightning(x,y,rad,dmg){
 
     if(e.hp<=0)return;
 
-    if(dist2(e.x,e.y,x,y)<(rad+e.r)*(rad+e.r))dealDamage(e,dmg,undefined,undefined,'Lightning');/*B041*/
+    if(dist2(e.x,e.y,x,y)<(rad+e.r)*(rad+e.r))dealDamage(e,dmg,undefined,undefined,'Orbital Discharger');/*B041*/
 
   });
 
@@ -4144,15 +4150,15 @@ function update(dt){
 
         const ndx=e.x-player.x,ndy=e.y-player.y;
 
-if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Relic Nova');novaHits++;}/*B041*/
+if(ndx*ndx+ndy*ndy<(rr+e.r)*(rr+e.r)){dealDamage(e,rd,undefined,undefined,'Pulse Module');novaHits++;}/*B041*/
 
       });
 
-      glow(player.x,player.y,rr,'#f0abfc',0.5);
+      glow(player.x,player.y,rr,'#67e8f9',0.5);
 
-      spawnParticles(player.x,player.y,'#f0abfc',novaHits?10:5,1.3,{sprite:'spark',size:16});
+      spawnParticles(player.x,player.y,'#67e8f9',novaHits?10:5,1.3,{sprite:'spark',size:16});
 
-      if(novaHits)addFloater(player.x,player.y-34,'NOVA x'+novaHits,'#f0abfc',0.8,14);
+      if(novaHits)addFloater(player.x,player.y-34,'PULSE x'+novaHits,'#67e8f9',0.8,14);
 
     }
 
@@ -4951,9 +4957,9 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         whiteFlash=Math.max(whiteFlash,0.18);shake=Math.max(shake,8);
 
-        addFloater(player.x,player.y-30,'🏺 ANCIENT RELIC x'+player.relic+'','#f0abfc',1.4,18);
+        addFloater(player.x,player.y-30,'⚙ PULSE MODULE x'+player.relic+'','#67e8f9',1.4,18);
 
-        addFloater(player.x,player.y-52,'RELIC NOVA AWAKENED','#e9d5ff',1,13);
+        addFloater(player.x,player.y-52,'SHOCKWAVE DEVICE ONLINE','#a5f3fc',1,13);
 
         sfx('levelup');
 
@@ -5001,7 +5007,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
           if(e.hp<=0)return;
 
-          if(dist2(e.x,e.y,n.x,n.y)<(n.r+e.r)*(n.r+e.r)){dealDamage(e,n.dmg,undefined,undefined,'Frost Nova');e.frostT=Math.max(e.frostT||0,0.7);}
+          if(dist2(e.x,e.y,n.x,n.y)<(n.r+e.r)*(n.r+e.r)){dealDamage(e,n.dmg,undefined,undefined,'Cryo Emitter');e.frostT=Math.max(e.frostT||0,0.7);}
 
         });
 
@@ -5075,7 +5081,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
     t.pulse+=dt;
 
-    if(def.kind==='aura'){
+    if(def.kind==='support zone'){
 
       t.cd-=dt;
 
@@ -5596,7 +5602,7 @@ function showLevelUp(){
 
   document.getElementById('lvlTitle').textContent='LEVEL UP';
 
-  const levelHint=document.getElementById('lvlHint');if(levelHint)levelHint.textContent='LEVEL '+player.level+' · CHOOSE YOUR BLESSING';
+  const levelHint=document.getElementById('lvlHint');if(levelHint)levelHint.textContent='LEVEL '+player.level+' · CHOOSE YOUR UPGRADE';
 
   document.getElementById('rerollBtn').disabled=rerollsLeft<=0;
 
@@ -7391,14 +7397,14 @@ function paintIcon(key,g,Sz){
     g.fillStyle='rgba(255,255,255,0.55)';g.beginPath();g.moveTo(4*u,-21*u);g.lineTo(-13*u,3*u);g.lineTo(-7*u,2*u);g.closePath();g.fill();
 
   }else if(key==='orb'){
-
-    g.strokeStyle='#7f5bd6';g.lineWidth=2.6*u;g.beginPath();g.ellipse(0,0,20*u,8.5*u,-0.5,0,Math.PI*2);g.stroke();
-
-    g.beginPath();g.arc(0,-2*u,12.5*u,0,Math.PI*2);F('#b678f2');
-
-    g.fillStyle='#ecd6ff';g.beginPath();g.arc(-4*u,-6*u,4*u,0,Math.PI*2);g.fill();
-
-    g.fillStyle='#7f5bd6';g.beginPath();g.arc(16*u,7*u,3.2*u,0,Math.PI*2);g.fill();
+    g.rotate(-0.35);
+    g.fillStyle='#475569';g.fillRect(-23*u,-8*u,15*u,16*u);g.fillRect(8*u,-8*u,15*u,16*u);
+    g.strokeStyle='#67e8f9';g.lineWidth=1.2*u;
+    for(let i=0;i<3;i++){g.strokeRect((-22+i*4)*u,-7*u,3*u,14*u);g.strokeRect((9+i*4)*u,-7*u,3*u,14*u);}
+    g.beginPath();g.rect(-7*u,-12*u,14*u,24*u);F('#cbd5e1');
+    g.fillStyle='#22d3ee';g.fillRect(-4*u,-7*u,8*u,7*u);
+    g.strokeStyle='#94a3b8';g.lineWidth=2*u;g.beginPath();g.moveTo(0,-12*u);g.lineTo(0,-22*u);g.stroke();
+    g.fillStyle='#fbbf24';g.fillRect(-2*u,5*u,4*u,4*u);
 
   }else if(key==='molotov'){
 
@@ -8853,7 +8859,7 @@ function paintCritter(g,ty,x,y,ang,anim,r,flash,ghost){
     g.beginPath();g.moveTo(r*0.05,-r*0.5);g.lineTo(r*0.2,-r*0.88);g.lineTo(r*0.3,-r*0.42);g.closePath();g.fill();
     g.strokeStyle='rgba(255,140,50,0.8)';g.lineWidth=Math.max(1.2,r*0.1);
     g.beginPath();g.moveTo(-r*0.6,-hop*0.3);g.quadraticCurveTo(-r*1.1,r*0.1,-r*0.9,r*0.45);g.stroke();
-  }else if(ty==='magmoth'){ /*B024 tank/splitter skin: cracked magma golem*/
+  }else if(ty==='magmoth'){ /*B024 tank/splitter skin: cracked lava beetle*/
     E('rgba(15,8,7,0.35)',[0,r*0.48],r,r*0.34);
     E('#38302e',[0,0],r*0.95,r*0.78);
     E('#493934',[r*0.12,-r*0.08],r*0.68,r*0.55);
@@ -9377,7 +9383,7 @@ function drawWaymarker(g,x,y){
   kShadow(g,x,y+4,10,4);
   g.fillStyle='#cfc7b4';g.fillRect(x-9,y-2,18,6);
   g.fillStyle='#ece6d6';g.beginPath();g.roundRect?g.roundRect(x-6,y-28,12,28,[6,6,0,0]):g.rect(x-6,y-28,12,28);g.fill();
-  /* Carved direction arrow, not a ritual symbol. */
+  /* Carved direction arrow. */
   g.strokeStyle='#6b5530';g.lineWidth=2;g.beginPath();g.moveTo(x-3,y-19);g.lineTo(x+3,y-19);g.moveTo(x,y-22);g.lineTo(x+3,y-19);g.lineTo(x,y-16);g.stroke();
   g.fillStyle='rgba(0,0,0,0.15)';g.fillRect(x-4,y-12,8,1.5);g.fillRect(x-4,y-8,8,1.5);
 }
@@ -9801,21 +9807,21 @@ function drawFence(g,x,y,len,horiz){
 
 }
 
-function drawSkullPile(g,x,y,s){
+function drawRubblePile(g,x,y,s){
 
   g.fillStyle='rgba(60,45,25,0.25)';g.beginPath();g.ellipse(x+4*s,y+5*s,14*s,6*s,0,0,Math.PI*2);g.fill();
 
-  g.fillStyle='#e8e2d0';
+  g.fillStyle='#938b7b';
 
   g.beginPath();g.arc(x-3*s,y,5.5*s,0,Math.PI*2);g.fill();
 
-  g.fillRect(x-5.5*s,y+3.5*s,7*s,3*s);
+  g.fillRect(x-7*s,y+2*s,10*s,3*s);
 
   g.beginPath();g.arc(x+8*s,y-4*s,3.5*s,0,Math.PI*2);g.fill();
 
-  g.fillStyle='#2c2822';
+  g.fillStyle='#b7b0a3';
 
-  g.beginPath();g.arc(x-4.5*s,y-0.5*s,1.5*s,0,Math.PI*2);g.arc(x-1*s,y-0.5*s,1.5*s,0,Math.PI*2);g.fill();
+  g.fillRect(x-5*s,y-3*s,4*s,2*s);
 
   g.strokeStyle='#ddd6c4';g.lineWidth=2*s;g.lineCap='round';
 
@@ -10573,7 +10579,7 @@ function getChunk(cx,cy){
 
       else if(r<0.72)drawGrassTuft(g,px2,py2);
 
-      else if(r<0.82)drawSkullPile(g,px2,py2,0.8+r*0.5);
+      else if(r<0.82)drawRubblePile(g,px2,py2,0.8+r*0.5);
 
       else if(r<0.90)drawRuin(g,px2,py2,0.7+r*0.5);
 
@@ -11469,7 +11475,7 @@ function render(){
 
     }else{
 
-      ctx.fillText(pk.kind==='chicken'?'🍗':pk.kind==='magnet'?'🧲':pk.kind==='relic'?'🏺':'💣',pk.x,pk.y+bob);
+      ctx.fillText(pk.kind==='chicken'?'🍗':pk.kind==='magnet'?'🧲':pk.kind==='relic'?'⚙':'💣',pk.x,pk.y+bob);
 
     }
 
@@ -11809,13 +11815,11 @@ function render(){
 
       }
 
-      ctx.fillStyle='#c084fc';
-
-      ctx.beginPath();ctx.arc(ox,oy,fw.evo?12:9,0,Math.PI*2);ctx.fill();
-
-      ctx.fillStyle='rgba(255,255,255,0.6)';
-
-      ctx.beginPath();ctx.arc(ox-2,oy-3,3.5,0,Math.PI*2);ctx.fill();
+      /* Visible satellite hardware, not a floating energy orb. */
+      ctx.fillStyle='#475569';ctx.fillRect(ox-15,oy-5,30,10);
+      ctx.fillStyle='#cbd5e1';ctx.fillRect(ox-6,oy-9,12,18);
+      ctx.fillStyle='#22d3ee';ctx.fillRect(ox-3,oy-5,6,6);
+      ctx.fillStyle='#67e8f9';ctx.fillRect(ox-13,oy-3,5,6);ctx.fillRect(ox+8,oy-3,5,6);
 
     }
 
@@ -12975,7 +12979,7 @@ function drawEnemy(e){
 
   }
 
-  if(e.isBoss&&(e.bPhase||1)>=3&&!(e.bFx>0)&&!settings.lowFx){/*B005 P3 enrage aura*/
+  if(e.isBoss&&(e.bPhase||1)>=3&&!(e.bFx>0)&&!settings.lowFx){/*B005 P3 enrage support zone*/
 
     ctx.globalCompositeOperation='lighter';
 
@@ -15294,11 +15298,11 @@ killEnemy=function(e){
     {k:'toad',    n:'Spit Toad',      d:'Keeps distance and lobs acid globs.',       r:14},
     {k:'scorpion',n:'Elite Scorpion', d:'Elite slamer. Ground-pound area attack.',   r:26},
     {k:'boa',     n:'Brute Boa',      d:'BOSS. Charges and slams in a frenzy.',      r:34},
-    {k:'hornet',  n:'Devourer',       d:'BOSS. Relentless teleporting hunter.',      r:30},
+    {k:'hornet',  n:'Devourer',       d:'BOSS. Relentless high-speed diving hunter.',      r:30},
     {k:'blimp',   n:'Terror Blimp',   d:'Airship elite. Bursts into splitters.',     r:30},
     {k:'ashworm', n:'Ash Worm',       d:'CINDER. Basalt segments with ember veins.',  r:13},
     {k:'cinderling',n:'Cinderling',   d:'CINDER. Ember imp that hops on hot ash.',    r:10},
-    {k:'magmoth', n:'Magmoth',        d:'CINDER. Magma golem, cracks glow as it runs.',r:24},
+    {k:'magmoth', n:'Magmoth',        d:'CINDER. Lava beetle, shell cracks glow as it runs.',r:24},
     {k:'charger', n:'Ram Beetle',     d:'Shakes, then dashes in a straight line.',   r:15}/*B020*/
   ];
   var B={seen:{},kills:{},chap:{}};
@@ -16055,7 +16059,7 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
   function favorite(){
     var best=null,bv=0;
     for(var k in L.wpn){if(L.wpn[k]>bv){bv=L.wpn[k];best=k;}}
-    return best?{n:best,v:bv}:null;
+    return best?{n:displayWeaponLabel(best),v:bv}:null;
   }
   function fmtHours(sec){
     var h=sec/3600;
@@ -16125,7 +16129,7 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
    Draws world-space via renderHUD() wrapper, ticks via update() wrapper.
 
    KSC-PATHS (v1.2): every tower line has THREE upgrade paths x TWO tiers (BTD crosspathing rule:
-   at most two paths per tower, the third locks). Upgrades cost Anointing Oil. Tower tier = 1 + deepest
+   at most two paths per tower, the third locks). Upgrades cost Engineering Oil. Tower tier = 1 + deepest
    path, so a fully-walked path (T3) is what unlocks the PARAGON merge (two T3 -> T4) and GLORY (two T4 -> T5).
    Targeting priority per tower (CLOSE / HERO / STRONG / WEAK), per-tower pops + damage ledger, effective-stat
    derivation (paths x paragon x Kingdom research) via TOWERSYS.eff(t), BTD-style inspect panel. */
@@ -16137,47 +16141,47 @@ const TD={
   /* up2/up3 = OIL cost of a path's 1st / 2nd tier. BAL: the oil cap is 100 (+5/level, + Oil Press), so every step must sit
      under it — the old 240/400 tesla + mortar tiers were unreachable in real play. */
   gatling:{name:'SLING THROWER',cost:50, range:175, rate:0.22, dmg:6, up2:30, up3:60, up3txt:'twin-shot spread', col:'#93c5fd', col2:'#3b82f6', desc:'fast bullets, 1 target'},
-  tesla:{name:'PROPHET HERALD',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:45, up3:90, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
+  tesla:{name:'ARC COIL',cost:120, range:150, rate:0.95, dmg:14, chain:3, chainR:130, up2:45, up3:90, up3txt:'+2 chains + 0.2s stun', col:'#67e8f9', col2:'#0891b2', desc:'zaps 3 chained foes'},
   mortar:{name:'BOMBARDIER',cost:200, range:430, minR:120, rate:2.3, dmg:38, splash:72, up2:55, up3:95, up3txt:'+50% blast + burning ground', col:'#fbbf24', col2:'#b45309', desc:'long-range splash'},
   tack:{name:'TACK DEFENDER',cost:80, range:135, rate:0.85, dmg:5, up2:25, up3:50, up3txt:'12 spikes + faster', col:'#fca5a5', col2:'#b91c1c', desc:'spikes in all directions'},
-  watch:{name:'WATCHTOWER',cost:150, range:165, rate:2.4, dmg:6, up2:35, up3:70, up3txt:'deeper freeze + 0.5s stun', col:'#93c5fd', col2:'#1e3a8a', desc:'freezing holy pulse'},
-  tithe:{name:'TITHE COLLECTOR',cost:100, range:0, rate:2, dmg:0, up2:25, up3:50, up3txt:'+4 silver per cycle', col:'#fbbf24', col2:'#92400e', desc:'generates silver over time'}
+  watch:{name:'WATCHTOWER',cost:150, range:165, rate:2.4, dmg:6, up2:35, up3:70, up3txt:'deeper freeze + 0.5s stun', col:'#93c5fd', col2:'#1e3a8a', desc:'cryo emitter slows nearby foes'},
+  tithe:{name:'SUPPLY DEPOT',cost:100, range:0, rate:2, dmg:0, up2:25, up3:50, up3txt:'+4 silver per cycle', col:'#fbbf24', col2:'#92400e', desc:'generates silver over time'}
 };
 /* ---------- KSC-PATHS: 3 paths x 2 tiers per line. m = stat multipliers, f = behaviour flags read by fire code ---------- */
 const PATHS={
   gatling:[{n:'RAPID SLING',t:[{n:'Quick Arm',d:'+60% fire rate',m:{rate:1.6}},{n:'Twin Shot',d:'fires two stones in a spread',f:'twin'}]},
            {n:'HEAVY STONES',t:[{n:'River Stones',d:'+50% damage',m:{dmg:1.5}},{n:'Piercing Shot',d:'stones pass through 2 foes',f:'pierce2'}]},
            {n:'EAGLE EYE',t:[{n:'Far Sight',d:'+30% range',m:{range:1.3}},{n:'Deadeye',d:'20% chance to crit x3',f:'crit'}]}],
-  tesla:[{n:'THUNDER CALL',t:[{n:'Quick Verse',d:'+60% fire rate',m:{rate:1.6}},{n:'Rebuke',d:'+2 chains, chained foes stunned 0.2s',f:'chains'}]},
-         {n:'HOLY FIRE',t:[{n:'Zeal',d:'+50% damage',m:{dmg:1.5}},{n:'Undimmed',d:'chains lose no damage',f:'nofall'}]},
-         {n:'FAR VOICE',t:[{n:'Carrying Voice',d:'+30% range',m:{range:1.3}},{n:'Long Arc',d:'chain reach x1.6',f:'reach'}]}],
+  tesla:[{n:'RAPID DISCHARGE',t:[{n:'Fast Capacitor',d:'+60% fire rate',m:{rate:1.6}},{n:'Chain Discharge',d:'+2 chains, chained foes stunned 0.2s',f:'chains'}]},
+         {n:'HIGH VOLTAGE',t:[{n:'Power Cell',d:'+50% damage',m:{dmg:1.5}},{n:'Low-Loss Cable',d:'chains lose no damage',f:'nofall'}]},
+         {n:'LONG REACH',t:[{n:'Extended Conductor',d:'+30% range',m:{range:1.3}},{n:'Long Arc',d:'chain reach x1.6',f:'reach'}]}],
   mortar:[{n:'SIEGE DRILL',t:[{n:'Fast Loaders',d:'+60% fire rate',m:{rate:1.6}},{n:'Firestorm',d:'+50% blast + burning ground',f:'blast'}]},
           {n:'GREATER SHELLS',t:[{n:'Iron Shot',d:'+50% damage',m:{dmg:1.5}},{n:'Concussion',d:'blast stuns 0.4s',f:'shellStun'}]},
           {n:'LONG ARM',t:[{n:'High Arc',d:'+30% range, half minimum range',m:{range:1.3},f:'longarm'},{n:'Twin Barrel',d:'fires two shells',f:'twinShell'}]}],
   tack:[{n:'QUICK TACKS',t:[{n:'Fast Hammer',d:'+60% fire rate',m:{rate:1.6}},{n:'Ring of Twelve',d:'12 spikes per volley',f:'tacks12'}]},
         {n:'BARBED',t:[{n:'Barbed Tips',d:'+50% damage',m:{dmg:1.5}},{n:'Through-Shot',d:'tacks pierce one extra foe',f:'pierce1'}]},
         {n:'WIDE SPREAD',t:[{n:'Long Tacks',d:'+30% range, tacks fly farther',m:{range:1.3},f:'tackLong'},{n:'Numbing Tacks',d:'tacks slow on hit',f:'slow'}]}],
-  watch:[{n:'DEEP FROST',t:[{n:'Cold Vigil',d:'+60% pulse rate',m:{rate:1.6}},{n:'Deep Freeze',d:'longer freeze + 0.5s stun',f:'deepFreeze'}]},
-         {n:'HOLY LIGHT',t:[{n:'Radiance',d:'+100% pulse damage',m:{dmg:2}},{n:'Purifying Light',d:'+75% pulse damage',m:{dmg:1.75}}]},
+  watch:[{n:'DEEP FROST',t:[{n:'Fast Compressor',d:'+60% pulse rate',m:{rate:1.6}},{n:'Deep Freeze',d:'longer freeze + 0.5s stun',f:'deepFreeze'}]},
+         {n:'CRYO PRESSURE',t:[{n:'Pressure Tank',d:'+100% pulse damage',m:{dmg:2}},{n:'High-Pressure Jet',d:'+75% pulse damage',m:{dmg:1.75}}]},
          {n:'BEACON',t:[{n:'Tall Tower',d:'+30% range',m:{range:1.3}},{n:'Lighthouse',d:'+30% range again',m:{range:1.3}}]}],
-  tithe:[{n:'FAITHFUL',t:[{n:'Tithe Box',d:'+1 silver per cycle',f:'t1'},{n:'Storehouse',d:'+2 more silver per cycle',f:'t2'}]},
-         {n:'OFFERINGS',t:[{n:'Oil Jar',d:'+0.15 oil per cycle',f:'oil1'},{n:'Anointing Vat',d:'+0.35 oil per cycle',f:'oil2'}]},
-         {n:'HARVEST',t:[{n:'Gleaning',d:'+1 silver per 4 foes within 200',f:'harv'},{n:'Jubilee',d:'+1 silver per 2 foes within 200',f:'harv2'}]}],
+  tithe:[{n:'LOGISTICS',t:[{n:'Cash Box',d:'+1 silver per cycle',f:'t1'},{n:'Storehouse',d:'+2 more silver per cycle',f:'t2'}]},
+         {n:'FUEL STORAGE',t:[{n:'Oil Jar',d:'+0.15 oil per cycle',f:'oil1'},{n:'Storage Tank',d:'+0.35 oil per cycle',f:'oil2'}]},
+         {n:'HARVEST',t:[{n:'Gleaning',d:'+1 silver per 4 foes within 200',f:'harv'},{n:'Salvage Crew',d:'+1 silver per 2 foes within 200',f:'harv2'}]}],
   pitch:[{n:'THICK TAR',t:[{n:'Sticky Pitch',d:'+60% rate, stronger slow',m:{rate:1.6},f:'sticky'},{n:'Tar Pool',d:'pooled tar slows 40% longer',f:'tar'}]},
          {n:'BOILING',t:[{n:'Hot Pitch',d:'+100% damage',m:{dmg:2}},{n:'Scalding',d:'+100% damage',m:{dmg:2}}]},
-         {n:'WIDE SPLASH',t:[{n:'Wide Ladle',d:'+30% range',m:{range:1.3}},{n:'Cauldron',d:'+30% range',m:{range:1.3}}]}],
+         {n:'WIDE SPLASH',t:[{n:'Wide Ladle',d:'+30% range',m:{range:1.3}},{n:'Pitch Reservoir',d:'+30% range',m:{range:1.3}}]}],
   spike:[{n:'QUICK FORGE',t:[{n:'Fast Anvil',d:'+60% rate',m:{rate:1.6}},{n:'Caltrops',d:'spikes linger, foes slowed',f:'linger'}]},
          {n:'TEMPERED',t:[{n:'Tempered Steel',d:'+50% damage',m:{dmg:1.5}},{n:'Kingsteel',d:'+50% damage',m:{dmg:1.5}}]},
          {n:'SPREAD',t:[{n:'Wide Field',d:'+30% range',m:{range:1.3}},{n:'Spike Sea',d:'+30% range',m:{range:1.3}}]}],
-  crier:[{n:'LOUDER',t:[{n:'Rallying Cry',d:'aura +15% tower damage',f:'cry1'},{n:'Royal Decree',d:'aura +30% tower damage',f:'cry2'}]},
-         {n:'REACH',t:[{n:'Tall Podium',d:'+30% aura range',m:{range:1.3}},{n:'Town Square',d:'+30% aura range',m:{range:1.3}}]},
-         {n:'HERALDRY',t:[{n:'Banners',d:'towers in aura +25% sell value',f:'sell80'},{n:'Standard',d:'towers in aura regen 5 HP/s',f:'mend'}]}],
-  apoth:[{n:'HERBAL',t:[{n:'Salves',d:'heal 2 HP/s in aura',f:'heal2'},{n:'Elixirs',d:'heal 3 HP/s in aura',f:'heal3'}]},
-         {n:'BALM',t:[{n:'Wide Garden',d:'+30% aura range',m:{range:1.3}},{n:'Orchard',d:'+30% aura range',m:{range:1.3}}]},
-         {n:'TONIC',t:[{n:'Vigor',d:'hero +10% damage in aura',f:'tonic1'},{n:'Fervor',d:'hero +20% damage in aura',f:'tonic2'}]}],
-  craft:[{n:'MASTERWORK',t:[{n:'Oiled Gears',d:'towers in aura +15% fire rate',f:'gear1'},{n:'Clockwork',d:'towers in aura +25% fire rate',f:'gear2'}]},
-         {n:'REACH',t:[{n:'Long Bench',d:'+30% aura range',m:{range:1.3}},{n:'Guild Hall',d:'+30% aura range',m:{range:1.3}}]},
-         {n:'REINFORCE',t:[{n:'Iron Bands',d:'towers in aura +50 max HP',f:'hp50'},{n:'Bastion',d:'towers in aura +100 max HP',f:'hp100'}]}]
+  crier:[{n:'LOUDER',t:[{n:'Rallying Cry',d:'support zone +15% tower damage',f:'cry1'},{n:'Royal Decree',d:'support zone +30% tower damage',f:'cry2'}]},
+         {n:'REACH',t:[{n:'Tall Podium',d:'+30% support zone range',m:{range:1.3}},{n:'Town Square',d:'+30% support zone range',m:{range:1.3}}]},
+         {n:'HERALDRY',t:[{n:'Banners',d:'towers in support zone +25% sell value',f:'sell80'},{n:'Standard',d:'towers in support zone regen 5 HP/s',f:'mend'}]}],
+  apoth:[{n:'HERBAL',t:[{n:'Salves',d:'heal 2 HP/s in support zone',f:'heal2'},{n:'Medical Kits',d:'heal 3 HP/s in support zone',f:'heal3'}]},
+         {n:'BALM',t:[{n:'Wide Garden',d:'+30% support zone range',m:{range:1.3}},{n:'Orchard',d:'+30% support zone range',m:{range:1.3}}]},
+         {n:'FIELD RATIONS',t:[{n:'Vigor',d:'hero +10% damage in support zone',f:'tonic1'},{n:'Resupply',d:'hero +20% damage in support zone',f:'tonic2'}]}],
+  craft:[{n:'MASTERWORK',t:[{n:'Oiled Gears',d:'towers in support zone +15% fire rate',f:'gear1'},{n:'Clockwork',d:'towers in support zone +25% fire rate',f:'gear2'}]},
+         {n:'REACH',t:[{n:'Long Bench',d:'+30% support zone range',m:{range:1.3}},{n:'Guild Hall',d:'+30% support zone range',m:{range:1.3}}]},
+         {n:'REINFORCE',t:[{n:'Iron Bands',d:'towers in support zone +50 max HP',f:'hp50'},{n:'Bastion',d:'towers in support zone +100 max HP',f:'hp100'}]}]
 };
 const TGT_MODES=['close','hero','strong','weak'];
 const TGT_LABEL={close:'CLOSE',hero:'HERO',strong:'STRONG',weak:'WEAK'};
@@ -16282,7 +16286,7 @@ function fireTower(t,dt){
       inc=Math.round(inc*(tier>=4?1.5:1)*(tier>=5?1.5:1));
       gold+=inc;t._tithe=(t._tithe||0)+inc;t.dmgDone=(t.dmgDone||0);t.silver=(t.silver||0)+inc;
       if(F.oil1||F.oil2){const o=(F.oil1?0.15:0)+(F.oil2?0.35:0);if(window.gainOil)window.gainOil(o);t.oilMade=(t.oilMade||0)+o;}
-      if(!settings.lowFx&&t._tithe>=8){t._tithe=0;addFloater(t.x,t.y-26,'+'+inc+' TITHE','#fbbf24',0.9,12);}
+      if(!settings.lowFx&&t._tithe>=8){t._tithe=0;addFloater(t.x,t.y-26,'+'+inc+' SILVER','#fbbf24',0.9,12);}
       if(!settings.lowFx)spawnParticles(t.x,t.y-8,'#fbbf24',1,0.6);
     }
     return;
@@ -16413,11 +16417,11 @@ function drawTower(g,t,ghosted){
     g.fillStyle=D.col2;g.fillRect(0,-5,15,4);g.fillRect(0,1,15,4);
     g.fillStyle=D.col;g.beginPath();g.arc(0,0,5,0,Math.PI*2);g.fill();
   }else if(t.ty==='tesla'){
-    g.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3+Math.PI/6;if(i)g.lineTo(Math.cos(a)*14,Math.sin(a)*14);else g.moveTo(Math.cos(a)*14,Math.sin(a)*14);}g.closePath();g.fill();g.stroke();
-    g.fillStyle='#123f4a';g.beginPath();g.arc(0,0,9,0,Math.PI*2);g.fill();
-    g.fillStyle=D.col;g.beginPath();g.arc(0,-2,4.5,0,Math.PI*2);g.fill();
-    g.strokeStyle=D.col;g.lineWidth=2;
-    g.beginPath();g.arc(0,-2,7.5+Math.sin(performance.now()/140+t.x)*1.5,0,Math.PI*2);g.stroke();
+    g.fillStyle='#334155';g.fillRect(-12,-5,24,17);g.strokeRect(-12,-5,24,17);
+    g.fillStyle='#94a3b8';g.fillRect(-3,-27,6,24);
+    g.fillStyle='#b87333';for(let i=0;i<4;i++)g.fillRect(-8,-23+i*5,16,3);
+    g.fillStyle=D.col;g.beginPath();g.ellipse(0,-28,10,4,0,0,Math.PI*2);g.fill();
+    g.fillStyle='#67e8f9';g.fillRect(-8,2,5,4);g.fillStyle='#0f172a';g.fillRect(3,1,5,7);
   }else if(t.ty==='tack'){
     g.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4;if(i)g.lineTo(Math.cos(a)*14,Math.sin(a)*14);else g.moveTo(Math.cos(a)*14,Math.sin(a)*14);}g.closePath();g.fill();g.stroke();
     g.fillStyle='#3a1a1a';g.beginPath();g.arc(0,0,8,0,Math.PI*2);g.fill();
@@ -16427,7 +16431,7 @@ function drawTower(g,t,ghosted){
     g.fillStyle='rgba(0,0,0,0.12)';g.fillRect(-9,-14,18,2);g.fillRect(-9,-4,18,2);
     g.fillStyle=D.col2;g.fillRect(-11,-26,22,6);g.strokeRect(-11,-26,22,6);
     g.fillStyle='#d4af37';g.fillRect(-12,-28,24,2);
-    g.fillStyle=D.col;g.beginPath();g.arc(0,-31,4,0,Math.PI*2);g.fill();
+    g.fillStyle='#64748b';g.fillRect(-7,-35,14,8);g.fillStyle=D.col;g.fillRect(-5,-36,3,7);g.fillRect(2,-36,3,7);
     if(t.pulseT){const f=1-t.pulseT/0.45;g.strokeStyle='rgba(147,197,253,'+(0.6*(1-f)).toFixed(2)+')';g.lineWidth=2;g.beginPath();g.arc(0,0,(t.pulseR||D.range)/sc*f,0,Math.PI*2);g.stroke();}
   }else if(t.ty==='tithe'){
     g.fillStyle='#6b4a1f';g.fillRect(-13,-10,26,20);g.strokeRect(-13,-10,26,20);
@@ -16502,7 +16506,7 @@ function drawWorld(){
     g.strokeStyle='rgba(251,146,60,'+(0.55*f*fl).toFixed(2)+')';g.lineWidth=2;
     g.beginPath();g.arc(b.x,b.y,b.r*0.92,0,Math.PI*2);g.stroke();
   }
-  /* support auras (ground-level, faint) */
+  /* support support zones (ground-level, faint) */
   for(const t of towers){
     if(t.ty==='crier'||t.ty==='apoth'||t.ty==='craft'){
       const E=effOf(t);if(!E)continue;
@@ -16545,7 +16549,7 @@ function drawWorld(){
     g.strokeStyle='rgba(252,165,165,'+(0.5*(1-f)).toFixed(2)+')';g.lineWidth=2;
     g.beginPath();g.arc(s.x,s.y,s.r*f*0.7,0,Math.PI*2);g.stroke();
   }
-  if(sellAsk&&towers.indexOf(sellAsk)>=0){/*selected tower: range ring + covenant marker*/
+  if(sellAsk&&towers.indexOf(sellAsk)>=0){/*selected tower: range ring + selection marker*/
     const E=effOf(sellAsk);
     if(E&&E.range){g.strokeStyle='rgba(255,210,63,0.55)';g.setLineDash([6,6]);g.lineWidth=2;g.beginPath();g.arc(sellAsk.x,sellAsk.y,E.range,0,Math.PI*2);g.stroke();g.setLineDash([]);}
     g.strokeStyle='#ffd23f';g.lineWidth=2;g.beginPath();g.arc(sellAsk.x,sellAsk.y,24,0,Math.PI*2);g.stroke();
@@ -16739,7 +16743,7 @@ function positionSell(){
 function closeSell(){sellAsk=null;sellPop.style.display='none';}
 function doSell(){
   if(!sellAsk)return;
-  const D=TD[sellAsk.ty],val=Math.round((sellAsk.invested||D.cost)*SELL_BACK*(sellAsk.__sell80?1.25:1));/*60% of TOTAL invested (80% inside a HERALDRY crier aura)*/
+  const D=TD[sellAsk.ty],val=Math.round((sellAsk.invested||D.cost)*SELL_BACK*(sellAsk.__sell80?1.25:1));/*60% of TOTAL invested (80% inside a HERALDRY crier support zone)*/
   const i=towers.indexOf(sellAsk);
   if(i>=0){towers.splice(i,1);gold+=val;addFloater(sellAsk.x,sellAsk.y-30,'+'+val+' GOLD','#fbbf24',1,14);sfx('coin');}
   closeSell();
@@ -16991,11 +16995,11 @@ if(pb&&pb.parentNode){
 </script>
 <script>
 /* =====================================================================
-   KSC-PHASE1.2: Anointing Oil + Altar Points + Covenant Radius
+   KSC-PHASE1.2: Engineering Oil + Field Stations + Build Radius
    - oil: per-run resource, regen, amber HUD bar, globals oil/gainOil/spendOil
    - towers upgrade with OIL (TOWERSYS block edited to read window.oil)
    - altars: 6 per run; activate with E nearby (60 silver) -> build zone
-     + heal aura; towers may ONLY be placed near hero (covenant 260px)
+     + heal support zone; towers may ONLY be placed near hero (build radius 260px)
      or near an ACTIVATED altar (90px)  [doc: DESIGN-KingdomSurvivorClash §2]
    ===================================================================== */
 (function(){
@@ -17052,7 +17056,7 @@ function nearAltar(x,y,r){
     if(a.on){var dx=a.x-x,dy=a.y-y;if(dx*dx+dy*dy<r*r)return a;}}
   return null;
 }
-/* covenant radius gate on placement */
+/* build radius gate on placement */
 if(window.TOWERSYS){
   var _add=window.TOWERSYS.addTower.bind(window.TOWERSYS);
   window.TOWERSYS.addTower=function(ty,x,y){
@@ -17061,7 +17065,7 @@ if(window.TOWERSYS){
       var inCov=dx*dx+dy*dy<=260*260;
       var inAlt=!!nearAltar(x,y,90);
       if(!inCov&&!inAlt){
-        addFloater(x,y-30,'BUILD NEAR HERO OR ALTARS','#fbbf24',1,12);
+        addFloater(x,y-30,'BUILD NEAR HERO OR STATIONS','#fbbf24',1,12);
         return false;
       }
     }catch(_){}
@@ -17079,15 +17083,15 @@ document.addEventListener('keydown',function(ev){
       var dx=a.x-player.x,dy=a.y-player.y,d2=dx*dx+dy*dy;
       if(d2<bd){bd=d2;best=a;}}
     if(!best)return;
-    var ac=(window.KSC_META&&window.KSC_META.altarCost)||60;/*KSC-KINGDOM: High Altar discount*/
+    var ac=(window.KSC_META&&window.KSC_META.altarCost)||60;/*KSC-KINGDOM: Field Hospital discount*/
     if(gold<ac){addFloater(best.x,best.y-40,'NEED '+ac+' SILVER','#f87171',1,13);return;}
     gold-=ac;best.on=true;
-    addFloater(best.x,best.y-46,'ALTAR CONSECRATED','#ffe9a3',1.4,15);
+    addFloater(best.x,best.y-46,'FIELD STATION ONLINE','#ffe9a3',1.4,15);
     if(!settings.lowFx)spawnParticles(best.x,best.y-10,'#ffe9a3',14,1);
     try{sfx('levelup');}catch(_){}
   }catch(_){}
 });
-/* heal aura + altar tick (poll) */
+/* heal support zone + altar tick (poll) */
 setInterval(function(){
   try{
     if(state!=='play')return;
@@ -17095,7 +17099,7 @@ setInterval(function(){
       if(!a.on)continue;
       a.pulse+=0.05;
       var dx=a.x-player.x,dy=a.y-player.y;
-      if(dx*dx+dy*dy<200*200&&player.hp>0&&player.hp<player.maxHp)player.hp=Math.min(player.maxHp,player.hp+0.2*((window.KSC_META&&window.KSC_META.altarHeal)||1));/*+1/s x High Altar*/
+      if(dx*dx+dy*dy<200*200&&player.hp>0&&player.hp<player.maxHp)player.hp=Math.min(player.maxHp,player.hp+0.2*((window.KSC_META&&window.KSC_META.altarHeal)||1));/*+1/s x Field Hospital*/
     }
   }catch(_){}
 },200);
@@ -17107,24 +17111,26 @@ renderHUD=function(){
     if(state==='play'||state==='pause'){
       ctx.save();ctx.translate(-cam.x,-cam.y);
       for(var i=0;i<ALTARS.length;i++){var a=ALTARS[i];
-        /* aura */
+        /* support zone */
         if(a.on){
           ctx.fillStyle='rgba(255,233,163,0.05)';
           ctx.beginPath();ctx.arc(a.x,a.y,200,0,Math.PI*2);ctx.fill();
           ctx.strokeStyle='rgba(255,210,63,0.5)';ctx.setLineDash([8,8]);
           ctx.beginPath();ctx.arc(a.x,a.y,90,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
         }
-        /* pedestal */
+        /* Field station: supply cabinet, first-aid panel and fixed radio mast. */
         ctx.fillStyle='rgba(0,0,0,0.28)';ctx.beginPath();ctx.ellipse(a.x,a.y+14,22,9,0,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#e8e4da';ctx.fillRect(a.x-14,a.y-10,28,22);
-        ctx.fillStyle='#cfc9ba';ctx.fillRect(a.x-17,a.y-16,34,8);
-        ctx.fillStyle=a.on?'#ffd23f':'#8fa1c7';
-        ctx.globalAlpha=a.on?0.85+0.15*Math.sin(a.pulse*2):0.5;
-        ctx.beginPath();ctx.arc(a.x,a.y-24,7,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;
+        ctx.fillStyle='#334155';ctx.fillRect(a.x-18,a.y-17,36,31);
+        ctx.fillStyle='#64748b';ctx.fillRect(a.x-20,a.y-20,40,5);
+        ctx.fillStyle='#e2e8f0';ctx.fillRect(a.x-12,a.y-11,17,19);
+        ctx.fillStyle='#15803d';ctx.fillRect(a.x-6,a.y-8,5,13);ctx.fillRect(a.x-10,a.y-4,13,5);
+        ctx.fillStyle='#94a3b8';ctx.fillRect(a.x+13,a.y-38,3,19);
+        ctx.fillStyle=a.on?'#4ade80':'#fbbf24';ctx.fillRect(a.x+8,a.y-10,5,5);
+        ctx.fillStyle='#0f172a';ctx.fillRect(a.x+8,a.y,5,8);
+        ctx.font='800 9px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#e2e8f0';ctx.fillText(a.on?'SUPPLIES ONLINE':'FIELD STATION',a.x,a.y+28);
         if(!a.on){
           ctx.font='800 10px "Baloo 2",system-ui,sans-serif';ctx.textAlign='center';
-          ctx.fillStyle='#ffe9a3';ctx.fillText('E — CONSECRATE ('+((window.KSC_META&&window.KSC_META.altarCost)||60)+')',a.x,a.y-40);
+          ctx.fillStyle='#ffe9a3';ctx.fillText('E — ACTIVATE ('+((window.KSC_META&&window.KSC_META.altarCost)||60)+')',a.x,a.y-40);
         }
       }
       ctx.restore();
@@ -17816,12 +17822,12 @@ document.addEventListener('keydown',function(ev){
 });
 /* ---------- C4: lore fragments ---------- */
 var LORE=[
-  'The first altar was raised before the first wall.',
-  'Silver buys stone. Oil buys will.',
+  'Field stations keep the patrol supplied beyond the walls.',
+  'Silver buys stone. Oil powers the machinery.',
   'The horde does not hate you. That is the worst part.',
-  'Every Paragon remembers the two towers it was.',
+  'Every Paragon combines the engineering of two towers.',
   'The Watchtower never blinks. Someone must not.',
-  'Tithe faithfully; the Kingdom keeps its own books.'
+  'Every supply delivery helps the Kingdom hold its ground.'
 ];
 window.__lore=0;try{window.__lore=+localStorage.getItem('survivorLore')||0;}catch(_){}
 setInterval(function(){
@@ -18015,8 +18021,8 @@ var TD=window.TOWERSYS.defs;
 /* new tower defs (upgrades cost OIL) */
 TD.pitch={name:'PITCH THROWER',cost:90, range:150, rate:1.6, dmg:3, up2:25, up3:50, up3txt:'tar pool slows 40%', col:'#a3a3a3', col2:'#525252', desc:'slows enemies in range'};
 TD.spike={name:'SPIKE SMITH',cost:70, range:110, rate:1.1, dmg:8, up2:25, up3:50, up3txt:'spikes linger as traps', col:'#d6d3d1', col2:'#78716c', desc:'ground spikes shred feet'};
-TD.crier={name:'TOWN CRIER',cost:130, range:190, rate:1, dmg:0, up2:30, up3:60, up3txt:'+15% tower dmg aura', col:'#fda4af', col2:'#9f1239', desc:'buffs nearby towers'};
-TD.apoth={name:'APOTHECARY',cost:160, range:170, rate:1, dmg:0, up2:30, up3:60, up3txt:'heal 2 HP/s in aura', col:'#86efac', col2:'#166534', desc:'heals the hero nearby'};
+TD.crier={name:'TOWN CRIER',cost:130, range:190, rate:1, dmg:0, up2:30, up3:60, up3txt:'+15% tower dmg support zone', col:'#fda4af', col2:'#9f1239', desc:'buffs nearby towers'};
+TD.apoth={name:'MEDIC STATION',cost:160, range:170, rate:1, dmg:0, up2:30, up3:60, up3txt:'heal 2 HP/s in support zone', col:'#86efac', col2:'#166534', desc:'heals the hero nearby'};
 TD.craft={name:'CRAFTSMAN',cost:180, range:160, rate:1, dmg:0, up2:35, up3:70, up3txt:'+25% fire rate nearby', col:'#fdba74', col2:'#9a3412', desc:'speeds nearby towers'};
 try{window.TOWERSYS.refreshBar();}catch(_){}/*KSC-PATHS: build the five new cards (icon + hotkey) right away*/
 /* T5: merge two PARAGONS -> GLORY (2x dmg, +30% range) */
@@ -18043,7 +18049,7 @@ window.TOWERSYS.mergeTowers=function(t,p){
   }catch(_){}
   return res;
 };
-/* fire behavior + aura tick: handled via a poll reading TOWERSYS.towers */
+/* fire behavior + support zone tick: handled via a poll reading TOWERSYS.towers */
 var SLOWED=new Set();
 setInterval(function(){
   try{
@@ -18093,7 +18099,7 @@ setInterval(function(){
           else t.cd=0.2;
         }
       }else if(t.ty==='crier'){
-        /* aura: LOUDER path = +8% / +15% / +30% tower damage; HERALDRY = sell value + tower mending */
+        /* support zone: LOUDER path = +8% / +15% / +30% tower damage; HERALDRY = sell value + tower mending */
         t.__cry=F.cry2?0.30:F.cry1?0.15:0.08;
         for(var k=0;k<ts.length;k++){
           var o=ts[k];if(o===t)continue;
@@ -18133,13 +18139,13 @@ setInterval(function(){
     /* apply crier/craft multipliers in fireTower via cd & dmg hooks: simplest — adjust cd each tick */
     for(var j=0;j<ts.length;j++){
       var tt=ts[j];
-      if(tt.__craft&&tt.__craft<1){/* CRAFTSMAN aura: shave cooldown each tick (= +fire rate) */
+      if(tt.__craft&&tt.__craft<1){/* CRAFTSMAN support zone: shave cooldown each tick (= +fire rate) */
         tt.cd=Math.max(0,(tt.cd||0)-(0.25*(1-tt.__craft)));
       }
     }
   }catch(_){}
 },250);
-/* damage aura for crier: wrap dealDamage globally once */
+/* damage support zone for crier: wrap dealDamage globally once */
 if(!window.__crierHook){
   window.__crierHook=1;
   var _dd=dealDamage;
@@ -18147,7 +18153,7 @@ if(!window.__crierHook){
     try{
       if(typeof tag==='string'&&tag.indexOf('Tower:')===0&&window.TOWERSYS){
         var ts=window.TOWERSYS.towers;
-        /*KSC-PATHS: strongest crier aura in play buffs tower hits (per-crier strength from its LOUDER path)*/
+        /*KSC-PATHS: strongest crier support zone in play buffs tower hits (per-crier strength from its LOUDER path)*/
         var best=0;
         for(var i=0;i<ts.length;i++){
           var t=ts[i];
@@ -18155,7 +18161,7 @@ if(!window.__crierHook){
         }
         if(best)dmg*=1+best;
       }
-      if(typeof tag==='string'&&tag.indexOf('Tower:')!==0&&window.__heroTonic>1)dmg*=window.__heroTonic;/*APOTHECARY tonic path: hero damage in aura*/
+      if(typeof tag==='string'&&tag.indexOf('Tower:')!==0&&window.__heroTonic>1)dmg*=window.__heroTonic;/*MEDIC STATION tonic path: hero damage in support zone*/
     }catch(_){}
     return _dd(e,dmg,x,y,tag);
   };
@@ -18185,7 +18191,7 @@ renderHUD=function(){
   _rh.apply(null,arguments);
   try{
     if(state!=='play'&&state!=='pause')return;
-    if(window.__nativeTowerDraw)return;/*KSC-PATHS: TOWERSYS.drawTower now paints these lines + auras itself*/
+    if(window.__nativeTowerDraw)return;/*KSC-PATHS: TOWERSYS.drawTower now paints these lines + support zones itself*/
     ctx.save();ctx.translate(-cam.x,-cam.y);
     var ts=window.TOWERSYS.towers;
     for(var i=0;i<ts.length;i++){
@@ -18232,7 +18238,7 @@ renderHUD=function(){
       }
       if(tier>=5){ctx.strokeStyle='#ffd23f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(t.x,t.y,29+Math.sin(performance.now()/180)*3,0,Math.PI*2);ctx.stroke();}
     }
-    /* auras */
+    /* support zones */
     for(var i2=0;i2<ts.length;i2++){
       var t2=ts[i2];var D2=TD[t2.ty];if(!D2)continue;
       if(t2.ty==='crier'||t2.ty==='apoth'||t2.ty==='craft'){
@@ -18263,7 +18269,7 @@ setInterval(function(){
       bar.appendChild(c);
     });
     var hint=[...document.querySelectorAll('div')].find(d=>d.textContent.indexOf('[T] build')===0);
-    if(hint)hint.textContent='[T] build \u00b7 1-6,6/7/8/9/0 pick \u00b7 click place \u00b7 Esc cancel \u00b7 click tower: anoint/sell \u00b7 two T3 = PARAGON, two T4 = GLORY';
+    if(hint)hint.textContent='[T] build \u00b7 1-6,6/7/8/9/0 pick \u00b7 click place \u00b7 Esc cancel \u00b7 click tower: upgrade/sell \u00b7 two T3 = PARAGON, two T4 = GLORY';
   }catch(_){}
 },1500);
 })();
@@ -18274,10 +18280,10 @@ setInterval(function(){
 'use strict';
 if(window.__ITER_E)return;window.__ITER_E=1;
 /* E1: LORD GLAZE (donut king) @6:30: heals 2%/s; Watchtower pulses melt glaze (disable regen 4s) */
-/* E2: FIZZBEELZEBUB (soda golem) @8:00: shield absorbs first 80 hits, fizz knockback every 5s */
+/* E2: CAPTAIN FIZZ (armored soda tank) @8:00: shield absorbs first 80 hits, fizz knockback every 5s */
 /* E3: GRAINLORD CRISP (cereal champion) @9:00: milk beam heals nearby enemies; fire damage = x1.5 & strips heal */
 /* E4: ARMORED PEKKA variant: chapter 4+, takes 30% less damage from towers */
-/* E5: GOBLIN DRILL: burrows (untargetable, 50% speed) 3s every 8s */
+/* E5: TUNNEL DRILL: burrows (untargetable, 50% speed) 3s every 8s */
 /* E6: boss defeat chest tiers: funny bosses drop a big chest pickup */
 /* E7: IRONMAN mode: no revive button (nightmare-only toggle persisted) */
 /* E8:Difficulty naming: NIGHTMARE badge adds skulls by difficulty in leaderboard rows (exists) -> do: victory screen shows difficulty + NG+/weekly tags */
@@ -18299,7 +18305,7 @@ setInterval(function(){
     if(state!=='play')return;
     /* spawns */
     if(gameTime>=390&&!fired.glaze){fired.glaze=1;var g=mkBase(3.5,'Lord Glaze');g.glzHeal=1;}
-    if(gameTime>=480&&!fired.fizz){fired.fizz=1;var f=mkBase(3.8,'Fizzbeelzebub');f.fizzHits=80;f.fizzPulse=5;}
+    if(gameTime>=480&&!fired.fizz){fired.fizz=1;var f=mkBase(3.8,'Captain Fizz');f.fizzHits=80;f.fizzPulse=5;}
     if(gameTime>=540&&!fired.grain){fired.grain=1;var c=mkBase(4,'Grainlord Crisp');c.milkT=0;}
     for(var i=enemies.length-1;i>=0;i--){
       var e=enemies[i];
@@ -18312,7 +18318,7 @@ setInterval(function(){
         }else e.glazeMelt-=0.25;
       }
       /* E2 fizz */
-      if(e.kscBoss2==='Fizzbeelzebub'){
+      if(e.kscBoss2==='Captain Fizz'){
         e.fizzPulse-=0.25;
         if(e.fizzPulse<=0){e.fizzPulse=5;
           var dx=e.x-player.x,dy=e.y-player.y,d=Math.hypot(dx,dy)||1;
@@ -18447,7 +18453,7 @@ setInterval(function(){
   try{
     if(state!=='over')return;
     if(window.__ironRun){
-      var rv=[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('REVIVE')>=0);
+      var rv=[...document.querySelectorAll('button')].find(x=>x.textContent.indexOf('RECOVER')>=0);
       if(rv)rv.style.display='none';
     }
   }catch(_){}
@@ -18616,7 +18622,7 @@ renderHUD=function(){
       /* F6 intro cards */
       if(e2.kscType&&!seen[e2.kscType]&&e2.spawnT<=0){
         seen[e2.kscType]=1;
-        var names={swarmer:'BARBARIAN SWARMER',pekka:'P.E.K.K.A KNIGHT',serpent:'ELECTRO SERPENT',charger:'RAM BEETLE',chip:'NACHO CHIP',drill:'GOBLIN DRILL'};
+        var names={swarmer:'BARBARIAN SWARMER',pekka:'P.E.K.K.A KNIGHT',serpent:'ELECTRO SERPENT',charger:'RAM BEETLE',chip:'NACHO CHIP',drill:'TUNNEL DRILL'};
         if(names[e2.kscType]){try{warn('\u2694 NEW FOE: '+names[e2.kscType]);}catch(_){}}
       }
     }
@@ -18693,7 +18699,7 @@ setInterval(function(){
   try{
     if(window.__verFoot||state!=='ready')return;
     var f=document.createElement('div');
-    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.3.1 \u00b7 17 chapters + mobile clarity \u00b7 web build';
+    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.3.2 \u00b7 17 chapters + mobile clarity \u00b7 web build';
     f.style.cssText='position:fixed;bottom:6px;left:10px;font-size:10px;color:rgba(143,161,199,0.6);z-index:5;pointer-events:none';
     document.body.appendChild(f);window.__verFoot=1;
   }catch(_){}
@@ -18886,7 +18892,7 @@ togglePause=function(){
    Persistent buildings bought with Silver between runs. The PALACE (Town Hall) gates every other building's level —
    the Clash upgrade path: raise the Palace, then the buildings, then the towers you field. Effects feed the live
    tower/oil systems through window.KSC_META (read by TOWERSYS.eff, maxTowers, the oil poll and the altar gate).
-   WORKSHOP unlocks run consumables: Z ZEAL, X STILLNESS, V RESTORATION (one use each per run). */
+   WORKSHOP unlocks run consumables: Z OVERDRIVE, X CRYO CANISTER, V REPAIR KIT (one use each per run). */
 (function(){
 'use strict';
 if(window.__KSC_KINGDOM)return;window.__KSC_KINGDOM=1;
@@ -18895,16 +18901,16 @@ var B={
     fx:function(l){return '+'+(l-1)+' tower slot'+(l-1===1?'':'s')+' · buildings up to L'+l;}},
   scriptorium:{name:'SCRIPTORIUM',icon:'📜',tag:'Laboratory',desc:'Scribes research the old war-scrolls: every tower line hits harder.',max:5,cost:[150,350,700,1300,2400],
     fx:function(l){return '+'+(6*l)+'% tower damage';}},
-  oilpress:{name:'OIL PRESS',icon:'🫙',tag:'Resource',desc:'Presses more Anointing Oil for upgrade paths and merges.',max:5,cost:[120,300,600,1100,2000],
+  oilpress:{name:'OIL PRESS',icon:'🫙',tag:'Resource',desc:'Presses more Engineering Oil for upgrade paths and merges.',max:5,cost:[120,300,600,1100,2000],
     fx:function(l){return '+'+(12*l)+' oil cap · +'+(12*l)+'% oil regen';}},
   forge:{name:'FORGE',icon:'⚒️',tag:'Army Camp',desc:'Smiths reinforce tower footings and cut build costs.',max:5,cost:[140,320,650,1200,2100],
     fx:function(l){return '+'+(25*l)+' tower HP · towers cost -'+(4*l)+'%';}},
   beacon:{name:'BEACON TOWER',icon:'🗼',tag:'Watch',desc:'Signal fires let every tower see farther and re-arm faster.',max:4,cost:[200,450,900,1700],
     fx:function(l){return '+'+(5*l)+'% tower range · +'+(4*l)+'% fire rate';}},
-  workshop:{name:'WORKSHOP',icon:'🧪',tag:'Field Supplies',desc:'Craftsmen prepare one of each field supply per run. Use with Z / X / V.',max:3,cost:[300,800,1600],
-    fx:function(l){return ['','ZEAL (Z): +40% all damage 15s','+ STILLNESS (X): freeze all foes 4s','+ RESTORATION (V): heal 60% + mend towers'][l];}},
-  altar:{name:'HIGH ALTAR',icon:'⛪',tag:'Covenant',desc:'Priests pre-bless the altar points scattered across each map.',max:3,cost:[200,500,1000],
-    fx:function(l){return 'consecrate for '+(60-10*l)+' silver · altar heal x'+(1+0.5*l).toFixed(1);}}
+  workshop:{name:'WORKSHOP',icon:'🛠️',tag:'Field Supplies',desc:'Craftsmen prepare one of each field supply per run. Use with Z / X / V.',max:3,cost:[300,800,1600],
+    fx:function(l){return ['','OVERDRIVE (Z): +40% all damage 15s','+ CRYO CANISTER (X): cryo spray stuns foes 4s (bosses 1.5s)','+ REPAIR KIT (V): heal 60% + mend towers'][l];}},
+  altar:{name:'FIELD HOSPITAL',icon:'✚',tag:'Medical Support',desc:'Medics equip the field stations across each map with supplies and repair tools.',max:3,cost:[200,500,1000],
+    fx:function(l){return 'activate for '+(60-10*l)+' silver · station recovery x'+(1+0.5*l).toFixed(1);}}
 };
 var ORDER=['palace','scriptorium','oilpress','forge','beacon','workshop','altar'];
 var K={palace:1};
@@ -19011,34 +19017,34 @@ setInterval(function(){
   }catch(_){}
 },600);
 /* ---------- consumables (WORKSHOP) ---------- */
-var used={zeal:0,still:0,resto:0};
-window.__zealT=0;
+var used={boost:0,cryo:0,repair:0};
+window.__boostT=0;
 var _sg=startGame;
-startGame=function(){var r=_sg.apply(null,arguments);used={zeal:0,still:0,resto:0};window.__zealT=0;return r;};
+startGame=function(){var r=_sg.apply(null,arguments);used={boost:0,cryo:0,repair:0};window.__boostT=0;return r;};
 function useC(which){
   if(state!=='play')return;
   var w=window.KSC_META.workshop|0;
-  var need={zeal:1,still:2,resto:3}[which];
+  var need={boost:1,cryo:2,repair:3}[which];
   if(w<need){addFloater(player.x,player.y-40,'WORKSHOP L'+need+' NEEDED','#f87171',1,13);try{sfx('buzz');}catch(_){}return;}
   if(used[which]){addFloater(player.x,player.y-40,'ALREADY USED','#f87171',0.9,13);try{sfx('buzz');}catch(_){}return;}
   used[which]=1;
-  if(which==='zeal'){window.__zealT=15;warn('✨ ZEAL — +40% DAMAGE');if(!settings.lowFx)spawnParticles(player.x,player.y,'#ffe98a',20,1.2);}
-  else if(which==='still'){var n=0;for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e||e.hp<=0)continue;var d=(e.isBoss||e.kscBoss2)?1.5:4;e.stun=Math.max(e.stun||0,d);e.frostT=Math.max(e.frostT||0,d);n++;}
-    warn('❄ STILLNESS — '+n+' FOES FROZEN');if(typeof whiteFlash!=='undefined'&&settings.flash)whiteFlash=Math.max(whiteFlash,0.25);}
+  if(which==='boost'){window.__boostT=15;warn('⚙ OVERDRIVE — +40% DAMAGE');if(!settings.lowFx)spawnParticles(player.x,player.y,'#ffe98a',20,1.2);}
+  else if(which==='cryo'){var n=0;for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e||e.hp<=0)continue;var d=(e.isBoss||e.kscBoss2)?1.5:4;e.stun=Math.max(e.stun||0,d);e.frostT=Math.max(e.frostT||0,d);n++;}
+    warn('❄ CRYO CANISTER — '+n+' FOES FROZEN');if(typeof whiteFlash!=='undefined'&&settings.flash)whiteFlash=Math.max(whiteFlash,0.25);}
   else{player.hp=Math.min(player.maxHp,player.hp+player.maxHp*0.6);try{var ts=window.TOWERSYS.towers;for(var k=0;k<ts.length;k++){ts[k].hp=ts[k].maxHp||100;ts[k].kscOff=0;}}catch(_){}
-    warn('❤ RESTORATION');if(!settings.lowFx)spawnParticles(player.x,player.y,'#86efac',24,1.3);}
+    warn('❤ REPAIR KIT');if(!settings.lowFx)spawnParticles(player.x,player.y,'#86efac',24,1.3);}
   try{sfx('rare');}catch(_){}
 }
 document.addEventListener('keydown',function(ev){
   try{
     if(state!=='play')return;
     var k=(ev.key||'').toLowerCase();
-    if(k==='z')useC('zeal');else if(k==='x')useC('still');else if(k==='v')useC('resto');
+    if(k==='z')useC('boost');else if(k==='x')useC('cryo');else if(k==='v')useC('repair');
   }catch(_){}
 });
-setInterval(function(){try{if(state==='play'&&window.__zealT>0)window.__zealT-=0.25;}catch(_){}},250);
+setInterval(function(){try{if(state==='play'&&window.__boostT>0)window.__boostT-=0.25;}catch(_){}},250);
 var _dd=dealDamage;
-dealDamage=function(e,dmg,x,y,tag){if(window.__zealT>0)dmg*=1.4;return _dd(e,dmg,x,y,tag);};
+dealDamage=function(e,dmg,x,y,tag){if(window.__boostT>0)dmg*=1.4;return _dd(e,dmg,x,y,tag);};
 /* ---------- HUD: consumable chips + palace badge; hide the Hub link / version footer during play ---------- */
 var _rh=renderHUD;
 renderHUD=function(){
@@ -19046,7 +19052,7 @@ renderHUD=function(){
   try{
     if(state!=='play'&&state!=='pause')return;
     var w=window.KSC_META.workshop|0;
-    var chips=[['Z','ZEAL','zeal',1,'#ffe98a'],['X','STILL','still',2,'#93c5fd'],['V','RESTO','resto',3,'#86efac']];
+    var chips=[['Z','OVERDRIVE','boost',1,'#ffe98a'],['X','CRYO','cryo',2,'#93c5fd'],['V','REPAIR','repair',3,'#86efac']];
     var x0=W-334,y0=H-46;/*left of the MISSIONS panel (W-190..W-20)*/
     ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
     for(var i=0;i<chips.length;i++){
@@ -19054,7 +19060,7 @@ renderHUD=function(){
       ctx.globalAlpha=have?1:0.35;
       ctx.fillStyle='rgba(8,12,26,0.72)';ctx.beginPath();ctx.arc(cx,y0,16,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle=ok?c[4]:'rgba(255,255,255,0.25)';ctx.lineWidth=ok?2.4:1.5;ctx.stroke();
-      if(c[2]==='zeal'&&window.__zealT>0){ctx.strokeStyle='#ffe98a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,y0,19,-Math.PI/2,-Math.PI/2+Math.PI*2*(window.__zealT/15));ctx.stroke();}
+      if(c[2]==='boost'&&window.__boostT>0){ctx.strokeStyle='#ffe98a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,y0,19,-Math.PI/2,-Math.PI/2+Math.PI*2*(window.__boostT/15));ctx.stroke();}
       ctx.fillStyle=ok?c[4]:'rgba(255,255,255,0.45)';ctx.font='900 13px "Luckiest Guy",cursive';ctx.fillText(c[0],cx,y0+1);
       ctx.font='800 8px "Baloo 2",system-ui';ctx.fillStyle=ok?'#fff':'rgba(255,255,255,0.4)';ctx.fillText(used[c[2]]?'USED':have?c[1]:'🔒',cx,y0+24);
     }
@@ -19082,7 +19088,7 @@ setInterval(function(){
       var m=window.KSC_META||{},ts=(window.TOWERSYS&&window.TOWERSYS.towers)||[],par=0;for(var i=0;i<ts.length;i++)if((ts[i].tier||1)>=4)par++;
       document.getElementById('kkPause').innerHTML='⚔ BOSS GAUNTLET: Spud 2:30 · Burrito 3:30 · Peel 5:00 · Glaze 6:30 · Patty 7:00 · Fizz 8:00 · Crisp 9:00'
         +'<br>🏰 PALACE L'+(m.palace||1)+' · tower dmg x'+((m.tower&&m.tower.dmg)||1).toFixed(2)+' · range x'+((m.tower&&m.tower.range)||1).toFixed(2)+' · oil cap '+window.OIL_CAP+' · towers '+ts.length+'/'+(window.TOWERSYS?window.TOWERSYS.maxTowers():15)+(par?' · ⭐ '+par+' paragons':'')
-        +'<br>Consumables: Z ZEAL · X STILLNESS · V RESTORATION (Workshop L'+(m.workshop|0)+')';
+        +'<br>Consumables: Z OVERDRIVE · X CRYO CANISTER · V REPAIR KIT (Workshop L'+(m.workshop|0)+')';
     }
   }catch(_){}
 },400);

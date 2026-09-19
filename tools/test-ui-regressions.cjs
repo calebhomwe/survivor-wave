@@ -137,7 +137,7 @@ test('responsive and state visibility guards are present (not a layout test)', (
   assert(html.includes("if(state==='play'&&hitStopT>0)"));
 });
 test('refined upgrade UI keeps large Retina art and explicit progress', () => {
-  for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'g.translate(Sz/2,Sz/2)', 'lc-progress', 'CHOOSE YOUR BLESSING']) assert(html.includes(marker));
+  for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'g.translate(Sz/2,Sz/2)', 'lc-progress', 'CHOOSE YOUR UPGRADE']) assert(html.includes(marker));
   assert(!html.includes('grid-template-columns:48px'));
 });
 test('expanded campaign exposes four named late-game destinations', () => {
@@ -159,5 +159,63 @@ test('renamed Second Wind ultimate still damages nearby enemies and heals', () =
   vm.runInContext(heroBlock + '\n' + fn('tryUlt') + '\ntryUlt();', run);
   assert.deepEqual(hits, [72]); assert.equal(run.player.hp,64); assert.equal(run.player.ult,0);
   assert(notices[0].includes('SECOND WIND'));
+});
+test('strict content boundary covers all runtime text, including late-game bosses', () => {
+  const banned = /\b(?:witch(?:craft|es)?|wizards?|warlocks?|sorcer\w*|occult|demons?|demonic|devil|satan\w*|\w*beelzebub|rituals?|runes?|summon(?:ing)?|spells?|spellcasting|magic(?:al)?|enchant\w*|curses?|charms?|spirits?|souls?|vampires?|blood|bless\w*|holy|prophet\w*|covenant|angels?|priests?|shrines?|alchem\w*|potions?|elixirs?|cauldron|zeal|stillness|restoration|sacred|divine|necroman\w*|talismans?|totems?|sigils?|arcane|mystic\w*|wraiths?|voodoo)\b|[🔮🧙👿👻😇⛧⛤⛥⛦]/iu;
+  // Comment removal keeps legacy engineering explanations out of the presentation check.
+  const source = html.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[^]*?-->/g, '');
+  assert.equal(source.match(banned), null, 'forbidden runtime theme');
+  for (const term of ['HIGH ALTAR', 'CONSECRATE', 'ANCIENT RELIC', 'RELIC NOVA', 'Guillotine Halo', 'Eternal Light', 'Frost Nova', 'drawSkullPile']) assert(!source.includes(term), term);
+  for (const term of ['FIELD HOSPITAL', 'FIELD STATION ONLINE', 'ARC COIL', 'Captain Fizz', 'CRYO CANISTER', 'REPAIR KIT', 'PULSE MODULE', 'Laser Cutter', 'SHOCKWAVE DEVICE ONLINE']) assert(source.includes(term), term);
+  for (const key of ['survivorRelics', 'survivorKingdom', 'KSC_ALTARS', "lv('altar')", "voidw:", "sanguine:"]) assert(source.includes(key), 'save/API compatibility: ' + key);
+});
+test('field stations activate once, charge silver, gate placement and heal only during play', () => {
+  const timers = [], listeners = {}, notices = [];
+  const r = {state:'play', gold:180, player:{x:1000,y:1000,hp:50,maxHp:100,level:1}, Math,
+    KSC_META:{altarCost:40,altarHeal:2}, settings:{lowFx:true},
+    document:{addEventListener:(k,f)=>listeners[k]=f}, setInterval:(f,ms)=>timers.push({f,ms}),
+    startGame:noop, dealDamage:noop, renderHUD:noop, sfx:noop,
+    addFloater:(x,y,s)=>notices.push(s), TOWERSYS:{addTower:()=>true}};
+  r.window=r; vm.createContext(r);
+  vm.runInContext(scripts.find(s=>s.includes('KSC-PHASE1.2:')),r);
+  r.startGame(); assert.equal(r.KSC_ALTARS.length,6);
+  const station=r.KSC_ALTARS[0]; r.player.x=station.x; r.player.y=station.y;
+  listeners.keydown({key:'e'}); assert(station.on); assert.equal(r.gold,140);
+  listeners.keydown({key:'e'}); assert.equal(r.gold,140);
+  assert(notices.includes('FIELD STATION ONLINE'));
+  timers.find(t=>t.ms===200).f(); assert.equal(r.player.hp,50.4);
+  r.state='paused'; timers.find(t=>t.ms===200).f(); assert.equal(r.player.hp,50.4);
+  r.state='play'; r.player.x=0; r.player.y=0;
+  assert(r.TOWERSYS.addTower('tesla',station.x,station.y));
+  assert.equal(r.TOWERSYS.addTower('tesla',9000,9000),false);
+});
+test('technical consumables preserve effects, one-use limits, locks and pause safety', () => {
+  const notices=[], r={state:'play',used:{boost:0,cryo:0,repair:0},__boostT:0,Math,
+    KSC_META:{workshop:3},player:{x:0,y:0,hp:20,maxHp:100},settings:{lowFx:true},
+    enemies:[{hp:10},{hp:100,isBoss:true},{hp:0}],TOWERSYS:{towers:[{hp:1,maxHp:150,kscOff:2}]},
+    warn:s=>notices.push(s),addFloater:noop,sfx:noop};
+  r.window=r;vm.createContext(r);vm.runInContext(fn('useC'),r);
+  r.useC('boost');assert.equal(r.__boostT,15);r.__boostT=7;r.useC('boost');assert.equal(r.__boostT,7);
+  r.useC('cryo');assert.equal(r.enemies[0].stun,4);assert.equal(r.enemies[1].stun,1.5);assert.equal(r.enemies[2].stun,undefined);
+  r.state='paused';r.useC('repair');assert.equal(r.player.hp,20);assert.equal(r.used.repair,0);
+  r.state='play';r.KSC_META.workshop=2;r.useC('repair');assert.equal(r.used.repair,0);
+  r.KSC_META.workshop=3;r.useC('repair');assert.equal(r.player.hp,80);assert.equal(r.TOWERSYS.towers[0].hp,150);assert.equal(r.TOWERSYS.towers[0].kscOff,0);
+  r.useC('repair');assert.equal(r.player.hp,80);
+  assert(notices.some(s=>s.includes('OVERDRIVE')) && notices.some(s=>s.includes('CRYO CANISTER')) && notices.some(s=>s.includes('REPAIR KIT')));
+});
+test('existing hospital and workshop save levels still load unchanged', () => {
+  const r={Math,JSON,isFinite,gold:1000,localStorage:{getItem:()=>JSON.stringify({palace:3,altar:2,workshop:3})},
+    setInterval:noop,startGame:noop,dealDamage:noop,renderHUD:noop,document:{addEventListener:noop}};
+  r.window=r;vm.createContext(r);vm.runInContext(scripts.find(s=>s.includes('if(window.__KSC_KINGDOM)')),r);
+  assert.equal(r.KSC_META.altarCost,40);assert.equal(r.KSC_META.altarHeal,2);assert.equal(r.KSC_META.workshop,3);
+});
+test('old lifetime labels cannot restore retired themes or inject markup', () => {
+  const r={WEAPONS:{laser:{name:'Laser Cutter',evoName:'Laser Array'}},Object};
+  vm.createContext(r);vm.runInContext(fn('displayWeaponLabel'),r);
+  assert.equal(r.displayWeaponLabel('Laser Cutter'),'Laser Cutter');
+  assert.equal(r.displayWeaponLabel('Laser Array'),'Laser Array');
+  assert.equal(r.displayWeaponLabel('Pulse Module'),'Pulse Module');
+  for(const old of ['Void Power','Relic Nova','Frost Nova','Spirit Shuriken','<img onerror=alert(1)>'])assert.equal(r.displayWeaponLabel(old),'Legacy equipment');
+  assert(html.includes('n:displayWeaponLabel(best),v:bv'));
 });
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));

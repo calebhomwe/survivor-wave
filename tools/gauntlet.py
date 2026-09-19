@@ -32,7 +32,7 @@ BOSS_SCHEDULE = [  # (threshold, finder-predicate-key, name)
     (300, "e.kscType=='peel'", "Sir Peel-a-Lot"),
     (390, "e.kscBoss2=='Lord Glaze'", "Lord Glaze"),
     (420, "e.kscBoss2=='Count Patty'", "Count Patty"),
-    (480, "e.kscBoss2=='Fizzbeelzebub'", "Fizzbeelzebub"),
+    (480, "e.kscBoss2=='Captain Fizz'", "Captain Fizz"),
     (540, "e.kscBoss2=='Grainlord Crisp'", "Grainlord Crisp"),
 ]
 ALL_TOWERS = ['gatling', 'tesla', 'mortar', 'tack', 'watch', 'tithe', 'pitch', 'spike', 'crier', 'apoth', 'craft']
@@ -198,10 +198,10 @@ def g1_full_run(ctx):
     }""")
     record(m, "PARAGON T4 merge", isinstance(mg, dict) and (mg.get("t4", 0) + mg.get("t5", 0)) >= 1, mg)  # t5 requires two prior T4 merges
     record(m, "GLORY T5 merge", isinstance(mg, dict) and mg.get("t5", 0) >= 1, mg)
-    # altar consecration via E
+    # field station activation via E
     altar = pg.ev("""() => {
       const AS=window.KSC_ALTARS||[];
-      if(!AS.length)return 'no-altars';
+      if(!AS.length)return 'no-field stations';
       const a=AS.find(a=>!a.on); if(!a)return 'all-on';
       player.x=a.x; player.y=a.y; gold=Math.max(gold,100);
       return {ax:a.x, ay:a.y};
@@ -209,10 +209,10 @@ def g1_full_run(ctx):
     pg.p.keyboard.press("e")
     pg.p.wait_for_timeout(700)
     on = pg.ev("""() => (window.KSC_ALTARS||[]).filter(a=>a.on).length""")
-    record(m, "altar consecrated via E", on >= 1, f"{on} on")
+    record(m, "field station activated via E", on >= 1, f"{on} on")
     # boss gauntlet via time compression
     for thr, pred, name in BOSS_SCHEDULE:
-        if name in ("Fizzbeelzebub", "Grainlord Crisp"):
+        if name in ("Captain Fizz", "Grainlord Crisp"):
             continue  # one-shot gates starve in long pages; g6 proves them in isolation
         jump(pg, thr)
         found = find_boss(pg, pred)
@@ -381,12 +381,12 @@ def g5_towers(ctx):
       return new Promise(res=>setTimeout(()=>res(Math.round((player.hp-h0)*10)/10),4500));
     }""")
     record(m, "apothecary heals hero", isinstance(healed, (int, float)) and healed > 0, f"+{healed} hp")
-    auras = pg.ev("""() => {
+    support_zones = pg.ev("""() => {
       const ts=TOWERSYS.towers;
       const near=ts.some(t=>t.__near===true);
       return {crierAura:near};
     }""")
-    record(m, "town crier aura applies", auras and auras.get("crierAura"), auras)
+    record(m, "town crier support zone applies", support_zones and support_zones.get("crierAura"), support_zones)
     pg.shot("g5_towers.png")
     record(m, "zero page errors", pg.clean(), pg.errors[:3])
     return all(r["status"] == "PASS" for r in RESULTS if r["module"] == m)
@@ -465,18 +465,18 @@ def g6_bosses(ctx):
     p3 = Page(ctx, "g6-fizzshield").goto()
     p3.start_run(); p3.godmode()
     jump(p3, 480)
-    fizz = find_boss(p3, "e.kscBoss2==='Fizzbeelzebub'")
-    if record(m, "Fizzbeelzebub spawns", bool(fizz), fizz):
-        p3.ev("""() => { const e=enemies.find(e=>e.kscBoss2==='Fizzbeelzebub'&&e.hp>0);
+    fizz = find_boss(p3, "e.kscBoss2==='Captain Fizz'")
+    if record(m, "Captain Fizz spawns", bool(fizz), fizz):
+        p3.ev("""() => { const e=enemies.find(e=>e.kscBoss2==='Captain Fizz'&&e.hp>0);
           for(let i=0;i<6;i++) dealDamage(e,1,e.x,e.y,'G'); }""")
         p3.p.wait_for_timeout(400)
-        sh2 = p3.ev("() => { const e=enemies.find(e=>e.kscBoss2==='Fizzbeelzebub'&&e.hp>0); return e?e.fizzHits:-1; }")
+        sh2 = p3.ev("() => { const e=enemies.find(e=>e.kscBoss2==='Captain Fizz'&&e.hp>0); return e?e.fizzHits:-1; }")
         record(m, "Fizz shield absorbs", sh2 >= 0 and sh2 < fizz["sh"], f"{fizz['sh']}->{sh2}")
     p3.p.close()
     # Burrito + Crisp: isolated pages (their spawn gates are one-shot per page)
     for thr, pred, name in [(210, "e.kscBoss2=='Baron Burrito'", "Baron Burrito"),
                             (540, "e.kscBoss2=='Grainlord Crisp'", "Grainlord Crisp"),
-                            (480, "e.kscBoss2=='Fizzbeelzebub'", "Fizzbeelzebub")]:
+                            (480, "e.kscBoss2=='Captain Fizz'", "Captain Fizz")]:
         p2 = Page(ctx, f"g6-{name}").goto()
         p2.start_run()
         p2.godmode()

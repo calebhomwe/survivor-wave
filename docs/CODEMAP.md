@@ -10,7 +10,7 @@ resizes). No frameworks, no build step. All persistent state in `localStorage` (
 |---|---|---|
 | 320–404 | UI skin / bounty chip | CSS-ish frame painting helpers |
 | 739–982 | ASSETS | `ASSETS` image path map (~820), image loader, `IMGS` registry (`im.ok`, `im.lit`) |
-| 983–1353 | META / HEROES | `HEROES` table (~985), meta levels `metaLv`, gold, daily, chapters, relics, missions + achievements persistence (~1124–1150), `selectedHero`, `saveAll()` (~1160) |
+| 983–1353 | META / HEROES | `HEROES` table (~985), meta levels `metaLv`, gold, daily, chapters, pulse modules (legacy relic keys), missions + achievements persistence (~1124–1150), `selectedHero`, `saveAll()` (~1160) |
 | 1354–1472 | WORLD | camera, world bounds |
 | 1362+ | PLAYER | player object, stats, regen |
 | 1473–1549 | NEXT-RUN BOUNTIES | pre-run modifiers |
@@ -44,7 +44,7 @@ resizes). No frameworks, no build step. All persistent state in `localStorage` (
 | `KSC-MEADOW` (env painters + `getChunk`) | Map 1 kingdom re-theme: `THEMES[0].kingdom=true` switches ground/roads/props; painters `drawPillar/Banner/Hay/Well/Stall/Cart/Lantern/Fountain/StoneWall/Waymarker/Olive/Plaza` |
 | `BTD: TOWER PLACEMENT SYSTEM` closure | `TD` defs, `PATHS` (3 paths × 2 tiers per line), `effOf(t)` effective stats, `pickTarget` (t.tgt), `tdmg` pops ledger, `drawTower` kingdom art for all 11 lines, inspect panel `openSell`. API: `TOWERSYS.eff/upgradePath/pathLv/pathCost/pathLock/maxTowers/costOf/drawIcon` |
 | `ITER BATCH D` poll | Support lines (pitch/spike/crier/apoth/craft) read `TOWERSYS.eff(t).flags`; tower maxHp/mending |
-| `KSC-KINGDOM` | Clash village meta: buildings `B`, levels `K` (localStorage `survivorKingdom`), `window.KSC_META` consumed by TOWERSYS / oil poll / altar gate, consumables Z/X/V, `window.KSC_KINGDOM` API |
+| `KSC-KINGDOM` | Clash village meta: buildings `B`, levels `K` (localStorage `survivorKingdom`), `window.KSC_META` consumed by TOWERSYS / oil poll / station gate, consumables Z/X/V, `window.KSC_KINGDOM` API |
 
 ## Key globals (read these before editing)
 
