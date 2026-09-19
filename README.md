@@ -9,10 +9,10 @@ run on a local server without internet. This GitHub build is **not yet an instal
 offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
 
 ## Features
-- **10 weapons** × 5 levels each, with **10 EVO evolutions** (pair a maxed weapon with its passive to unlock gold EVO cards)
-- **5 heroes** with unique starting weapons + ultimates (BARRAGE, ORBITAL STRIKE, BLADE CYCLONE, REGEN FIELD, FORTIFY)
+- **17 weapons** × 5 levels each, with EVO evolutions (pair a maxed weapon with its passive to unlock gold EVO cards)
+- **6 heroes** with unique starting weapons, traits and ultimates
 - **Procedural critter bestiary** — snakes, rats, boars, toads, scorpions, titan boa + hornet queen bosses, blimp mini-bosses, splitter packs
-- **4 biomes × 4 road layouts** across a 12-chapter ladder: Wild Streets → Desert Mesa → Frostpine Tundra → Ember Wastes (day/night cycle, storms, lamp-lit nights)
+- **9 biomes × 4 road layouts** across a 17-chapter ladder, ending in Moonlit Keep, Witchwood Mire, Crystal Citadel and Sunspire Gardens
 - **BTD-style coin turrets** (place T, cycle G, upgrade F) + **mortar strikes** (Q)
 - Gold economy, missions bar, achievements, daily challenge + sign-in, offline patrol, ECHO score-attack mode, chapters with stars, steamroll replays
 - Crowd-physics hordes, combo system, dash, bloom, painted environment, arcade audio
@@ -23,7 +23,7 @@ WASD/arrows/drag — move · SPACE — dash · R — ultimate · T/G/F — turre
 ## Credits
 Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · SFX + music: ElevenLabs · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
 
-## Kingdom Survivor Clash (v1.2)
+## Kingdom Survivor Clash (v1.3)
 
 Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom meta.
 
@@ -38,6 +38,8 @@ Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom met
 - **Promised Land Meadow:** map 1 is a painterly kingdom meadow — continuous-noise ground, flower
   meadows, winding footpaths, flagstone roads with marble curbs, marble plazas with fountains, pillars,
   banners, lanterns, market stalls, wells and olive trees.
+- **Readable mobile upgrade cards:** large 2× procedural weapon emblems, level progress pips, category
+  labels, stronger contrast and iPhone safe-area/short-screen layouts.
 - **7-boss gauntlet** every run, altar/covenant placement, Silver + Anointing Oil economy, clash enemies
   (P.E.K.K.A, Electro Serpent, Goblin Drill...), difficulty modes (Casual → Nightmare + IRONMAN), NG+,
   weekly challenges, endless mode, local leaderboards.

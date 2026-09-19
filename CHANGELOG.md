@@ -1,5 +1,11 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.3 — 2026-09-19 (mobile clarity + campaign expansion)
+- Rebuilt the level-up screen around large Retina-rendered weapon emblems, explicit category labels, five-step progress pips, readable effect copy and 44px+ mobile controls.
+- Expanded the campaign from 13 to 17 chapters: Moonlit Keep, Witchwood Mire, Crystal Citadel and Sunspire Gardens each have their own terrain palette, destination card and procedural prop mix.
+- Reworked the chapter browser into a responsive, named campaign grid with stronger selection and biome identity.
+- Added short-screen/iPhone layout rules and regression coverage for campaign count and upgrade-card legibility.
+
 ## Post-v1.2 — 2026-09-19 (post-merge interaction fixes)
 - Tower inspection/build UI closes when a level-up, pause, chest or end screen opens; controls cannot upgrade or sell behind those overlays.
 - Settings pauses combat; held movement resets on suspension; paused hit-stop no longer advances the run clock.
