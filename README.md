@@ -19,11 +19,24 @@ WASD/arrows/drag — move · SPACE — dash · R — ultimate · T/G/F — turre
 ## Credits
 Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · SFX + music: ElevenLabs · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
 
-## Kingdom Survivor Clash (v1.1)
+## Kingdom Survivor Clash (v1.2)
 
-Survivor.io-style horde survival × BTD tower defense. **11 tower lines** with oil upgrades and
-PARAGON/GLORY merges, **7-boss gauntlet** every run, altar/covenant placement, Silver + Anointing
-Oil economy, clash enemies (P.E.K.K.A, Electro Serpent, Goblin Drill...), difficulty modes
-(Casual → Nightmare + IRONMAN), NG+, weekly challenges, endless mode, local leaderboards.
+Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom meta.
 
-**Controls:** WASD move · SPACE dash · T build · E consecrate altar · P pause · H photo · M mute · Y timer
+- **BTD towers:** 11 tower lines, each with **3 upgrade paths × 2 tiers** (BTD crosspath rule: two paths
+  per tower, the third locks), bought with Anointing Oil from a BTD-style inspect panel (stats, DPS,
+  per-tower **pops** and damage dealt, **targeting priority** CLOSE / HERO / STRONG / WEAK, sell value).
+  A fully-walked path = Tier 3 → merge two T3 into a **PARAGON** (T4), two T4 into **GLORY** (T5).
+- **Clash kingdom:** the 🏰 KINGDOM screen is a persistent village bought with Silver. The **PALACE**
+  (Town Hall) gates every other building's level: SCRIPTORIUM (tower damage research), OIL PRESS
+  (oil cap + regen), FORGE (tower HP, cheaper builds), BEACON TOWER (range + fire rate), WORKSHOP
+  (run consumables ZEAL / STILLNESS / RESTORATION on Z / X / V) and HIGH ALTAR (cheaper, stronger altars).
+- **Promised Land Meadow:** map 1 is a painterly kingdom meadow — continuous-noise ground, flower
+  meadows, winding footpaths, flagstone roads with marble curbs, marble plazas with fountains, pillars,
+  banners, lanterns, market stalls, wells and olive trees.
+- **7-boss gauntlet** every run, altar/covenant placement, Silver + Anointing Oil economy, clash enemies
+  (P.E.K.K.A, Electro Serpent, Goblin Drill...), difficulty modes (Casual → Nightmare + IRONMAN), NG+,
+  weekly challenges, endless mode, local leaderboards.
+
+**Controls:** WASD move · SPACE dash · T build (1-0 / C pick) · click a tower to inspect (1/2/3 buy a path tier) ·
+E consecrate altar · Z / X / V consumables · Q mortar · R ult · P pause · H photo · M mute · Y timer
