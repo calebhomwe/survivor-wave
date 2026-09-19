@@ -9,10 +9,13 @@ run on a local server without internet. This GitHub build is **not yet an instal
 offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
 
 ## Features
+
+Content direction: no witchcraft or occult themes. Keep the biblical/kingdom identity and use natural, military, medical or technological alternatives. Contributors: read [the content guide](docs/CONTENT_GUIDE.md).
+
 - **17 weapons** × 5 levels each, with EVO evolutions (pair a maxed weapon with its passive to unlock gold EVO cards)
 - **6 heroes** with unique starting weapons, traits and ultimates
 - **Procedural critter bestiary** — snakes, rats, boars, toads, scorpions, titan boa + hornet queen bosses, blimp mini-bosses, splitter packs
-- **9 biomes × 4 road layouts** across a 17-chapter ladder, ending in Moonlit Keep, Witchwood Mire, Crystal Citadel and Sunspire Gardens
+- **9 biomes × 4 road layouts** across a 17-chapter ladder, ending in Moonlit Keep, Ironwood Marsh, Crystal Citadel and Sunspire Gardens
 - **BTD-style coin turrets** (place T, cycle G, upgrade F) + **mortar strikes** (Q)
 - Gold economy, missions bar, achievements, daily challenge + sign-in, offline patrol, ECHO score-attack mode, chapters with stars, steamroll replays
 - Crowd-physics hordes, combo system, dash, bloom, painted environment, arcade audio

@@ -1,8 +1,13 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.3.1 — Content direction correction
+- Renamed the marsh to Ironwood Marsh; removed vampire, demonic, blood-charm and spirit-weapon presentation in favor of combat recovery, Royal Blade, Field Medkit and Precision Shuriken.
+- Reframed the gravity weapon as technology; replaced decorative shrines with carved route markers and removed skull piles from the marsh prop mix.
+- Preserved existing save keys, upgrades and combat values. Added a content guide for future contributors and regression coverage for the renamed ultimate.
+
 ## v1.3 — 2026-09-19 (mobile clarity + campaign expansion)
 - Rebuilt the level-up screen around large Retina-rendered weapon emblems, explicit category labels, five-step progress pips, readable effect copy and 44px+ mobile controls.
-- Expanded the campaign from 13 to 17 chapters: Moonlit Keep, Witchwood Mire, Crystal Citadel and Sunspire Gardens each have their own terrain palette, destination card and procedural prop mix.
+- Expanded the campaign from 13 to 17 chapters: Moonlit Keep, Ironwood Marsh, Crystal Citadel and Sunspire Gardens each have their own terrain palette, destination card and procedural prop mix.
 - Reworked the chapter browser into a responsive, named campaign grid with stronger selection and biome identity.
 - Added short-screen/iPhone layout rules and regression coverage for campaign count and upgrade-card legibility.
 
@@ -15,7 +20,7 @@
 - Documented Playwright/browser setup, removed a stale smoke workaround and added dependency-free source regression tests. Not physical-iPhone or offline-PWA certification.
 
 ## v1.2 — 2026-09-18 (visual polish + BTD upgrade paths + Clash kingdom)
-- MAP 1 "Promised Land Meadow": kingdom re-theme of the first map — continuous-noise painterly ground (no tile grid), shade + sun dapple, grass/clover, flower meadows, seamless winding footpaths, flagstone roads with marble curbs and gold seams, marble plazas with fountains and pillars, banners, lanterns, market stalls, hay, carts, wells, shrines, low stone walls, olive trees.
+- MAP 1 "Promised Land Meadow": kingdom re-theme of the first map — continuous-noise painterly ground (no tile grid), shade + sun dapple, grass/clover, flower meadows, seamless winding footpaths, flagstone roads with marble curbs and gold seams, marble plazas with fountains and pillars, banners, lanterns, market stalls, hay, carts, wells, waymarkers, low stone walls, olive trees.
 - BTD upgrade paths: every tower line has 3 paths × 2 tiers (two paths per tower, third locks). Effective stats derive from base × paths × PARAGON/GLORY × Kingdom research (`TOWERSYS.eff`). New behaviours: pierce, crit, twin shells, concussion, deep freeze, no-falloff chains, long arcs, tithe oil/harvest, tar pools, caltrops, crier heraldry (sell value / mending), apothecary tonics, craftsman reinforcement.
 - BTD inspect panel: icon, tier, stats (DMG / RATE / RANGE / POPS / DEALT), three path columns with costs + lock reasons, targeting toggle (CLOSE / HERO / STRONG / WEAK), merge + sell. Hotkeys 1/2/3 buy the next tier of a path while inspecting.
 - Per-tower pops + damage ledger; ELECTRO SERPENT disable now truly silences a tower; goblin drills are untargetable to towers.

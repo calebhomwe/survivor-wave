@@ -8,7 +8,7 @@ Areas: BAL balance · WEAP weapon · HERO hero · ENMY enemy · BIOM biome · JU
 
 ## Wave 1
 - **B001 [BAL] Weapon rebalance pass** — audit all 10 weapons' DPS/fire-rate/evolution cost; nudge outliers (±15% of median at equal investment). Mark edits with `// BAL:` comments. Done: all weapons viable, no reordering of table entries.
-- **B013 [HERO] New hero: Vampire "Crimson"** — lifesteal passive (heal % of damage dealt), unique starting weapon. Append to HEROES table; never reorder existing entries. Done: selectable, playable, balanced vs existing 5.
+- **B013 [HERO] New hero: Combat survivor "Crimson"** — combat-recovery passive (heal % of damage dealt), unique starting weapon. Append to HEROES table; never reorder existing entries. Done: selectable, playable, balanced vs existing 5.
 - **B018 [ENMY] Spawn formations** — enemies occasionally spawn in rings, V-formations, and chasing trails. Done: ≥3 formation patterns, weighted by chapter, smoke passes.
 - **B029 [JUIC] Damage numbers** — floating damage numbers with crit styling (bigger/gold), stack merging for dense hits. Done: readable at 60 enemies, cheap (pooled ok later).
 - **B036 [AUD] Audio mix pass** — per-channel gain normalization, master soft limiter, ducking of SFX under level-up jingle. Done: no clipping on mass kills.
@@ -96,7 +96,7 @@ Areas: BAL balance · WEAP weapon · HERO hero · ENMY enemy · BIOM biome · JU
 - **B022 [ENMY→UI] Build summary on pause** — pause shows current build, DPS estimate, synergies. Done: accurate to real state.
 - **B028 [BIOM] Chapter 4 boss arena mechanic** — closing ring or similar arena hazard. Reduced-motion safe telegraphs.
 - **B035 [JUIC] Additive glow layer** — cheap additive-canvas glow for projectiles/explosions, auto-off under FPS guard.
-- **B093 [META] Echo ghost ally** — in Echo mode, your previous run's build manifests as an allied ghost for 30s once per chapter.
+- **B093 [META] Echo training drone** — in Echo mode, your previous run's build is replayed by an allied training drone for 30s once per chapter.
 - **B055 [UI] Between-chapter shop** — spend gold on heals, upgrade rerolls, revives. Done: integrates with gold economy.
 - **B066 [META] Mission expansion** — 3 new mission types using new systems (elites slain, hazards survived, no-reroll run).
 - **B077 [BUG] Resolution independence** — devicePixelRatio handling, mid-run resize, ultrawide safe. Done: crisp at 125%/150% Windows scaling.

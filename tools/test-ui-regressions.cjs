@@ -141,6 +141,23 @@ test('refined upgrade UI keeps large Retina art and explicit progress', () => {
   assert(!html.includes('grid-template-columns:48px'));
 });
 test('expanded campaign exposes four named late-game destinations', () => {
-  for (const marker of ['n<=17', 'MOONLIT KEEP', 'WITCHWOOD MIRE', 'CRYSTAL CITADEL', 'SUNSPIRE GARDENS', "if(ch>=13)return THEMES[Math.min(THEMES.length-1,ch-9)]"]) assert(html.includes(marker));
+  for (const marker of ['n<=17', 'MOONLIT KEEP', 'IRONWOOD MARSH', 'CRYSTAL CITADEL', 'SUNSPIRE GARDENS', "if(ch>=13)return THEMES[Math.min(THEMES.length-1,ch-9)]"]) assert(html.includes(marker));
+});
+test('content direction removes legacy occult presentation without changing save IDs', () => {
+  for (const term of ['Witchwood', 'Vampire', 'Demon Blade', 'Sanguine Charm', 'Spirit Shuriken', 'BLOOD FRENZY', 'Gloom Nova', 'Void Power', 'Alchemists', '🩸', '👹']) {
+    assert(!html.toLowerCase().includes(term.toLowerCase()), 'unexpected presentation: ' + term);
+  }
+  for (const marker of ["crimson:{name:'Crimson'", "sanguine:{name:'Field Medkit'", "voidw:{name:'Gravity Projector'", "evoName:'Royal Blade'", 'function drawWaymarker(']) assert(html.includes(marker));
+});
+test('renamed Second Wind ultimate still damages nearby enemies and heals', () => {
+  const heroBlock = html.slice(html.indexOf('const HEROES={'), html.indexOf('const META={'));
+  const hits = [], notices = [];
+  const run = {state:'play', player:{ult:1,x:0,y:0,hp:50,maxHp:100}, selectedHero:'crimson',
+    difficulty:2, Math, enemies:[{x:10,y:0,hp:20},{x:500,y:0,hp:20}],
+    buzz:noop, warn:s=>notices.push(s), sfx:noop, dealDamage:(e,d)=>hits.push(d), addFloater:noop, spawnParticles:noop};
+  vm.createContext(run);
+  vm.runInContext(heroBlock + '\n' + fn('tryUlt') + '\ntryUlt();', run);
+  assert.deepEqual(hits, [72]); assert.equal(run.player.hp,64); assert.equal(run.player.ult,0);
+  assert(notices[0].includes('SECOND WIND'));
 });
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
