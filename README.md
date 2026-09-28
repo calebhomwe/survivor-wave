@@ -18,15 +18,16 @@ Content direction: no witchcraft or occult themes. Keep the biblical/kingdom ide
 - **9 biomes × 4 road layouts** across a 17-chapter ladder, ending in Moonlit Keep, Ironwood Marsh, Crystal Citadel and Sunspire Gardens
 - **BTD-style coin turrets** (place T, cycle G, upgrade F) + **mortar strikes** (Q)
 - Gold economy, missions bar, achievements, daily challenge + sign-in, offline patrol, ECHO score-attack mode, chapters with stars, steamroll replays
-- Crowd-physics hordes, combo system, dash, bloom, painted environment, arcade audio
+- Crowd-physics hordes, combo system, dash, bloom, painted environment
+- **ElevenLabs audio pack (v1.4):** battle announcer (bosses, ults, milestones, warnings), designed tower / UI / event sound effects and a three-track adaptive score (menu → combat → boss) with crossfades; VOICE toggle in the pause menu
 
 ## Controls
 WASD/arrows/drag — move · SPACE — dash · R — ultimate · T/G/F — turrets · Q — mortar · P — pause · Gamepad OK
 
 ## Credits
-Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · SFX + music: ElevenLabs · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
+Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · Announcer voice, SFX + music: [ElevenLabs](https://elevenlabs.io) (generated offline, shipped as local files; regenerate with `ELEVENLABS_API_KEY=... python tools/gen_audio.py`) · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
 
-## Kingdom Survivor Clash (v1.3.2)
+## Kingdom Survivor Clash (v1.4)
 
 Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom meta.
 

@@ -1,5 +1,11 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.4 — 2026-09-28 (ElevenLabs audio pack: announcer, designed SFX, adaptive score)
+- Battle announcer: 38 voice lines generated with ElevenLabs (run start, every named boss arrival and boss down, elite / new-foe alerts, level 10 / 20 milestones, evolution, PARAGON / GLORY, merge ready, field station online, oil rush, tower limit, all six hero ultimates, the three workshop consumables, kingdom construction / palace, low-HP warning, victory / defeat / endless). One line at a time with a short priority queue, per-line cooldowns and a VOICE toggle in the pause quick options (`settings.voice`).
+- 25 designed sound effects (`assets/sfx3`): tower place / upgrade / sell, per-line tower attacks near the hero (Arc Coil zap, mortar thump, cryo pulse, tack burst, pitch splash, spike clang), paragon fanfare, boss stinger + boss death, chest open, major level-up, kingdom build, victory fanfare, defeat sting, UI confirm / error. Available through the plain `sfx('<name>')` API.
+- Adaptive score: three 60-second ElevenLabs tracks (`assets/music/menu|combat|boss.mp3`) crossfaded by game state (menu → combat → boss theme from the top when a boss is alive), ducked under voice lines and the level-up jingle, faded out on pause / end screens. The previous theme.mp3 / synth music remains as the automatic fallback if a pack track fails to load.
+- Everything is local files, additive wrappers and polls (no existing call path changed); `muted`, SFX and MUSIC sliders apply everywhere. `tools/gen_audio.py` regenerates the pack from an `ELEVENLABS_API_KEY` environment variable (idempotent, skips existing files).
+
 ## v1.3.2 — Strict content sweep
 - Replaced ritual-style tower paths, field activation, consumables and boss/pickup names with engineering, medical and military equivalents. The canonical names and future rules are in `docs/CONTENT_GUIDE.md`; older entries below are historical, not instructions to restore old content.
 - Redrew field stations as medical cabinets with radio masts, Arc Coils as copper hardware, cryo towers with nozzles, orbiting satellites with housings/panels, and skull props as rubble. Updated level-up copy to CHOOSE YOUR UPGRADE.
