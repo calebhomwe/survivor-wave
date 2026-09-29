@@ -1,5 +1,14 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.4.1 — 2026-09-29 (premium-audit trust fixes)
+- Chests: a chest opened once and then re-opened every frame after closing, which froze the run or granted dozens of free upgrades. The opened chest now leaves the field before the overlay appears, taken pickups are skipped and the chest overlay cannot stack (audit P035).
+- Coins: the kill-streak combo was applied as the whole coin value, so coins paid 0 Silver below a 10-kill combo. Coins now pay their full value plus the combo bonus, and the floater reads +N SILVER (P046).
+- Boss gauntlet: every boss and the oil-rush timer re-arm at the start of each run. Before, Spud, Baron Burrito, Sir Peel-a-Lot, Lord Glaze, Count Patty, Captain Fizz and Grainlord Crisp only appeared in the first run after a page load (P017).
+- TRY AGAIN now runs the full start sequence (tower wipe, oil reset, fresh stations, workshop refill, NG+ / weekly / IRONMAN). All start buttons resolve the live start chain at click time (P017).
+- Chapters 14–17 (Moonlit Keep, Ironwood Marsh, Crystal Citadel, Sunspire Gardens) now unlock in order after chapter 13; the ladder used to stop at 12 (P049).
+- The daily chest label now matches its payout (+600).
+- Tests: new regression group for these fixes (23 groups). Gauntlet g5 keeps a target inside every combat tower's firing band for its whole window, so slow or short-range lines no longer race the hero's weapons for the only 16 enemies.
+
 ## v1.4 — 2026-09-28 (ElevenLabs audio pack: announcer, designed SFX, adaptive score)
 - Battle announcer: 38 voice lines generated with ElevenLabs (run start, every named boss arrival and boss down, elite / new-foe alerts, level 10 / 20 milestones, evolution, PARAGON / GLORY, merge ready, field station online, oil rush, tower limit, all six hero ultimates, the three workshop consumables, kingdom construction / palace, low-HP warning, victory / defeat / endless). One line at a time with a short priority queue, per-line cooldowns and a VOICE toggle in the pause quick options (`settings.voice`).
 - 25 designed sound effects (`assets/sfx3`): tower place / upgrade / sell, per-line tower attacks near the hero (Arc Coil zap, mortar thump, cryo pulse, tack burst, pitch splash, spike clang), paragon fanfare, boss stinger + boss death, chest open, major level-up, kingdom build, victory fanfare, defeat sting, UI confirm / error. Available through the plain `sfx('<name>')` API.

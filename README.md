@@ -27,7 +27,7 @@ WASD/arrows/drag — move · SPACE — dash · R — ultimate · T/G/F — turre
 ## Credits
 Character/environment sprites: [Kenney](https://kenney.nl) (CC0) · Icons, critters, portraits: procedural · Fonts: Luckiest Guy + Baloo 2 (Google Fonts, OFL) · Announcer voice, SFX + music: [ElevenLabs](https://elevenlabs.io) (generated offline, shipped as local files; regenerate with `ELEVENLABS_API_KEY=... python tools/gen_audio.py`) · Particles: [Kenney Particle Pack](https://kenney.nl) (CC0)
 
-## Kingdom Survivor Clash (v1.4)
+## Kingdom Survivor Clash (v1.4.1)
 
 Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom meta.
 

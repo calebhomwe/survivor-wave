@@ -139,6 +139,19 @@ JS_RING = """(tys) => {
   return placed.length;
 }"""
 
+JS_FEED_TOWERS = """() => {
+  const T=window.TOWERSYS; let n=0;
+  for (const t of T.towers) {
+    const D=T.defs[t.ty]; if(!D||!(D.dmg>0))continue;
+    const E=T.eff?T.eff(t):D; const lo=E.minR||D.minR||0, hi=E.range||D.range||150;
+    const d=lo?Math.min(hi*0.8,lo+80):Math.min(60,hi*0.5);
+    const a=Math.atan2(t.y-player.y,t.x-player.x);   /* outside the tower, away from the hero's guns */
+    const e=makeEnemy('grunt'); e.x=t.x+Math.cos(a)*d; e.y=t.y+Math.sin(a)*d; e.hp=e.maxHp=Math.max(e.maxHp,400);
+    enemies.push(e); n++;
+  }
+  return n;
+}"""
+
 JS_GRANT_WEAPONS = """(weps) => {
   for (const id of weps) {
     if (!player.weapons.some(w=>w.id===id))
@@ -364,7 +377,12 @@ def g5_towers(ctx):
     pg.p.wait_for_timeout(600)
     pg.ev("(" + JS_TELEPORT_ENEMIES + ")(16)")
     pg.ev("(" + JS_RING + ")(['" + "','".join(ALL_TOWERS) + "'])")
-    pg.p.wait_for_timeout(12000)
+    # The hero's weapons clear the one-off 16 grunts within seconds, so slow or short-range lines
+    # (mortar: minR 120 / 2.3 s, tack: 135 px) used to race for targets and flake. Keep one fresh
+    # grunt inside each combat tower's own firing band for the whole 12 s window instead.
+    for _ in range(8):
+        pg.ev("(" + JS_FEED_TOWERS + ")()")
+        pg.p.wait_for_timeout(1500)
     dmg = pg.ev("""() => { const rs=(typeof runStats!=='undefined'&&runStats.dmg)?runStats.dmg:{};
       const out={}; for(const k in rs) if(k.indexOf('Tower')===0) out[k]=Math.round(rs[k]); return out; }""")
     combat_tags = {'Tower:Gatling': 'gatling', 'Tower:Tesla': 'tesla', 'Tower:Mortar': 'mortar',

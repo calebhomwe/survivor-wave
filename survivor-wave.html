@@ -3049,7 +3049,7 @@ function victory(){
 
   if(chBonus>0){gold+=chBonus;}
 
-  if(cn===sioc.stage&&sioc.stage<12)sioc.stage++;
+  if(cn===sioc.stage&&sioc.stage<17)sioc.stage++;/*P049: the ladder runs to chapter 17 (13 is also side-unlocked at stage 5)*/
 
   saveMeta();
 
@@ -3069,7 +3069,7 @@ function victory(){
 
   if(chBonus>0){const wg=document.getElementById('winGold');wg.textContent=gEarn+' (+'+chBonus+' FIRST CLEAR)';}
 
-  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone&&!dailyImported){dailyDone=true;/*B059: imported replays can't farm the daily chest*/try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+150 DAILY CHEST)';}
+  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone&&!dailyImported){dailyDone=true;/*B059: imported replays can't farm the daily chest*/try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+600 DAILY CHEST)';}
 
   if(perilRun){perilWins++;try{localStorage.setItem('survivorPerilW',String(perilWins));}catch(_){}const wg3=document.getElementById('winGold');if(wg3)wg3.textContent+=' · ☠ PERIL WON ('+perilWins+(perilWins%5===0?' — PERIL MASTER!':'')+')';if(perilWins%5===0)sfx('levelup');}
 
@@ -4876,7 +4876,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
   /* pickups */
 
   for(const pk of pickups){
-
+    if(pk.dead)continue;/*P035: never re-collect a pickup already taken this frame*/
     const dx=player.x-pk.x,dy=player.y-pk.y,d=Math.hypot(dx,dy)||1;
 
     if(d<player.pickupR*0.8||pk.magnet){
@@ -4925,7 +4925,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         const gBefore2=gold;
 
-        const cvs=Math.round(cv*b31GoldMult());/*B031 kill-streak combo gold bonus (stacks on B003 value)*/
+        const cvs=Math.round(cv*(1+b31GoldMult()));/*B031 kill-streak combo gold bonus (stacks on B003 value); P046: the combo is a bonus on top of the coin, not its whole value*/
 
         gold+=cvs;
 
@@ -4933,16 +4933,14 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         if(Math.floor(gold/250)>Math.floor(gBefore2/250))addFloater(player.x,player.y-44,gold+' SILVER BANKED','#ffd23f',1.2,16);
 
-        addFloater(player.x,player.y-26,'+'+cvs+' GOLD','#ffd23f',0.8,14);
+        addFloater(player.x,player.y-26,'+'+cvs+' SILVER','#ffd23f',0.8,14);
 
         sfx('coin');
 
       }else if(pk.kind==='chest'){
-
+        sweep(pickups,p2=>!p2.dead);/*P035: drop the opened chest before the overlay takes over, or it re-opens every frame after closing*/
         sfx('levelup');
-
         openChest();
-
         return;
 
       }else if(pk.kind==='relic'){
@@ -6151,7 +6149,7 @@ window.addEventListener('keydown',e=>{
 /* ============================== CHEST ============================== */
 
 function openChest(){
-
+  if(state==='chest')return;/*P035: one chest overlay at a time*/
   state='chest';
 
   const ov=document.getElementById('chestOv');
@@ -14637,7 +14635,7 @@ function startImportedDailyRun(o){                 /* mirrors startDailyRun but 
 
   dailyActive=true;
 
-  if(dailyMod.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(12,(sioc.stage||1)+dailyMod.st);}
+  if(dailyMod.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(17,(sioc.stage||1)+dailyMod.st);}
 
   startGame();
 
@@ -14697,7 +14695,7 @@ function startImportedDailyRun(o){                 /* mirrors startDailyRun but 
 
 function setDailyRun(){
 
-  if(DMOD.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(12,(sioc.stage||1)+DMOD.st);}   /* OVERLORD bumps stage */
+  if(DMOD.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(17,(sioc.stage||1)+DMOD.st);}   /* OVERLORD bumps stage */
 
 }
 
@@ -17201,7 +17199,7 @@ makeEnemy=function(type){
 };
 
 /* ---------- Spud the Unruly ---------- */
-var spudDone=false;
+var spudDone=false,spudGT=0;/*P017: spudGT tracks gameTime so a new run re-arms the boss*/
 function spawnSpud(){
   var e=makeEnemy('tank');
   e.kscType='spud';e.isSpud=true;
@@ -17218,6 +17216,7 @@ var starch=[];/* {x,y,life} */
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<spudGT)spudDone=false;spudGT=gameTime;/*P017*/
     /* spud spawn: midpoint of the 10-min run */
     if(!spudDone&&gameTime>=150){spudDone=true;spawnSpud();}
     for(var i=enemies.length-1;i>=0;i--){
@@ -17380,7 +17379,7 @@ renderHUD=function(){
 (function(){
 'use strict';
 if(window.KSC_BOSS2)return;window.KSC_BOSS2=1;
-var spawned=false,peels=[];
+var spawned=false,peels=[],peelGT=0;/*P017*/
 
 /* reliable boss loot */
 var _ke=null;
@@ -17412,6 +17411,7 @@ function spawnPeel(){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<peelGT)spawned=false;peelGT=gameTime;/*P017*/
     if(!spawned&&gameTime>=300){spawned=true;spawnPeel();}
     for(var i=enemies.length-1;i>=0;i--){
       var e=enemies[i];
@@ -18290,7 +18290,7 @@ if(window.__ITER_E)return;window.__ITER_E=1;
 /* E9: tower damage type tags shown in run stats panel bottom (Tower summary line) */
 /* E10: in-run banner for PARAGON/GLORY merges via killEnemy-style floater (exists) -> do: minimap tower dots */
 var bosses={};
-var fired={};
+var fired={},firedGT=0;/*P017*/
 function mkBase(mult,name){
   var e=makeEnemy('tank');
   e.kscBoss2=name;
@@ -18303,6 +18303,7 @@ function mkBase(mult,name){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<firedGT)fired={};firedGT=gameTime;/*P017*/
     /* spawns */
     if(gameTime>=390&&!fired.glaze){fired.glaze=1;var g=mkBase(3.5,'Lord Glaze');g.glzHeal=1;}
     if(gameTime>=480&&!fired.fizz){fired.fizz=1;var f=mkBase(3.8,'Captain Fizz');f.fizzHits=80;f.fizzPulse=5;}
@@ -18505,6 +18506,7 @@ function spawnNamed(mult,name,extra){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<(window.__f_gt||0)){window.__f_bur=0;window.__f_patty=0;}window.__f_gt=gameTime;/*P017*/
     if(gameTime>=210&&!window.__f_bur){window.__f_bur=1;spawnNamed(3.2,'Baron Burrito',{burSalsa:4,burChips:8});}
     if(gameTime>=420&&!window.__f_patty){window.__f_patty=1;spawnNamed(4.2,'Count Patty',{patLayers:3,patNext:0.66,pklT:6});}
     for(var i=enemies.length-1;i>=0;i--){
@@ -18699,7 +18701,7 @@ setInterval(function(){
   try{
     if(window.__verFoot||state!=='ready')return;
     var f=document.createElement('div');
-    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.4 \u00b7 announcer + adaptive score \u00b7 web build';
+    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.4.1 \u00b7 announcer + adaptive score \u00b7 web build';
     f.style.cssText='position:fixed;bottom:6px;left:10px;font-size:10px;color:rgba(143,161,199,0.6);z-index:5;pointer-events:none';
     document.body.appendChild(f);window.__verFoot=1;
   }catch(_){}
@@ -18808,6 +18810,7 @@ window.__nextOilRush=120;
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<(window.__oilGT||0))window.__nextOilRush=120;window.__oilGT=gameTime;/*P017: first rush of every run at 2:00*/
     window.__nextOilRush-=1;
     if(window.__nextOilRush<=0){
       window.__nextOilRush=110+Math.floor(Math.random()*30);
@@ -19331,8 +19334,8 @@ window.KSC_KINGDOM={levels:K,defs:B,buy:buy,canBuy:canBuy,open:open,apply:apply,
    weekly/gauntlet-banner never ran via FIGHT). Rebind every known entry to the live chain.*/
 (function(){
   function rebind(){
-    var fn=window.startGame;
-    ['playBtn','winAgainBtn'].forEach(function(id){
+    var fn=function(){return window.startGame.apply(this,arguments);};/*P017: resolve the chain at click time so late wrappers (IRONMAN) apply*/
+    ['playBtn','winAgainBtn','againBtn'].forEach(function(id){
       var b=document.getElementById(id);
       if(b)b.onclick=fn;
     });
