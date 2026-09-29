@@ -10,7 +10,7 @@ offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
 
 ## Features
 
-Content direction: no witchcraft or occult themes. Keep the biblical/kingdom identity and use natural, military, medical or technological alternatives. Contributors: read [the content guide](docs/CONTENT_GUIDE.md). Planned work lives in [Backlog v2 — upgradables & visual improvements](docs/BACKLOG-v2.md) (the original [100-item backlog](docs/BACKLOG.md) is mostly shipped).
+Content direction: no witchcraft or occult themes. Keep the biblical/kingdom identity and use natural, military, medical or technological alternatives. Contributors: read [the content guide](docs/CONTENT_GUIDE.md). Planned work lives in [Backlog v2 — upgradables & visual improvements](docs/BACKLOG-v2.md) (the original [100-item backlog](docs/BACKLOG.md) is mostly shipped). The [premium-bar audit](docs/PREMIUM-AUDIT.md) scores the game against Survivor.io, BTD6 and Clash of Clans and ranks the highest-leverage fixes.
 
 - **17 weapons** × 5 levels each, with EVO evolutions (pair a maxed weapon with its passive to unlock gold EVO cards)
 - **6 heroes** with unique starting weapons, traits and ultimates

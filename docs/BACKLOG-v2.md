@@ -396,5 +396,30 @@ Derived from evidence recorded by the nine audit areas (each v1 item mapped to t
 - **Merged, not dropped** — 'Inspect panel readability and stat previews' (tower audit) + 'Path tier stat-delta preview and status badges' (HUD audit) → U063; 'Field station tiers + enforce the station build zone' (tower audit) + 'Field-station types and E-to-upgrade tiers' (biome audit) → U016; 'Boss gauntlet timeline strip' (enemy audit) + 'Boss gauntlet timeline strip under the timer' (HUD audit) → V049; 'Warn banner queue with info vs boss styling' (enemy audit) + 'Notification toast queue replacing single-slot warn()' (HUD audit) → V050. Every anchor from both sources is kept on the merged item.
 
 ---
+
+# Part E — Premium-bar audit (P-items)
+
+The deep audit against Survivor.io, Bloons TD 6, Clash of Clans and survivor-like peers lives in [PREMIUM-AUDIT.md](PREMIUM-AUDIT.md): a 12-dimension scorecard (overall 2.40 / 5), measured play-test and economy tables, loop-by-loop comparisons and 101 items P001–P101. P-items keep their own numbering and are not copied here. Where a P-item and a U/V item describe the same fix, ship the P-item and close the U/V item in the same commit. Known overlaps: P049 = U067 (chapter unlock), P036 = U035 (chest loot tiers), P066 = U089 (daily streak), P090 overlaps U068 and the currency-naming items.
+
+The audit also confirmed trust-breaking defects that no U/V item covers: the chest re-open soft-lock (P035), coins paying 0 Silver (P046), gauntlet once-flags and TRY AGAIN skipping the per-run reset (P017), and endless double-pay (P047). Treat them as Part C iteration 1 work.
+
+Top 12 by retention impact ÷ effort, to schedule ahead of Part C iteration 2:
+
+| Rank | ID | Change | Effort |
+|---|---|---|---|
+| 1 | P035 | Stop the chest re-open soft-lock | S |
+| 2 | P046 | Restore coin value | S |
+| 3 | P017 | Per-run reset integrity | S |
+| 4 | P001 | BOOT CAMP opening | S |
+| 5 | P002 | First level-up in 5 s or less | S |
+| 6 | P066 | A sign-in calendar that keeps paying | S |
+| 7 | P049 | Unlock chapters 13–17 + MARCH ON | S |
+| 8 | P080 | Make difficulty tiers real | S |
+| 9 | P006 | Death screen "What next" | M |
+| 10 | P019 | Cap the Bomb Pickup | S |
+| 11 | P047 | Close the inflation leaks | S |
+| 12 | P048 | FIELD BUDGET split | M |
+
+---
 **Count: 105 upgradables (U001–U105) + 99 visual improvements (V001–V099) = 204 items.** (First pass U001–U066 / V001–V062; second pass appended U067–U105 / V063–V099, including three confirmed bugs U067–U069.)
 Rules for every agent: single file, zero network, CONTENT_GUIDE.md framing, append-don't-reorder shared tables, `node tools/test-ui-regressions.cjs` + `python tools/smoke.py` before commit, inspect every new drawing in the browser, commit message `Uxxx:`/`Vxxx: short title`.
