@@ -18538,14 +18538,14 @@ setInterval(function(){
     for(var p=pools.length-1;p>=0;p--){var pd=pools[p];pd.life-=0.25;
       if(pd.life<=0){pools.splice(p,1);continue;}
       var dx=player.x-pd.x,dy=player.y-pd.y;
-      if(dx*dx+dy*dy<40*40&&player.invT<=0){player.hp-=4*0.25*3;}}
+      if(dx*dx+dy*dy<40*40&&!(player.iframes>0)){hurtPlayer(4*0.25*3);}}/*fix: gated on player.invT, which the game never sets (undefined<=0 is false), so salsa pools never hurt; now uses iframes + hurtPlayer (armor, daily mods, damage-taken stats)*/
     /* bombs tick */
     for(var b2=bombs.length-1;b2>=0;b2--){var bm=bombs[b2];bm.t-=0.25;
       if(bm.t<=0){bombs.splice(b2,1);
         if(!settings.lowFx)spawnParticles(bm.x,bm.y,'#84cc16',14,1);
         try{sfx('boom');}catch(_){}
         var dx2=player.x-bm.x,dy2=player.y-bm.y;
-        if(dx2*dx2+dy2*dy2<90*90&&player.invT<=0){player.hp-=12;addFloater(player.x,player.y-30,'PICKLED!','#84cc16',1,13);}}
+        if(dx2*dx2+dy2*dy2<90*90&&!(player.iframes>0)){hurtPlayer(12);addFloater(player.x,player.y-30,'PICKLED!','#84cc16',1,13);}}
     }
     /* F5 enemy cap */
     if(enemies.length>280){

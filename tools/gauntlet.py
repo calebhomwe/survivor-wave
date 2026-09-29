@@ -111,7 +111,7 @@ class Page:
         }""")
 
     def godmode(self):
-        self.p.evaluate("""() => { try{ player.invT=9999; player.hp=player.maxHp; gold=Math.max(gold,3000); window.oil=Math.max(window.oil||0,500);}catch(_){} }""")
+        self.p.evaluate("""() => { try{ player.invT=9999; player.iframes=9999; player.hp=player.maxHp; gold=Math.max(gold,3000); window.oil=Math.max(window.oil||0,500);}catch(_){} }""")
 
     def ev(self, js):
         return self.p.evaluate(js)
@@ -394,7 +394,7 @@ def g5_towers(ctx):
     record(m, "tithe generates silver", tithe and tithe > 0, f"+{tithe}")
     healed = pg.ev("""() => {
       const ap=TOWERSYS.towers.find(t=>t.ty==='apoth'); if(!ap)return 'no-apoth';
-      player.x=ap.x; player.y=ap.y; player.hp=Math.max(1,player.maxHp*0.4); player.invT=9999;
+      player.x=ap.x; player.y=ap.y; player.hp=Math.max(1,player.maxHp*0.4); player.invT=9999; player.iframes=9999;
       const h0=player.hp;
       return new Promise(res=>setTimeout(()=>res(Math.round((player.hp-h0)*10)/10),4500));
     }""")
@@ -524,6 +524,7 @@ def g7_perf(ctx):
         const e=makeEnemy('grunt');
         const a=Math.random()*6.28, d=200+Math.random()*400;
         e.x=player.x+Math.cos(a)*d; e.y=player.y+Math.sin(a)*d;
+        e.hp=e.maxHp=1e6; /* durable: since v1.2 towers + hero clear plain grunts inside the 6 s window, so the scene no longer held 120 */
         enemies.push(e);
       }
       return enemies.length;
@@ -649,6 +650,14 @@ def main():
             except Exception as e:
                 record(key, "module crash", False, repr(e)[:200])
                 ok = False
+            # Modules open pages via browser.new_page() and several never close them; a leaked page keeps
+            # a live game running, so by g7 ~6 background runs shared 4 cores (FPS 6, load-sensitive
+            # boss polls). Close whatever the module left open before the next one starts.
+            for c in list(browser.contexts):
+                try:
+                    c.close()
+                except Exception:
+                    pass
             passed_all &= ok
             print(f"== {key} {'PASS' if ok else 'FAIL'}", flush=True)
         browser.close()

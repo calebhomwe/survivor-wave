@@ -7,7 +7,8 @@
 - TRY AGAIN now runs the full start sequence (tower wipe, oil reset, fresh stations, workshop refill, NG+ / weekly / IRONMAN). All start buttons resolve the live start chain at click time (P017).
 - Chapters 14–17 (Moonlit Keep, Ironwood Marsh, Crystal Citadel, Sunspire Gardens) now unlock in order after chapter 13; the ladder used to stop at 12 (P049).
 - The daily chest label now matches its payout (+600).
-- Tests: new regression group for these fixes (23 groups). Gauntlet g5 keeps a target inside every combat tower's firing band for its whole window, so slow or short-range lines no longer race the hero's weapons for the only 16 enemies.
+- Boss hazards: Baron Burrito's salsa pools and Count Patty's pickle bombs checked a field the game never sets, so they never hurt the hero. They now use the real invulnerability window and the normal damage path (armor, daily modifiers, damage-taken stats).
+- Tests: new regression group for these fixes (23 groups). Gauntlet fixes: the runner closes every page a module leaves open (by g7 about six abandoned games were running in the background, dropping headless FPS to 6); godmode sets the invulnerability field the game actually reads; g5 keeps a target inside every combat tower's firing band; the g7 stress scene uses durable enemies so it really holds 120. Full gauntlet: 9 modules, 94 checks, all pass.
 
 ## v1.4 — 2026-09-28 (ElevenLabs audio pack: announcer, designed SFX, adaptive score)
 - Battle announcer: 38 voice lines generated with ElevenLabs (run start, every named boss arrival and boss down, elite / new-foe alerts, level 10 / 20 milestones, evolution, PARAGON / GLORY, merge ready, field station online, oil rush, tower limit, all six hero ultimates, the three workshop consumables, kingdom construction / palace, low-HP warning, victory / defeat / endless). One line at a time with a short priority queue, per-line cooldowns and a VOICE toggle in the pause quick options (`settings.voice`).
