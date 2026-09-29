@@ -3049,7 +3049,7 @@ function victory(){
 
   if(chBonus>0){gold+=chBonus;}
 
-  if(cn===sioc.stage&&sioc.stage<12)sioc.stage++;
+  if(cn===sioc.stage&&sioc.stage<17)sioc.stage++;/*P049: the ladder runs to chapter 17 (13 is also side-unlocked at stage 5)*/
 
   saveMeta();
 
@@ -3069,7 +3069,7 @@ function victory(){
 
   if(chBonus>0){const wg=document.getElementById('winGold');wg.textContent=gEarn+' (+'+chBonus+' FIRST CLEAR)';}
 
-  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone&&!dailyImported){dailyDone=true;/*B059: imported replays can't farm the daily chest*/try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+150 DAILY CHEST)';}
+  /* DAILY-PATCH-R2 */if(dailyActive&&!dailyDone&&!dailyImported){dailyDone=true;/*B059: imported replays can't farm the daily chest*/try{localStorage.setItem(DK,'1');}catch(_){}gold+=600;const wg2=document.getElementById('winGold');if(wg2)wg2.textContent+=' (+600 DAILY CHEST)';}
 
   if(perilRun){perilWins++;try{localStorage.setItem('survivorPerilW',String(perilWins));}catch(_){}const wg3=document.getElementById('winGold');if(wg3)wg3.textContent+=' · ☠ PERIL WON ('+perilWins+(perilWins%5===0?' — PERIL MASTER!':'')+')';if(perilWins%5===0)sfx('levelup');}
 
@@ -4876,7 +4876,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
   /* pickups */
 
   for(const pk of pickups){
-
+    if(pk.dead)continue;/*P035: never re-collect a pickup already taken this frame*/
     const dx=player.x-pk.x,dy=player.y-pk.y,d=Math.hypot(dx,dy)||1;
 
     if(d<player.pickupR*0.8||pk.magnet){
@@ -4925,7 +4925,7 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         const gBefore2=gold;
 
-        const cvs=Math.round(cv*b31GoldMult());/*B031 kill-streak combo gold bonus (stacks on B003 value)*/
+        const cvs=Math.round(cv*(1+b31GoldMult()));/*B031 kill-streak combo gold bonus (stacks on B003 value); P046: the combo is a bonus on top of the coin, not its whole value*/
 
         gold+=cvs;
 
@@ -4933,16 +4933,14 @@ if(dist2(e.x,e.y,fb.x,fb.y)<(e.r+13)*(e.r+13)){dealDamage(e,fb.dmg,player.x,play
 
         if(Math.floor(gold/250)>Math.floor(gBefore2/250))addFloater(player.x,player.y-44,gold+' SILVER BANKED','#ffd23f',1.2,16);
 
-        addFloater(player.x,player.y-26,'+'+cvs+' GOLD','#ffd23f',0.8,14);
+        addFloater(player.x,player.y-26,'+'+cvs+' SILVER','#ffd23f',0.8,14);
 
         sfx('coin');
 
       }else if(pk.kind==='chest'){
-
+        sweep(pickups,p2=>!p2.dead);/*P035: drop the opened chest before the overlay takes over, or it re-opens every frame after closing*/
         sfx('levelup');
-
         openChest();
-
         return;
 
       }else if(pk.kind==='relic'){
@@ -6151,7 +6149,7 @@ window.addEventListener('keydown',e=>{
 /* ============================== CHEST ============================== */
 
 function openChest(){
-
+  if(state==='chest')return;/*P035: one chest overlay at a time*/
   state='chest';
 
   const ov=document.getElementById('chestOv');
@@ -14637,7 +14635,7 @@ function startImportedDailyRun(o){                 /* mirrors startDailyRun but 
 
   dailyActive=true;
 
-  if(dailyMod.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(12,(sioc.stage||1)+dailyMod.st);}
+  if(dailyMod.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(17,(sioc.stage||1)+dailyMod.st);}
 
   startGame();
 
@@ -14697,7 +14695,7 @@ function startImportedDailyRun(o){                 /* mirrors startDailyRun but 
 
 function setDailyRun(){
 
-  if(DMOD.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(12,(sioc.stage||1)+DMOD.st);}   /* OVERLORD bumps stage */
+  if(DMOD.st){dailyPrevChapter=chapterSel;chapterSel=Math.min(17,(sioc.stage||1)+DMOD.st);}   /* OVERLORD bumps stage */
 
 }
 
@@ -15983,7 +15981,7 @@ showLevelUp=function(){_b32SLU();const le=document.getElementById('lvlup');if(le
 
     }
 
-    const togs=[['shake','SHAKE'],['lowFx','LOW FX']];
+    const togs=[['shake','SHAKE'],['lowFx','LOW FX'],['voice','VOICE']];/*AUDIO PACK v2*/
 
     for(const tg of togs){
 
@@ -17201,7 +17199,7 @@ makeEnemy=function(type){
 };
 
 /* ---------- Spud the Unruly ---------- */
-var spudDone=false;
+var spudDone=false,spudGT=0;/*P017: spudGT tracks gameTime so a new run re-arms the boss*/
 function spawnSpud(){
   var e=makeEnemy('tank');
   e.kscType='spud';e.isSpud=true;
@@ -17218,6 +17216,7 @@ var starch=[];/* {x,y,life} */
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<spudGT)spudDone=false;spudGT=gameTime;/*P017*/
     /* spud spawn: midpoint of the 10-min run */
     if(!spudDone&&gameTime>=150){spudDone=true;spawnSpud();}
     for(var i=enemies.length-1;i>=0;i--){
@@ -17380,7 +17379,7 @@ renderHUD=function(){
 (function(){
 'use strict';
 if(window.KSC_BOSS2)return;window.KSC_BOSS2=1;
-var spawned=false,peels=[];
+var spawned=false,peels=[],peelGT=0;/*P017*/
 
 /* reliable boss loot */
 var _ke=null;
@@ -17412,6 +17411,7 @@ function spawnPeel(){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<peelGT)spawned=false;peelGT=gameTime;/*P017*/
     if(!spawned&&gameTime>=300){spawned=true;spawnPeel();}
     for(var i=enemies.length-1;i>=0;i--){
       var e=enemies[i];
@@ -18290,7 +18290,7 @@ if(window.__ITER_E)return;window.__ITER_E=1;
 /* E9: tower damage type tags shown in run stats panel bottom (Tower summary line) */
 /* E10: in-run banner for PARAGON/GLORY merges via killEnemy-style floater (exists) -> do: minimap tower dots */
 var bosses={};
-var fired={};
+var fired={},firedGT=0;/*P017*/
 function mkBase(mult,name){
   var e=makeEnemy('tank');
   e.kscBoss2=name;
@@ -18303,6 +18303,7 @@ function mkBase(mult,name){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<firedGT)fired={};firedGT=gameTime;/*P017*/
     /* spawns */
     if(gameTime>=390&&!fired.glaze){fired.glaze=1;var g=mkBase(3.5,'Lord Glaze');g.glzHeal=1;}
     if(gameTime>=480&&!fired.fizz){fired.fizz=1;var f=mkBase(3.8,'Captain Fizz');f.fizzHits=80;f.fizzPulse=5;}
@@ -18505,6 +18506,7 @@ function spawnNamed(mult,name,extra){
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<(window.__f_gt||0)){window.__f_bur=0;window.__f_patty=0;}window.__f_gt=gameTime;/*P017*/
     if(gameTime>=210&&!window.__f_bur){window.__f_bur=1;spawnNamed(3.2,'Baron Burrito',{burSalsa:4,burChips:8});}
     if(gameTime>=420&&!window.__f_patty){window.__f_patty=1;spawnNamed(4.2,'Count Patty',{patLayers:3,patNext:0.66,pklT:6});}
     for(var i=enemies.length-1;i>=0;i--){
@@ -18536,14 +18538,14 @@ setInterval(function(){
     for(var p=pools.length-1;p>=0;p--){var pd=pools[p];pd.life-=0.25;
       if(pd.life<=0){pools.splice(p,1);continue;}
       var dx=player.x-pd.x,dy=player.y-pd.y;
-      if(dx*dx+dy*dy<40*40&&player.invT<=0){player.hp-=4*0.25*3;}}
+      if(dx*dx+dy*dy<40*40&&!(player.iframes>0)){hurtPlayer(4*0.25*3);}}/*fix: gated on player.invT, which the game never sets (undefined<=0 is false), so salsa pools never hurt; now uses iframes + hurtPlayer (armor, daily mods, damage-taken stats)*/
     /* bombs tick */
     for(var b2=bombs.length-1;b2>=0;b2--){var bm=bombs[b2];bm.t-=0.25;
       if(bm.t<=0){bombs.splice(b2,1);
         if(!settings.lowFx)spawnParticles(bm.x,bm.y,'#84cc16',14,1);
         try{sfx('boom');}catch(_){}
         var dx2=player.x-bm.x,dy2=player.y-bm.y;
-        if(dx2*dx2+dy2*dy2<90*90&&player.invT<=0){player.hp-=12;addFloater(player.x,player.y-30,'PICKLED!','#84cc16',1,13);}}
+        if(dx2*dx2+dy2*dy2<90*90&&!(player.iframes>0)){hurtPlayer(12);addFloater(player.x,player.y-30,'PICKLED!','#84cc16',1,13);}}
     }
     /* F5 enemy cap */
     if(enemies.length>280){
@@ -18699,7 +18701,7 @@ setInterval(function(){
   try{
     if(window.__verFoot||state!=='ready')return;
     var f=document.createElement('div');
-    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.3.2 \u00b7 17 chapters + mobile clarity \u00b7 web build';
+    f.textContent='KINGDOM SURVIVOR CLASH \u00b7 v1.4.1 \u00b7 announcer + adaptive score \u00b7 web build';
     f.style.cssText='position:fixed;bottom:6px;left:10px;font-size:10px;color:rgba(143,161,199,0.6);z-index:5;pointer-events:none';
     document.body.appendChild(f);window.__verFoot=1;
   }catch(_){}
@@ -18808,6 +18810,7 @@ window.__nextOilRush=120;
 setInterval(function(){
   try{
     if(state!=='play')return;
+    if(gameTime+0.5<(window.__oilGT||0))window.__nextOilRush=120;window.__oilGT=gameTime;/*P017: first rush of every run at 2:00*/
     window.__nextOilRush-=1;
     if(window.__nextOilRush<=0){
       window.__nextOilRush=110+Math.floor(Math.random()*30);
@@ -19096,13 +19099,243 @@ window.KSC_KINGDOM={levels:K,defs:B,buy:buy,canBuy:canBuy,open:open,apply:apply,
 })();
 </script>
 <script>
+/* ============================== AUDIO PACK v2 (ElevenLabs) ==============================
+   Announcer voice lines (assets/voice/*.mp3), designed sound effects (assets/sfx3/*.mp3) and a
+   three-track adaptive score (assets/music/menu|combat|boss.mp3), all generated offline with
+   ElevenLabs and shipped as local files: zero runtime network. Purely additive: it wraps
+   warn / addFloater / showEl / announceEvo / openChest / gameOver / victory / startGame /
+   dealDamage / Music.start and polls kingdom + tower state, so no existing code path changes.
+   If any pack track fails to load the old theme.mp3 / synth music takes over unchanged.
+   settings.voice (default on, toggle in the pause quick options) gates the announcer;
+   `muted`, settings.sfxVol and settings.musicVol are respected everywhere. */
+(function(){
+  if(typeof window==='undefined'||typeof document==='undefined')return;
+  const VOICE=['run_start','boss_incoming','boss_spud','boss_burrito','boss_peel','boss_glaze','boss_patty','boss_fizz','boss_crisp',
+    'boss_down','elite','new_foe','levelup','level10','level20','evo','paragon','glory','merge_ready','station','oil_rush','tower_limit',
+    'victory','defeat','endless','ult_survivor','ult_soldier','ult_scout','ult_medic','ult_engi','ult_crimson','c_zeal','c_still','c_resto',
+    'kingdom_build','kingdom_palace','low_hp','countdown'];
+  /* name -> base volume (before settings.sfxVol) */
+  const SFX3={tower_place:0.7,tower_upgrade:0.7,tower_sell:0.65,paragon:0.8,arc_zap:0.5,mortar_launch:0.55,cryo_pulse:0.5,tack_burst:0.45,
+    pitch_splash:0.5,spike_clang:0.5,crier_horn:0.6,heal_chime:0.55,craft_gears:0.5,station_online:0.7,oil_rush:0.7,boss_stinger:0.85,
+    boss_death:0.85,ui_click:0.5,ui_confirm:0.6,ui_error:0.55,kingdom_build:0.7,victory_fanfare:0.9,defeat_sting:0.85,lvlup_major:0.7,chest_open:0.7};
+  /* per-line announcer cooldown (ms); default 8s */
+  const CD={elite:25000,new_foe:15000,levelup:12000,low_hp:45000,merge_ready:20000,tower_limit:15000,oil_rush:12000};
+  const ULT={survivor:'ult_survivor',soldier:'ult_soldier',scout:'ult_scout',medic:'ult_medic',engi:'ult_engi',crimson:'ult_crimson'};
+  const V={},S={};
+  function mk(path,vol){try{const a=new Audio(path);a.preload='auto';a.volume=vol;a.addEventListener('error',()=>{a._bad=true;});return a;}catch(_){return null;}}
+  VOICE.forEach(n=>{V[n]=mk('assets/voice/'+n+'.mp3',0.9);});
+  for(const n in SFX3)S[n]=mk('assets/sfx3/'+n+'.mp3',SFX3[n]);
+  const sv=()=>(typeof settings!=='undefined'&&settings.sfxVol!==undefined)?+settings.sfxVol:1;
+  const mv=()=>(typeof settings!=='undefined'&&settings.musicVol!==undefined)?+settings.musicVol:0.6;
+  const isMuted=()=>(typeof muted!=='undefined'&&muted);
+  const voiceOn=()=>!(typeof settings!=='undefined'&&settings.voice===false);
+  try{if(typeof settings!=='undefined'&&settings.voice===undefined)settings.voice=true;}catch(_){}
+
+  /* ---------- designed SFX ---------- */
+  const gate3={};
+  function sfx3(n,vol,gateMs){
+    try{
+      if(isMuted())return false;const a=S[n];if(!a||a._bad)return false;
+      const now=performance.now();if(gate3[n]&&now-gate3[n]<(gateMs||60))return false;gate3[n]=now;
+      a.volume=Math.max(0,Math.min(1,(vol!==undefined?vol:SFX3[n])*sv()));
+      a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{});return true;
+    }catch(_){return false;}
+  }
+  /* sfx('<pack name>') routes here so later code can use the plain API; everything else falls through */
+  const _sfxPrev=sfx;
+  sfx=function(n){if(SFX3[n]!==undefined)return sfx3(n);return _sfxPrev.apply(this,arguments);};
+
+  /* ---------- announcer (one line at a time, short queue, urgent lines cut in) ---------- */
+  const VX={q:[],cur:null,last:{}};
+  function vox(n,prio){
+    try{
+      const a=V[n];if(!a||a._bad||isMuted()||!voiceOn())return false;
+      const now=performance.now();
+      if(VX.last[n]&&now-VX.last[n]<(CD[n]||8000))return false;
+      if(VX.cur){
+        if((prio|0)>=2){try{VX.cur.pause();}catch(_){}VX.cur=null;}
+        else{if(VX.q.length<3)VX.q.push({n:n,prio:prio|0,t:now});return true;}
+      }
+      play(n,now);return true;
+    }catch(_){return false;}
+  }
+  function play(n,now){
+    const a=V[n];VX.last[n]=now;VX.cur=a;
+    a.volume=Math.max(0,Math.min(1,0.95*sv()));
+    const done=()=>{a.removeEventListener('ended',done);if(VX.cur===a){VX.cur=null;setTimeout(next,380);}};
+    a.addEventListener('ended',done);
+    try{a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(done);}catch(_){done();}
+    setTimeout(()=>{if(VX.cur===a)done();},6000); /* never wedge the queue on a stuck element */
+  }
+  function next(){
+    if(VX.cur)return;
+    const now=performance.now();
+    while(VX.q.length){
+      const it=VX.q.shift();
+      if((now-it.t<5000||it.prio>0)&&!(VX.last[it.n]&&now-VX.last[it.n]<(CD[it.n]||8000))){play(it.n,now);return;}
+    }
+  }
+  window.vox=vox;window.sfx3=sfx3;
+
+  /* ---------- adaptive score: menu / combat / boss with crossfades ---------- */
+  const M={tracks:{},gain:{menu:0,combat:0,boss:0},ok:true,blocked:false};
+  ['menu','combat','boss'].forEach(n=>{const a=mk('assets/music/'+n+'.mp3',0);if(a){a.loop=true;a.addEventListener('error',()=>{M.ok=false;});}M.tracks[n]=a;});
+  if(!M.tracks.menu||!M.tracks.combat||!M.tracks.boss)M.ok=false;
+  const packOn=()=>M.ok;
+  const _mStart=Music.start.bind(Music);
+  Music.start=function(){ /* pack drives playback; keep legacy theme/synth silent while it works */
+    if(!packOn())return _mStart();
+    Music.playing=true;
+    try{if(Music.realEl)Music.realEl.pause();}catch(_){}
+    try{if(Music.stopTimerOnly)Music.stopTimerOnly();}catch(_){}
+  };
+  const bossUp=()=>(typeof MI!=='undefined'&&MI&&MI.boss);
+  function desired(){
+    if(isMuted())return null;
+    const st=(typeof state!=='undefined')?state:'ready';
+    if(st==='play'||st==='levelup'||st==='chest')return bossUp()?'boss':'combat';
+    if(st==='ready')return 'menu';
+    return null; /* paused / over / win: fade out under the stingers */
+  }
+  const unblock=()=>{M.blocked=false;};
+  window.addEventListener('pointerdown',unblock,{passive:true});
+  window.addEventListener('keydown',unblock);
+  const FADE=0.9;let lastT=performance.now();
+  setInterval(()=>{try{
+    if(!packOn())return;
+    const now=performance.now(),dt=Math.min(0.5,(now-lastT)/1000);lastT=now;
+    const want=desired();
+    const duck=(VX.cur?0.5:1)*((typeof auDuckActive==='function'&&auDuckActive())?0.45:1);
+    const base=Math.min(1,mv()*0.8)*duck;
+    for(const n in M.tracks){
+      const a=M.tracks[n];if(!a)continue;
+      const g=M.gain[n],tgt=(want===n)?1:0;
+      const ng=tgt>g?Math.min(1,g+dt/FADE):Math.max(0,g-dt/FADE*1.6);
+      M.gain[n]=ng;
+      if(ng<=0){if(!a.paused)a.pause();continue;}
+      a.volume=Math.max(0,Math.min(1,base*ng));
+      if(a.paused&&!M.blocked){
+        if(n==='boss')a.currentTime=0; /* boss theme always hits from the top */
+        const p=a.play();if(p&&p.catch)p.catch(()=>{M.blocked=true;M.gain[n]=0;});
+      }
+    }
+    if(Music.realEl&&!Music.realEl.paused)Music.realEl.pause();
+  }catch(_){}},100);
+  window.AUDIOPACK={voice:V,sfx:S,music:M,state:VX};
+
+  /* ---------- hooks ---------- */
+  const _warn=warn;
+  warn=function(msg){
+    const r=_warn.apply(this,arguments);
+    try{
+      const m=String(msg||'').toUpperCase();
+      const boss=/SPUD/.test(m)?'boss_spud':/PEEL/.test(m)?'boss_peel':/GLAZE/.test(m)?'boss_glaze':/FIZZ/.test(m)?'boss_fizz':
+        /PATTY/.test(m)?'boss_patty':/BURRITO/.test(m)?'boss_burrito':/CRISP/.test(m)?'boss_crisp':/COLOSSUS/.test(m)?'boss_incoming':null;
+      if(boss){vox(boss,2);sfx3('boss_stinger');}
+      else if(/ELITE INCOMING/.test(m))vox('elite',1);
+      else if(/NEW FOE/.test(m))vox('new_foe',0);
+      else if(/ENDLESS/.test(m))vox('endless',2);
+      else if(/OVERDRIVE/.test(m))vox('c_zeal',1);
+      else if(/CRYO CANISTER/.test(m))vox('c_still',1);
+      else if(/REPAIR KIT/.test(m))vox('c_resto',1);
+      else if(m.charAt(0)==='»')vox(ULT[typeof selectedHero!=='undefined'?selectedHero:'survivor']||'ult_survivor',2);
+    }catch(_){}
+    return r;
+  };
+  const _fl=addFloater;
+  addFloater=function(x,y,text,color,life,size){
+    const r=_fl.apply(this,arguments);
+    try{
+      const t=String(text||'');
+      if(t.indexOf(' BUILT')>0)sfx3('tower_place');
+      else if(t.indexOf('OIL RUSH')>=0){sfx3('oil_rush');vox('oil_rush',1);}
+      else if(t==='FIELD STATION ONLINE'){sfx3('station_online');vox('station',1);}
+      else if(t.indexOf('MERGE READY')>=0)vox('merge_ready',0);
+      else if(t.indexOf('ROYAL TUMFY')>=0){sfx3('boss_death');vox('boss_down',2);}
+      else if(t.indexOf('GLORY')>=0){sfx3('paragon');vox('glory',2);}
+      else if(t.indexOf('PARAGON')>=0){sfx3('paragon');vox('paragon',2);}
+      else if(t.charAt(0)==='+'&&/ GOLD$/.test(t))sfx3('tower_sell');
+      else if(t==='TOWER LIMIT'||t==='TURRET LIMIT'){sfx3('ui_error');vox('tower_limit',0);}
+      else if(/^NEED |NEEDED$|^ALREADY USED|^BLOCKED|^BUILD NEAR/.test(t))sfx3('ui_error');
+    }catch(_){}
+    return r;
+  };
+  const _show=showEl;
+  showEl=function(id){
+    const r=_show.apply(this,arguments);
+    try{
+      if(id==='lvlup'&&typeof state!=='undefined'&&state==='levelup'&&typeof player!=='undefined'){
+        const L=player.level|0;
+        if(L===10)vox('level10',1);else if(L===20)vox('level20',1);else if(L<=5||L%5===0)vox('levelup',0);
+        if(L%5===0)sfx3('lvlup_major');
+      }
+    }catch(_){}
+    return r;
+  };
+  const _evo=announceEvo;
+  announceEvo=function(){const r=_evo.apply(this,arguments);try{sfx3('lvlup_major');vox('evo',2);}catch(_){}return r;};
+  const _chest=openChest;
+  openChest=function(){const r=_chest.apply(this,arguments);try{sfx3('chest_open');}catch(_){}return r;};
+  const _over=gameOver;
+  gameOver=function(){const r=_over.apply(this,arguments);try{sfx3('defeat_sting');vox('defeat',2);}catch(_){}return r;};
+  const _win=victory;
+  victory=function(){const r=_win.apply(this,arguments);try{sfx3('victory_fanfare');vox('victory',2);}catch(_){}return r;};
+  const _start=startGame;
+  startGame=function(){
+    const r=_start.apply(this,arguments);
+    try{setTimeout(()=>{try{if(typeof state!=='undefined'&&state==='play')vox('run_start',2);}catch(_){}},700);}catch(_){}
+    return r;
+  };
+  /* tower attack sounds keyed on the damage tag; only near the hero, low volume, per-line gates */
+  const TSFX={'Tower:Tesla':['arc_zap',450],'Tower:Mortar':['mortar_launch',700],'Tower:Watch':['cryo_pulse',1400],
+    'Tower:Tack':['tack_burst',600],'Tower:Pitch':['pitch_splash',1200],'Tower:Spike':['spike_clang',900]};
+  const _dd=dealDamage;
+  dealDamage=function(e,dmg,srcX,srcY,wtag){
+    try{
+      const s=TSFX[wtag];
+      if(s&&typeof state!=='undefined'&&state==='play'&&!isMuted()&&typeof player!=='undefined'){
+        const sx=(srcX!==undefined&&srcX!==null)?srcX:(e?e.x:player.x),sy=(srcY!==undefined&&srcY!==null)?srcY:(e?e.y:player.y);
+        const dx=sx-player.x,dy=sy-player.y;
+        if(dx*dx+dy*dy<640*640)sfx3(s[0],SFX3[s[0]]*0.55,s[1]);
+      }
+    }catch(_){}
+    return _dd.apply(this,arguments);
+  };
+  /* kingdom builds + tower path upgrades are detected by state polling (the UI calls closure-internal functions) */
+  let kSnap=null;
+  setInterval(()=>{try{
+    const KK=window.KSC_KINGDOM;if(!KK||!KK.levels)return;
+    const L=KK.levels;
+    if(!kSnap){kSnap={};for(const k in L)kSnap[k]=L[k]|0;return;}
+    for(const k in L){
+      if((L[k]|0)>(kSnap[k]|0)){sfx3('kingdom_build');vox(k==='palace'?'kingdom_palace':'kingdom_build',1);}
+      kSnap[k]=L[k]|0;
+    }
+  }catch(_){}},300);
+  let tSig=-1;
+  setInterval(()=>{try{
+    const TS=window.TOWERSYS;const st=(typeof state!=='undefined')?state:'';
+    if(!TS||!TS.pathLv||!TS.towers||st!=='play'){tSig=-1;return;}
+    let s=0;const arr=TS.towers;
+    for(let i=0;i<arr.length;i++){const t=arr[i];if(!t)continue;s+=(TS.pathLv(t,0)|0)+(TS.pathLv(t,1)|0)+(TS.pathLv(t,2)|0);}
+    if(tSig>=0&&s>tSig){sfx3('tower_upgrade');sfx3('ui_confirm');}
+    tSig=s;
+  }catch(_){}},150);
+  /* low-HP warning, at most once per 45s */
+  setInterval(()=>{try{
+    if(typeof state==='undefined'||state!=='play'||typeof player==='undefined'||!player)return;
+    if(player.hp>0&&player.hp<player.maxHp*0.25)vox('low_hp',1);
+  }catch(_){}},400);
+})();
+</script>
+<script>
 /*GAUNTLET-FIX: playBtn/winAgainBtn captured the ORIGINAL startGame at load; every wrapper block
    reassigns the global binding, so button clicks bypassed the whole chain (altars/oil-reset/NG+/
    weekly/gauntlet-banner never ran via FIGHT). Rebind every known entry to the live chain.*/
 (function(){
   function rebind(){
-    var fn=window.startGame;
-    ['playBtn','winAgainBtn'].forEach(function(id){
+    var fn=function(){return window.startGame.apply(this,arguments);};/*P017: resolve the chain at click time so late wrappers (IRONMAN) apply*/
+    ['playBtn','winAgainBtn','againBtn'].forEach(function(id){
       var b=document.getElementById(id);
       if(b)b.onclick=fn;
     });

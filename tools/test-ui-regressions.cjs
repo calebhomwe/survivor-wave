@@ -218,4 +218,27 @@ test('old lifetime labels cannot restore retired themes or inject markup', () =>
   for(const old of ['Void Power','Relic Nova','Frost Nova','Spirit Shuriken','<img onerror=alert(1)>'])assert.equal(r.displayWeaponLabel(old),'Legacy equipment');
   assert(html.includes('n:displayWeaponLabel(best),v:bv'));
 });
+test('premium-audit trust fixes: chest once, coin value, per-run boss reset, retry chain, 17-chapter ladder', () => {
+  // P035: the chest leaves pickups before the overlay opens, taken pickups are skipped, and openChest is re-entry safe.
+  const upd = fn('update');
+  assert(upd.includes("if(pk.dead)continue;"), 'pickup loop skips taken pickups');
+  assert(/kind==='chest'\)\{\s*sweep\(pickups,p2=>!p2\.dead\);/.test(upd), 'chest is swept before openChest');
+  assert(/function openChest\(\)\{\s*if\(state==='chest'\)return;/.test(fn('openChest')), 'openChest guards re-entry');
+  // P046: a coin at combo 0 pays its full value; the combo only adds on top.
+  const g = {b31Combo: 0}; vm.createContext(g); vm.runInContext(html.match(/function b31GoldMult\(\)\{[^\n]*\}/)[0], g);
+  assert(upd.includes('Math.round(cv*(1+b31GoldMult()))'), 'coin uses 1+combo bonus');
+  assert.equal(Math.round(3 * (1 + g.b31GoldMult())), 3);
+  g.b31Combo = 50; assert.equal(Math.round(10 * (1 + g.b31GoldMult())), 12);
+  // P017: every gauntlet once-flag re-arms when gameTime restarts, and TRY AGAIN uses the live startGame chain.
+  for (const re of [/if\(gameTime\+0\.5<spudGT\)spudDone=false;/, /if\(gameTime\+0\.5<peelGT\)spawned=false;/,
+    /if\(gameTime\+0\.5<firedGT\)fired=\{\};/, /window\.__f_bur=0;window\.__f_patty=0;/, /window\.__nextOilRush=120;window\.__oilGT=gameTime;/])
+    assert(re.test(html), 'per-run reset ' + re);
+  assert(html.includes("['playBtn','winAgainBtn','againBtn'].forEach"), 'againBtn is rebound');
+  assert(html.includes('return window.startGame.apply(this,arguments);'), 'buttons resolve startGame at click time');
+  // P049: the chapter ladder and daily OVERLORD clamp both reach chapter 17.
+  const vic = fn('victory');
+  assert(vic.includes('sioc.stage<17)sioc.stage++'), 'ladder advances to 17');
+  assert(!/Math\.min\(12,\(sioc\.stage/.test(html), 'no chapter-12 daily clamp');
+  assert(vic.includes("'+600 DAILY CHEST'") || html.includes("' (+600 DAILY CHEST)'"), 'daily chest label matches payout');
+});
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
