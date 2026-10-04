@@ -5,8 +5,11 @@ A polished single-file HTML5 horde-survival roguelite — **Survivor.io-style, b
 Play locally: keep `survivor-wave.html` beside its `assets/` folder, run
 `python -m http.server 8000`, then open `http://localhost:8000/survivor-wave.html`.
 No build step or runtime package dependencies. The complete downloaded folder can
-run on a local server without internet. This GitHub build is **not yet an installable
-offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
+run on a local server without internet. On HTTPS (or localhost), use **PREPARE
+OFFLINE PLAY** from the start screen to cache and verify the game shell before
+going offline. The cache covers the listed same-origin game files only; bump the
+cache version in `sw.js` when changing the app shell. This is not iPhone/Safari
+certification: test an airplane-mode reload on the target device before relying on it.
 
 ## Features
 
@@ -68,6 +71,7 @@ python -m venv .venv
 python -m pip install -r tools/requirements-test.txt
 python -m playwright install chromium
 node tools/test-ui-regressions.cjs
+node tools/test-offline.cjs
 python tools/smoke.py
 python tools/gauntlet.py --only g1,g2,g5,g6,g8
 ```
@@ -76,5 +80,7 @@ Linux CI may need `python -m playwright install --with-deps chromium`. Browser
 installation needs internet; download it before working offline. A missing browser
 or blocked download is a setup failure, not a passing test. The gauntlet writes
 `tools/PROOF.md` and `tools/proof/`; review generated changes before committing.
-The Node suite tests actual source functions with a fake DOM, not browser layout.
-Physical iPhone Safari, safe-area behavior and offline reload still need device QA.
+The Node suites test source behavior and cache inventory, not browser layout or
+offline behavior. No actual browser airplane-mode reload, audio playback or range
+request test has been run. Physical iPhone Safari, safe-area behavior, airplane-mode
+reload and audio range requests still need browser/device integration QA.
