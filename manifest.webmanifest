@@ -1,0 +1,17 @@
+{
+  "name": "Kingdom Survivor Clash",
+  "short_name": "Survivor Wave",
+  "start_url": "./survivor-wave.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c1020",
+  "theme_color": "#0c1020",
+  "icons": [
+    {
+      "src": "./assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
