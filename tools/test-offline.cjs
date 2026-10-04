@@ -72,7 +72,77 @@ function makeServiceWorker(failingPath) {
   return {handlers, entries, get fetchCount() { return fetchCount; }};
 }
 
+function makeOfflinePage(register, getReady, timers = {setTimeout, clearTimeout}) {
+  const button = {disabled: false, addEventListener: (type, handler) => { button.click = handler; }};
+  const status = {textContent: ''};
+  const navigator = {serviceWorker: {register, get ready() { return getReady(); }}};
+  class FakeMessageChannel {
+    constructor() {
+      this.port1 = {onmessage: null, close() {}};
+      this.port2 = {
+        postMessage: data => queueMicrotask(() => this.port1.onmessage?.({data})),
+        close() {}
+      };
+    }
+  }
+  vm.runInNewContext(offlineSource, {
+    document: {getElementById: id => id === 'prepareOffline' ? button : status},
+    window: {isSecureContext: true},
+    navigator,
+    location: {href: 'https://game.example/survivor-wave/survivor-wave.html'},
+    URL, MessageChannel: FakeMessageChannel, Promise, setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout
+  });
+  return {button, status};
+}
+
 async function run() {
+  const workingWorker = {
+    postMessage: (message, ports) => {
+      assert.equal(message.type, 'PREPARE_OFFLINE');
+      ports[0].postMessage({type: 'progress', completed: shellPaths.length, total: shellPaths.length});
+      ports[0].postMessage({type: 'complete', version: 'survivor-wave-shell-v2', total: shellPaths.length});
+      ports[0].close();
+    }
+  };
+  const registration = {active: workingWorker};
+  let registrationAttempts = 0;
+  const retryPage = makeOfflinePage(async () => {
+    registrationAttempts++;
+    if (registrationAttempts === 1) throw new Error('temporary service-worker fetch failure');
+    return registration;
+  }, () => Promise.resolve(registration));
+  await retryPage.button.click();
+  assert.equal(registrationAttempts, 1);
+  assert(!retryPage.status.textContent.includes('Offline play ready'));
+  assert.equal(retryPage.button.disabled, false);
+  await retryPage.button.click();
+  assert.equal(registrationAttempts, 2, 'retry invokes service-worker registration again');
+  assert(retryPage.status.textContent.includes('Offline play ready'));
+
+  const fastTimeouts = {
+    setTimeout: (callback, ms) => setTimeout(callback, ms === 25000 ? 0 : ms),
+    clearTimeout
+  };
+  const readinessPage = makeOfflinePage(
+    async () => registration,
+    () => new Promise(() => {}),
+    fastTimeouts
+  );
+  await readinessPage.button.click();
+  assert(!readinessPage.status.textContent.includes('Offline play ready'));
+  assert(readinessPage.status.textContent.includes('retry'), 'service-worker readiness timeout is recoverable');
+  assert.equal(readinessPage.button.disabled, false);
+
+  const silentRegistration = {active: {postMessage() {}}};
+  const preparePage = makeOfflinePage(
+    async () => silentRegistration,
+    () => Promise.resolve(silentRegistration),
+    fastTimeouts
+  );
+  await preparePage.button.click();
+  assert(!preparePage.status.textContent.includes('Offline play ready'));
+  assert(preparePage.status.textContent.includes('retry'), 'prepare-message timeout is recoverable');
+
   const serviceWorker = makeServiceWorker();
   const {handlers, entries} = serviceWorker;
   let install;
@@ -91,7 +161,7 @@ async function run() {
   const complete = messages.find(message => message.type === 'complete');
   assert.deepEqual(
     {version: complete.version, total: complete.total},
-    {version: 'survivor-wave-shell-v1', total: shellPaths.length}
+    {version: 'survivor-wave-shell-v2', total: shellPaths.length}
   );
   assert(messages.some(message => message.type === 'progress'));
 
@@ -110,6 +180,17 @@ async function run() {
   assert.equal(rangeHandled, false, 'range requests remain outside the cache handler');
 
   const broken = makeServiceWorker('assets/app-icon.svg');
+  const brokenPage = makeOfflinePage(async () => {
+    let failedInstall;
+    broken.handlers.install({waitUntil: promise => { failedInstall = promise; }});
+    await assert.rejects(failedInstall);
+    return {active: null};
+  }, () => new Promise(() => {}), fastTimeouts);
+  await brokenPage.button.click();
+  assert(broken.entries.size < shellPaths.length, 'failed install leaves an incomplete cache');
+  assert(!brokenPage.status.textContent.includes('Offline play ready'));
+  assert(brokenPage.status.textContent.includes('retry'));
+
   let failedInstall;
   broken.handlers.install({waitUntil: promise => { failedInstall = promise; }});
   await assert.rejects(failedInstall);

@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const VERSION = 'survivor-wave-shell-v1';
+  const VERSION = 'survivor-wave-shell-v2';
   const button = document.getElementById('prepareOffline');
   const status = document.getElementById('offlineStatus');
   if (!button || !status) return;
@@ -14,40 +14,41 @@
 
   const scriptUrl = new URL('./sw.js', location.href);
   const scope = new URL('./', location.href).pathname;
-  const registrationPromise = navigator.serviceWorker.register(scriptUrl, {scope});
-  registrationPromise.then(() => {
-    if (!button.disabled) status.textContent = 'Press to cache and verify the game files while online.';
-  }).catch(() => {
-    status.textContent = 'Could not start offline preparation. Check the connection and retry.';
+  const waitFor = (promise, timeoutMs) => new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Timed out')), timeoutMs);
+    Promise.resolve(promise).then(value => {
+      clearTimeout(timeout);
+      resolve(value);
+    }, error => {
+      clearTimeout(timeout);
+      reject(error);
+    });
   });
+
+  status.textContent = 'Press to cache and verify the game files while online.';
 
   button.addEventListener('click', async () => {
     button.disabled = true;
     status.textContent = 'Preparing offline play…';
     try {
-      await registrationPromise;
-      const registration = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Timed out')), 25000);
-        navigator.serviceWorker.ready.then(value => {
-          clearTimeout(timeout);
-          resolve(value);
-        }, error => {
-          clearTimeout(timeout);
-          reject(error);
-        });
-      });
-      const worker = registration.active;
+      const registration = await waitFor(
+        navigator.serviceWorker.register(scriptUrl, {scope}),
+        25000
+      );
+      const readyRegistration = await waitFor(navigator.serviceWorker.ready, 25000);
+      const worker = readyRegistration.active || registration.active;
       if (!worker) throw new Error('No active service worker');
 
-      await new Promise((resolve, reject) => {
+      await waitFor(new Promise((resolve, reject) => {
         const channel = new MessageChannel();
         const finish = (error, value) => {
-          clearTimeout(timeout);
           channel.port1.close();
+          try {
+            channel.port2.close();
+          } catch (_) {}
           if (error) reject(error);
           else resolve(value);
         };
-        const timeout = setTimeout(() => finish(new Error('Timed out')), 25000);
         channel.port1.onmessage = event => {
           const message = event.data || {};
           if (message.version && message.version !== VERSION) {
@@ -66,7 +67,7 @@
         } catch (error) {
           finish(error);
         }
-      });
+      }), 25000);
     } catch (_) {
       status.textContent = 'Offline preparation did not complete. Stay online and retry.';
     } finally {

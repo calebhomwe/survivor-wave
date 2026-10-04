@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'survivor-wave-shell-v1';
+const CACHE_NAME = 'survivor-wave-shell-v2';
 const CACHE_PREFIX = 'survivor-wave-shell-';
 const CACHE_PATHS = [
   'survivor-wave.html',

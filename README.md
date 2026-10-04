@@ -81,6 +81,6 @@ installation needs internet; download it before working offline. A missing brows
 or blocked download is a setup failure, not a passing test. The gauntlet writes
 `tools/PROOF.md` and `tools/proof/`; review generated changes before committing.
 The Node suites test source behavior and cache inventory, not browser layout or
-service-worker installation. Physical iPhone Safari, safe-area behavior, airplane
-mode reload, installation failure/retry and audio range requests still need device
-and browser integration QA.
+offline behavior. No actual browser airplane-mode reload, audio playback or range
+request test has been run. Physical iPhone Safari, safe-area behavior, airplane-mode
+reload and audio range requests still need browser/device integration QA.
