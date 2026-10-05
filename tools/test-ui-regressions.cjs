@@ -241,4 +241,23 @@ test('premium-audit trust fixes: chest once, coin value, per-run boss reset, ret
   assert(!/Math\.min\(12,\(sioc\.stage/.test(html), 'no chapter-12 daily clamp');
   assert(vic.includes("'+600 DAILY CHEST'") || html.includes("' (+600 DAILY CHEST)'"), 'daily chest label matches payout');
 });
+test('storage shim keeps the game alive when localStorage throws (sandboxed frames, private modes)', () => {
+  const first = scripts[0];
+  assert(first.includes('STORAGE-SHIM'), 'the shim is the first script, before any save is read');
+  const w = {Object, String};
+  for (const n of ['localStorage', 'sessionStorage'])
+    Object.defineProperty(w, n, {configurable: true, get() { throw new Error('SecurityError: sandboxed'); }});
+  w.window = w; vm.createContext(w); vm.runInContext(first, w);
+  assert.equal(w.__kscMemStorage, true);
+  w.localStorage.setItem('survivorKingdom', '{"palace":2}');
+  assert.equal(w.localStorage.getItem('survivorKingdom'), '{"palace":2}');
+  assert.equal(w.localStorage.getItem('missing'), null);
+  assert.equal(w.localStorage.length, 1); assert.equal(w.localStorage.key(0), 'survivorKingdom');
+  w.localStorage.removeItem('survivorKingdom'); assert.equal(w.localStorage.length, 0);
+  // working storage is left untouched
+  const store = {}, real = {setItem: (k, v) => { store[k] = v; }, removeItem: k => { delete store[k]; }, getItem: k => store[k] ?? null};
+  const ok = {Object, String, localStorage: real, sessionStorage: real}; ok.window = ok; vm.createContext(ok); vm.runInContext(first, ok);
+  assert.equal(ok.localStorage, real); assert.equal(ok.__kscMemStorage, undefined);
+  assert(!html.includes("url('assets/fonts/"), 'fonts are embedded so sandboxed frames do not need CORS for them');
+});
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));

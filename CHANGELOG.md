@@ -1,5 +1,10 @@
 # Kingdom Survivor Clash — changelog (web build)
 
+## v1.4.2 — 2026-10-05 (runs in sandboxed and storage-blocked browsers)
+- The game crashed to a dead menu wherever the browser blocks storage access, such as a sandboxed embed without same-origin access or some private-browsing modes: the first save read threw and stopped the main script. A storage fallback now runs before any other script and swaps in an in-memory store when real storage is unusable, so the game plays normally and progress lasts for that session only.
+- The two web fonts are embedded in the page, so headings keep their typeface in sandboxed frames where cross-origin font loads are refused.
+- Tests: storage-fallback regression group (24 groups).
+
 ## v1.4.1 — 2026-09-29 (premium-audit trust fixes)
 - Chests: a chest opened once and then re-opened every frame after closing, which froze the run or granted dozens of free upgrades. The opened chest now leaves the field before the overlay appears, taken pickups are skipped and the chest overlay cannot stack (audit P035).
 - Coins: the kill-streak combo was applied as the whole coin value, so coins paid 0 Silver below a 10-kill combo. Coins now pay their full value plus the combo bonus, and the floater reads +N SILVER (P046).
