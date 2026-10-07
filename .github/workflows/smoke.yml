@@ -1,0 +1,48 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Source/unit regressions (fake DOM, no browser)
+        run: node tools/test-ui-regressions.cjs
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install -r tools/requirements-test.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Headless playtest (real Chromium, 20 s run)
+        run: python tools/smoke.py --secs 20
+
+      - name: Upload playtest screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-shots
+          path: tools/shots/
+          if-no-files-found: ignore

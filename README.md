@@ -2,11 +2,19 @@
 
 A polished single-file HTML5 horde-survival roguelite — **Survivor.io-style, but chill**: you defend a city park from invading wildlife, not zombies.
 
-Play locally: keep `survivor-wave.html` beside its `assets/` folder, run
-`python -m http.server 8000`, then open `http://localhost:8000/survivor-wave.html`.
-No build step or runtime package dependencies. The complete downloaded folder can
-run on a local server without internet. This GitHub build is **not yet an installable
-offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
+## Play / Test
+
+- **Play now:** <https://calebhomwe.github.io/survivor-wave/survivor-wave.html> (GitHub Pages, served from `main`).
+- **Play locally:** keep `survivor-wave.html` beside its `assets/` folder, run
+  `python -m http.server 8000`, then open `http://localhost:8000/survivor-wave.html`.
+  No build step or runtime package dependencies. The complete downloaded folder can
+  run on a local server without internet. This GitHub build is **not yet an installable
+  offline iPhone PWA**; a browser preview alone is not an airplane-mode guarantee.
+- **Test:** `node tools/test-ui-regressions.cjs` (source/unit regressions, no browser), then
+  `pip install -r tools/requirements-test.txt && python -m playwright install chromium && python tools/smoke.py --secs 20`
+  (headless Chromium playtest: starts a run, asserts the canvas paints, the run state advances and
+  there are zero page errors; screenshots land in `tools/shots/`). CI runs both on every push and
+  pull request via `.github/workflows/smoke.yml`.
 
 ## Features
 
