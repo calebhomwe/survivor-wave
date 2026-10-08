@@ -137,6 +137,10 @@ test('responsive and state visibility guards are present (not a layout test)', (
   for (const marker of ['viewport-fit=cover', 'safe-area-inset-bottom', '100dvh', '#kscTowerInspect', 'data-gameplay="true"']) assert(html.includes(marker));
   assert(html.includes("if(state==='play'&&hitStopT>0)"));
 });
+test('hub link points at a hub that exists, not the account root (404 in this standalone repo)', () => {
+  assert(!html.includes('href="../index.html"'));
+  assert(html.includes('<a class="back" href="https://calebhomwe.github.io/arcade/">'));
+});
 test('refined upgrade UI keeps large Retina art and explicit progress', () => {
   for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'g.translate(Sz/2,Sz/2)', 'lc-progress', 'CHOOSE YOUR UPGRADE']) assert(html.includes(marker));
   assert(!html.includes('grid-template-columns:48px'));
