@@ -22,7 +22,8 @@ class Element {
     this.tagName = tag.toUpperCase(); this.style = {}; this.dataset = {};
     this.children = []; this._text = ''; this.attrs = {}; this.offsetWidth = 344; this.offsetHeight = 330;
     const classes = new Set(['hidden']);
-    this.classList = {add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c)};
+    this.classList = {add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c),
+      toggle: (c, force) => { const on = force === undefined ? !classes.has(c) : !!force; on ? classes.add(c) : classes.delete(c); return on; }};
   }
   set id(v) { this._id = v; ids.set(v, this); }
   get id() { return this._id; }
@@ -136,6 +137,10 @@ test('responsive and state visibility guards are present (not a layout test)', (
   for (const marker of ['viewport-fit=cover', 'safe-area-inset-bottom', '100dvh', '#kscTowerInspect', 'data-gameplay="true"']) assert(html.includes(marker));
   assert(html.includes("if(state==='play'&&hitStopT>0)"));
 });
+test('hub link points at a hub that exists, not the account root (404 in this standalone repo)', () => {
+  assert(!html.includes('href="../index.html"'));
+  assert(html.includes('<a class="back" href="https://calebhomwe.github.io/arcade/">'));
+});
 test('refined upgrade UI keeps large Retina art and explicit progress', () => {
   for (const marker of ['grid-template-columns:112px', 'width:96%;height:96%', 'iconCV(k,144)', 'g.translate(Sz/2,Sz/2)', 'lc-progress', 'CHOOSE YOUR UPGRADE']) assert(html.includes(marker));
   assert(!html.includes('grid-template-columns:48px'));
@@ -217,5 +222,34 @@ test('old lifetime labels cannot restore retired themes or inject markup', () =>
   assert.equal(r.displayWeaponLabel('Pulse Module'),'Pulse Module');
   for(const old of ['Void Power','Relic Nova','Frost Nova','Spirit Shuriken','<img onerror=alert(1)>'])assert.equal(r.displayWeaponLabel(old),'Legacy equipment');
   assert(html.includes('n:displayWeaponLabel(best),v:bv'));
+});
+test('end-of-run screen still opens when the best-score write throws (blocked or full storage)', () => {
+  for (const id of ['finTime', 'finKills', 'finLevel', 'finScore', 'finBest', 'newBest', 'reviveBtn']) { const e = new Element('div'); e.id = id; document.body.appendChild(e); }
+  const shown = [], r = {state: 'play', best: 10, ultGen: 0, gameTime: 30, gold: 0, usedRevive: false, dailyActive: true, runStats: {},
+    eliteCount: 0, bossCount: 0, player: {kills: 3, level: 2, revives: 0}, Math, document,
+    localStorage: {setItem() { throw new Error('QuotaExceededError'); }},
+    rollBounty: noop, sfx: noop, Music: {stop: noop}, saveMeta: noop, goldEarned: () => 25, fmtTime: () => '0:30', showEl: id => shown.push(id)};
+  vm.createContext(r);
+  vm.runInContext(fn('gameOver') + '\n' + fn('finalScore'), r);
+  r.gameOver();
+  assert.deepEqual(shown, ['over']); assert.equal(r.state, 'over'); assert.equal(r.gold, 25);
+  assert.equal(r.best, 376); assert.equal(ids.get('finBest').textContent, '376');
+  assert.equal(ids.get('newBest').classList.contains('hidden'), false);
+});
+test('mute toggle keeps its icon in sync when the save write throws', () => {
+  const e = new Element('button'); e.id = 'muteBtn'; document.body.appendChild(e);
+  const r = {muted: false, document, localStorage: {setItem() { throw new Error('QuotaExceededError'); }},
+    refreshMute: () => { e.textContent = r.muted ? 'off' : 'on'; }};
+  vm.createContext(r);
+  vm.runInContext(html.match(/document\.getElementById\('muteBtn'\)\.onclick=[^\n]+/)[0], r);
+  e.onclick(); assert.equal(r.muted, true); assert.equal(e.textContent, 'off');
+  e.onclick(); assert.equal(r.muted, false); assert.equal(e.textContent, 'on');
+});
+test('boot-time save reads and run-end writes sit inside a try so a denied localStorage cannot abort the script', () => {
+  for (const call of ["getItem(DK)", "getItem('survivorBest2')", "getItem('survivorTut')", "getItem('survivorWins')", "getItem('survivorParagons')", "setItem('survivorBest2'", "setItem('survivorMute'"]) {
+    let i = -1, seen = 0;
+    while ((i = html.indexOf(call, i + 1)) >= 0) { seen++; assert(html.slice(html.lastIndexOf('\n', i), i).includes('try{'), call + ' must be guarded on its own line'); }
+    assert(seen > 0, call + ' exists');
+  }
 });
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
