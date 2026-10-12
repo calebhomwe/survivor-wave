@@ -111,7 +111,7 @@ class Page:
         }""")
 
     def godmode(self):
-        self.p.evaluate("""() => { try{ player.invT=9999; player.hp=player.maxHp; gold=Math.max(gold,3000); window.oil=Math.max(window.oil||0,500);}catch(_){} }""")
+        self.p.evaluate("""() => { try{ player.invT=9999; player.iframes=9999; player.hp=player.maxHp; gold=Math.max(gold,3000); window.oil=Math.max(window.oil||0,500);}catch(_){} }""")
 
     def ev(self, js):
         return self.p.evaluate(js)
@@ -137,6 +137,19 @@ JS_RING = """(tys) => {
     ts.push(t); placed.push(ty);
   });
   return placed.length;
+}"""
+
+JS_FEED_TOWERS = """() => {
+  const T=window.TOWERSYS; let n=0;
+  for (const t of T.towers) {
+    const D=T.defs[t.ty]; if(!D||!(D.dmg>0))continue;
+    const E=T.eff?T.eff(t):D; const lo=E.minR||D.minR||0, hi=E.range||D.range||150;
+    const d=lo?Math.min(hi*0.8,lo+80):Math.min(60,hi*0.5);
+    const a=Math.atan2(t.y-player.y,t.x-player.x);   /* outside the tower, away from the hero's guns */
+    const e=makeEnemy('grunt'); e.x=t.x+Math.cos(a)*d; e.y=t.y+Math.sin(a)*d; e.hp=e.maxHp=Math.max(e.maxHp,400);
+    enemies.push(e); n++;
+  }
+  return n;
 }"""
 
 JS_GRANT_WEAPONS = """(weps) => {
@@ -364,7 +377,12 @@ def g5_towers(ctx):
     pg.p.wait_for_timeout(600)
     pg.ev("(" + JS_TELEPORT_ENEMIES + ")(16)")
     pg.ev("(" + JS_RING + ")(['" + "','".join(ALL_TOWERS) + "'])")
-    pg.p.wait_for_timeout(12000)
+    # The hero's weapons clear the one-off 16 grunts within seconds, so slow or short-range lines
+    # (mortar: minR 120 / 2.3 s, tack: 135 px) used to race for targets and flake. Keep one fresh
+    # grunt inside each combat tower's own firing band for the whole 12 s window instead.
+    for _ in range(8):
+        pg.ev("(" + JS_FEED_TOWERS + ")()")
+        pg.p.wait_for_timeout(1500)
     dmg = pg.ev("""() => { const rs=(typeof runStats!=='undefined'&&runStats.dmg)?runStats.dmg:{};
       const out={}; for(const k in rs) if(k.indexOf('Tower')===0) out[k]=Math.round(rs[k]); return out; }""")
     combat_tags = {'Tower:Gatling': 'gatling', 'Tower:Tesla': 'tesla', 'Tower:Mortar': 'mortar',
@@ -376,7 +394,7 @@ def g5_towers(ctx):
     record(m, "tithe generates silver", tithe and tithe > 0, f"+{tithe}")
     healed = pg.ev("""() => {
       const ap=TOWERSYS.towers.find(t=>t.ty==='apoth'); if(!ap)return 'no-apoth';
-      player.x=ap.x; player.y=ap.y; player.hp=Math.max(1,player.maxHp*0.4); player.invT=9999;
+      player.x=ap.x; player.y=ap.y; player.hp=Math.max(1,player.maxHp*0.4); player.invT=9999; player.iframes=9999;
       const h0=player.hp;
       return new Promise(res=>setTimeout(()=>res(Math.round((player.hp-h0)*10)/10),4500));
     }""")
@@ -506,6 +524,7 @@ def g7_perf(ctx):
         const e=makeEnemy('grunt');
         const a=Math.random()*6.28, d=200+Math.random()*400;
         e.x=player.x+Math.cos(a)*d; e.y=player.y+Math.sin(a)*d;
+        e.hp=e.maxHp=1e6; /* durable: since v1.2 towers + hero clear plain grunts inside the 6 s window, so the scene no longer held 120 */
         enemies.push(e);
       }
       return enemies.length;
@@ -631,6 +650,14 @@ def main():
             except Exception as e:
                 record(key, "module crash", False, repr(e)[:200])
                 ok = False
+            # Modules open pages via browser.new_page() and several never close them; a leaked page keeps
+            # a live game running, so by g7 ~6 background runs shared 4 cores (FPS 6, load-sensitive
+            # boss polls). Close whatever the module left open before the next one starts.
+            for c in list(browser.contexts):
+                try:
+                    c.close()
+                except Exception:
+                    pass
             passed_all &= ok
             print(f"== {key} {'PASS' if ok else 'FAIL'}", flush=True)
         browser.close()

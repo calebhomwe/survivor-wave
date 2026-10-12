@@ -44,6 +44,7 @@ resizes). No frameworks, no build step. All persistent state in `localStorage` (
 | `KSC-MEADOW` (env painters + `getChunk`) | Map 1 kingdom re-theme: `THEMES[0].kingdom=true` switches ground/roads/props; painters `drawPillar/Banner/Hay/Well/Stall/Cart/Lantern/Fountain/StoneWall/Waymarker/Olive/Plaza` |
 | `BTD: TOWER PLACEMENT SYSTEM` closure | `TD` defs, `PATHS` (3 paths × 2 tiers per line), `effOf(t)` effective stats, `pickTarget` (t.tgt), `tdmg` pops ledger, `drawTower` kingdom art for all 11 lines, inspect panel `openSell`. API: `TOWERSYS.eff/upgradePath/pathLv/pathCost/pathLock/maxTowers/costOf/drawIcon` |
 | `ITER BATCH D` poll | Support lines (pitch/spike/crier/apoth/craft) read `TOWERSYS.eff(t).flags`; tower maxHp/mending |
+| `AUDIO PACK v2` (second-to-last block, before `GAUNTLET-FIX`) | ElevenLabs announcer `vox(name,prio)` queue, `sfx3(name,vol,gateMs)` (+ `sfx()` routing for pack names), 3-track adaptive score (`window.AUDIOPACK.music`), wrappers on warn/addFloater/showEl/announceEvo/openChest/gameOver/victory/startGame/dealDamage, kingdom + tower-path polls, `settings.voice` |
 | `KSC-KINGDOM` | Clash village meta: buildings `B`, levels `K` (localStorage `survivorKingdom`), `window.KSC_META` consumed by TOWERSYS / oil poll / station gate, consumables Z/X/V, `window.KSC_KINGDOM` API |
 
 ## Key globals (read these before editing)
