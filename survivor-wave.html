@@ -9,6 +9,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
+<meta name="theme-color" content="#0c1020">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="offline.js" defer></script>
+
 <title>Kingdom Survivor Clash</title>
 
 <style>
@@ -23,6 +27,8 @@ html,body{height:100%;overflow:hidden}
 
 body{background:#0c1020;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;color:#eef2f7}
 #cv{touch-action:none}
+
+.offlineStatus{max-width:min(420px,90vw);min-height:1.4em;font-size:12px;line-height:1.35;color:#c7d2e4;text-align:center}
 
 canvas{display:block;position:absolute;inset:0}
 
@@ -551,6 +557,9 @@ body:not([data-gameplay="true"]) :is(#kscBuildBtn,#kscBuildBar,#kscTowerInspect,
     <button class="btn" id="perilBtn" style="font-size:15px;padding:11px 20px 8px;background:linear-gradient(170deg,#b91c1c,#450a0a);border-color:#f87171">☠ PERIL: OFF</button>
 
   </div>
+
+  <button class="btn green" id="prepareOffline" type="button">⬇ PREPARE OFFLINE PLAY</button>
+  <div class="offlineStatus" id="offlineStatus" role="status" aria-live="polite">Prepare while online before trying offline play.</div>
 
 </div>
 
