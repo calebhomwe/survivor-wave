@@ -16252,7 +16252,7 @@ function pickTarget(t,rng){
     else if(m==='weak')s=-e.hp;
     else if(m==='far')s=d;
     else if(m==='fast')s=e.speed||0;
-    else if(m==='elite')s=(e.isBoss||e.isElite||e.kscBoss2?1e12:0)-d;
+    else if(m==='elite')s=(e.isBoss||e.isElite||e.kscBoss2||e.isSpud||e.isPeel?1e12:0)-d;
     else s=-d;
     if(s>bs){bs=s;best=e;}
   });
@@ -16261,7 +16261,7 @@ function pickTarget(t,rng){
 function nearestInRange(t,rng){return pickTarget(t,rng);}
 function updateTowerTarget(t,D,dt){
   const TR=D.range, d=t.target?(t.target.x-t.x)**2+(t.target.y-t.y)**2:Infinity;
-  if(!t.target||t.target.hp<=0||t.target.untargetable||d>TR*TR||d<(D.minR||0)**2||(t.tgt&&t.tgt!=='close'&&t.tgt!=='lock'&&t.retarget!==undefined&&(t.retarget-=dt)<=0)){t.target=pickTarget(t,TR);t.retarget=0.5;}
+  if(!t.target||t.target.hp<=0||t.target.untargetable||d>TR*TR||d<(D.minR||0)**2||((t.tgt||'close')!=='lock'&&(t.retarget===undefined||(t.retarget-=dt)<=0))){t.target=pickTarget(t,TR);t.retarget=0.5;}
 }
 /* damage through the real pipeline + per-tower ledger (pops = kills) */
 function tdmg(t,e,dmg,x,y,tag){
