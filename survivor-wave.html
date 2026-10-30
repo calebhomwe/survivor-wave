@@ -16242,7 +16242,7 @@ function effOf(t){
 function pickTarget(t,rng){
   let best=null,bs=-1e18;const m=t.tgt||'close',minR=effOf(t).minR||0;
   eachNear(t.x,t.y,rng,e=>{
-    if(e.hp<=0||e.untargetable)return;
+    if(e.hp<=0||e.untargetable||e._kscDespawned)return;
     const dx=e.x-t.x,dy=e.y-t.y,d=dx*dx+dy*dy;
     if(d>rng*rng||d<minR*minR)return;
     let s;
@@ -16261,7 +16261,7 @@ function pickTarget(t,rng){
 function nearestInRange(t,rng){return pickTarget(t,rng);}
 function updateTowerTarget(t,D,dt){
   const TR=D.range, d=t.target?(t.target.x-t.x)**2+(t.target.y-t.y)**2:Infinity;
-  if(!t.target||t.target.hp<=0||t.target.untargetable||d>TR*TR||d<(D.minR||0)**2||((t.tgt||'close')!=='lock'&&(t.retarget===undefined||(t.retarget-=dt)<=0))){t.target=pickTarget(t,TR);t.retarget=0.5;}
+  if(!t.target||t.target.hp<=0||t.target.untargetable||t.target._kscDespawned||d>TR*TR||d<(D.minR||0)**2||((t.tgt||'close')!=='lock'&&(t.retarget===undefined||(t.retarget-=dt)<=0))){t.target=pickTarget(t,TR);t.retarget=0.5;}
 }
 /* damage through the real pipeline + per-tower ledger (pops = kills) */
 function tdmg(t,e,dmg,x,y,tag){
@@ -18580,9 +18580,9 @@ setInterval(function(){
       var removed=0;
       for(var k=enemies.length-1;k>=0&&removed<20;k--){
         var e5=enemies[k];
-        if(e5&&!e5.isBoss&&!e5.isElite&&!e5.kscBoss2&&e5.hp>0){
+        if(e5&&!e5.isBoss&&!e5.isElite&&!e5.kscBoss2&&!e5.isSpud&&!e5.isPeel&&e5.hp>0){
           var far=(e5.x-player.x)*(e5.x-player.x)+(e5.y-player.y)*(e5.y-player.y);
-          if(far>900*900){enemies.splice(k,1);removed++;}
+          if(far>900*900){e5._kscDespawned=true;enemies.splice(k,1);removed++;}
         }
       }
     }
