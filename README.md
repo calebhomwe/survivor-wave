@@ -33,7 +33,7 @@ Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom met
 
 - **BTD towers:** 11 tower lines, each with **3 upgrade paths × 2 tiers** (BTD crosspath rule: two paths
   per tower, the third locks), bought with Engineering Oil from a BTD-style inspect panel (stats, DPS,
-  per-tower **pops** and damage dealt, **targeting priority** CLOSE / HERO / STRONG / WEAK, sell value).
+  per-tower **pops** and damage dealt, **targeting priority** CLOSE / HERO / STRONG / WEAK / FAR / FAST / ELITE / LOCK, sell value).
   A fully-walked path = Tier 3 → merge two T3 into a **PARAGON** (T4), two T4 into **GLORY** (T5).
 - **Clash kingdom:** the 🏰 KINGDOM screen is a persistent village bought with Silver. The **PALACE**
   (Town Hall) gates every other building's level: SCRIPTORIUM (tower damage research), OIL PRESS
@@ -52,7 +52,7 @@ Survivor.io-style horde survival × BTD tower defense × Clash-style kingdom met
 E activate field station · Z / X / V consumables · Q mortar · R ult · P pause · H photo · M mute · Y timer
 
 **Touch:** drag empty ground to move; tap BUILD, select a tower, then tap ground to
-place. Tap an existing tower to inspect/upgrade/sell. CANCEL PLACEMENT exits build
+place. Tap an existing tower to inspect/upgrade/sell, then tap its targeting button to cycle priorities. LOCK keeps its current target until it dies or leaves the tower’s firing range. CANCEL PLACEMENT exits build
 mode. Dash and ULT stay on the right; build/sell controls stay on the left. Menus
 scroll; swipe the hero cards horizontally. Settings pauses a live run; close it
 and press Resume to continue.
