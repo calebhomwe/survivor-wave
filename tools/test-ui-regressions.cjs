@@ -260,4 +260,32 @@ test('storage shim keeps the game alive when localStorage throws (sandboxed fram
   assert.equal(ok.localStorage, real); assert.equal(ok.__kscMemStorage, undefined);
   assert(!html.includes("url('assets/fonts/"), 'fonts are embedded so sandboxed frames do not need CORS for them');
 });
+
+
+// Exercise the real tower target selector independently of animation and timing.
+test('tower priorities and lock respond to live, targetable enemies', () => {
+  const crowd = [
+    {x:10,y:0,hp:20,speed:20},
+    {x:80,y:0,hp:50,speed:120},
+    {x:40,y:0,hp:5,speed:10,isElite:true},
+    {x:20,y:0,hp:999,speed:999,untargetable:true},
+    {x:150,y:0,hp:999,speed:999,isBoss:true}
+  ];
+  const tc = {player:{x:75,y:0}, effOf: () => ({minR:0}), eachNear: (x,y,r,visit) => crowd.forEach(visit)};
+  vm.createContext(tc);
+  vm.runInContext(fn('pickTarget') + '\n' + fn('updateTowerTarget'), tc);
+  const t={x:0,y:0,tgt:'close'};
+  for (const [mode,index] of [['close',0],['hero',1],['strong',1],['weak',2],['far',1],['fast',1],['elite',2],['lock',0]]) {
+    t.tgt=mode; assert.equal(tc.pickTarget(t,100),crowd[index],mode);
+  }
+  t.tgt='lock'; t.target=crowd[0]; t.retarget=0.01;
+  tc.updateTowerTarget(t,{range:100},1); assert.equal(t.target,crowd[0]);
+  crowd[0].hp=0; tc.updateTowerTarget(t,{range:100},0.01); assert.equal(t.target,crowd[2]);
+  t.tgt='fast'; t.target=crowd[2]; t.retarget=0.01;
+  tc.updateTowerTarget(t,{range:100},0.02); assert.equal(t.target,crowd[1]);
+  tc.effOf=()=>({minR:50}); t.tgt='close';
+  assert.equal(tc.pickTarget(t,100),crowd[1], 'mortar must ignore enemies inside its dead zone');
+  t.target=crowd[2]; tc.updateTowerTarget(t,{range:100,minR:50},0.01); assert.equal(t.target,crowd[1]);
+});
+
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
