@@ -280,6 +280,14 @@ test('tower priorities and lock respond to live, targetable enemies', () => {
   }
   t.tgt='lock'; t.target=crowd[0]; t.retarget=0.01;
   tc.updateTowerTarget(t,{range:100},1); assert.equal(t.target,crowd[0]);
+  t.tgt='close'; t.target=crowd[1]; t.retarget=0.01;
+  tc.updateTowerTarget(t,{range:100},0.02); assert.equal(t.target,crowd[0], 'CLOSE should reconsider nearby enemies unlike LOCK');
+  t.tgt='elite'; crowd[2].isElite=false; crowd[1].isSpud=true;
+  assert.equal(tc.pickTarget(t,100),crowd[1], 'Spud is a boss and must be prioritized');
+  crowd[1].isSpud=false; crowd[1].isPeel=true;
+  assert.equal(tc.pickTarget(t,100),crowd[1], 'Peel is a boss and must be prioritized');
+  crowd[1].isPeel=false; crowd[2].isElite=true;
+  t.tgt='lock'; t.target=crowd[0];
   crowd[0].hp=0; tc.updateTowerTarget(t,{range:100},0.01); assert.equal(t.target,crowd[2]);
   t.tgt='fast'; t.target=crowd[2]; t.retarget=0.01;
   tc.updateTowerTarget(t,{range:100},0.02); assert.equal(t.target,crowd[1]);
