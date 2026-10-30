@@ -291,9 +291,24 @@ test('tower priorities and lock respond to live, targetable enemies', () => {
   crowd[0].hp=0; tc.updateTowerTarget(t,{range:100},0.01); assert.equal(t.target,crowd[2]);
   t.tgt='fast'; t.target=crowd[2]; t.retarget=0.01;
   tc.updateTowerTarget(t,{range:100},0.02); assert.equal(t.target,crowd[1]);
+  t.tgt='lock'; t.target=crowd[1]; crowd[1]._kscDespawned=true;
+  tc.updateTowerTarget(t,{range:100},0.02); assert.equal(t.target,crowd[2], 'despawned target must be released');
+  crowd[1]._kscDespawned=false;
   tc.effOf=()=>({minR:50}); t.tgt='close';
   assert.equal(tc.pickTarget(t,100),crowd[1], 'mortar must ignore enemies inside its dead zone');
   t.target=crowd[2]; tc.updateTowerTarget(t,{range:100,minR:50},0.01); assert.equal(t.target,crowd[1]);
+});
+
+test('crowd cap marks removed enemies and protects named bosses', () => {
+  const start=html.indexOf('    /* F5 enemy cap */');
+  const end=html.indexOf('\n  }catch(_){}',start);
+  assert(start>=0 && end>start);
+  const spud={x:1500,y:0,hp:100,isSpud:true}, peel={x:1500,y:0,hp:100,isPeel:true}, removed={x:1500,y:0,hp:10};
+  const enemies=[...Array.from({length:281},()=>({x:0,y:0,hp:10})),spud,peel,removed];
+  vm.runInNewContext(html.slice(start,end),{enemies,player:{x:0,y:0}});
+  assert.equal(removed._kscDespawned,true);
+  assert(!enemies.includes(removed));
+  assert(enemies.includes(spud) && enemies.includes(peel));
 });
 
 console.log(JSON.stringify({pass: true, groups: passed, inlineScripts: scripts.length, scope: 'source/unit; fake DOM, no browser or physical iPhone'}));
